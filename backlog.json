@@ -1,0 +1,1623 @@
+{
+  "$schema_version": "1.1",
+  "meta": {
+    "updated": "2026-09-14",
+    "context_doc": "work-widget-requirements.md",
+    "max_est_min": 30,
+    "note": "work-widget(업무 위젯 Electron 앱) 작업 항목 목록. json.json(voice-claude-car) 스키마를 참고해 이 프로젝트용으로 작성. 이 프로젝트에는 아직 pnpm backlog 같은 전용 CLI가 없어 수동으로 관리한다. 배경/상세 스펙은 context_doc(work-widget-requirements.md) 참고, 특히 Part B(B1~B5) 섹션 번호를 각 항목의 summary에 표기했다."
+  },
+  "enums": {
+    "status": [
+      "todo",
+      "in_progress",
+      "in_review",
+      "needs_info",
+      "blocked",
+      "done",
+      "cancelled"
+    ],
+    "priority": [
+      "P0",
+      "P1",
+      "P2",
+      "P3",
+      null
+    ],
+    "category": [
+      "spike",
+      "feature",
+      "infra",
+      "test",
+      "docs",
+      "security",
+      "bug",
+      "cleanup",
+      "release",
+      "skill"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "P0",
+      "status": "in_progress",
+      "priority": "P0",
+      "category": "infra",
+      "title": "Phase 0 스캐폴딩 — Electron+React 뼈대, 데이터 저장 계층",
+      "summary": "Vite+React 렌더러와 Electron 메인 프로세스 골격을 만들고 로컬 실행이 가능한 상태로 만든다. 화면 기능은 이후 phase에서 채운다.",
+      "where": null,
+      "parent": null,
+      "deps": [],
+      "doc": "work-widget-requirements.md",
+      "done_when": "npm install 성공 + vite build 성공 + electron 앱 기동(창 표시, 트레이 아이콘 생성) 확인",
+      "est_min": null,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P0.1",
+      "status": "done",
+      "priority": "P0",
+      "category": "infra",
+      "title": "스택 결정 및 폴더 구조 설계",
+      "summary": "Electron + Vite + React(JS) 스택 확정, electron/(메인) · src/(렌더러) 분리 구조 설계",
+      "where": null,
+      "parent": "P0",
+      "deps": [],
+      "doc": null,
+      "done_when": "폴더 구조 및 스택 결정 완료",
+      "est_min": 15,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T06:00:00Z",
+      "log": [
+        {
+          "at": "2026-09-14T06:00:00Z",
+          "owner": null,
+          "status": "done",
+          "note": "요구사항 문서(개요 2번)에서 Electron 추천안 확인, Vite 기반 React 렌더러 + electron/ 메인 프로세스 분리 구조로 결정"
+        }
+      ],
+      "done_at": "2026-09-14"
+    },
+    {
+      "id": "P0.2",
+      "status": "done",
+      "priority": "P0",
+      "category": "infra",
+      "title": "빌드 설정 파일 작성",
+      "summary": "package.json, vite.config.js, index.html, .gitignore 작성",
+      "where": "package.json vite.config.js index.html .gitignore",
+      "parent": "P0",
+      "deps": [
+        "P0.1"
+      ],
+      "doc": null,
+      "done_when": "네 파일 모두 작성 완료",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T06:10:00Z",
+      "log": [
+        {
+          "at": "2026-09-14T06:10:00Z",
+          "owner": null,
+          "status": "done",
+          "note": "package.json(dev/build/dist 스크립트, electron-builder 설정), vite.config.js(base: './'), index.html, .gitignore 작성"
+        }
+      ],
+      "done_at": "2026-09-14"
+    },
+    {
+      "id": "P0.3",
+      "status": "done",
+      "priority": "P0",
+      "category": "infra",
+      "title": "데이터 저장 계층(dataStore.js) 작성",
+      "summary": "B3 스키마 기준 data.json(projects/todos/memos/schedules 4개 배열) 로드/저장 함수",
+      "where": "electron/dataStore.js",
+      "parent": "P0",
+      "deps": [
+        "P0.1"
+      ],
+      "doc": "work-widget-requirements.md#B3",
+      "done_when": "loadData/saveData 함수 작성, 기본값 없을 때 자동 생성",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T06:20:00Z",
+      "log": [
+        {
+          "at": "2026-09-14T06:20:00Z",
+          "owner": null,
+          "status": "done",
+          "note": "app.getPath('userData')/data.json 기준 loadData/saveData 작성, 파일 없거나 파싱 실패 시 기본 구조로 폴백"
+        }
+      ],
+      "done_at": "2026-09-14"
+    },
+    {
+      "id": "P0.4",
+      "status": "done",
+      "priority": "P0",
+      "category": "infra",
+      "title": "Electron 메인 프로세스(main.js, preload.js) 작성",
+      "summary": "BrowserWindow 생성, 트레이 아이콘, data:load/data:save IPC, 닫기=숨김(B5.1)·별도 종료메뉴 없음(B5.2) 반영",
+      "where": "electron/main.js electron/preload.js",
+      "parent": "P0",
+      "deps": [
+        "P0.3"
+      ],
+      "doc": "work-widget-requirements.md#B5",
+      "done_when": "main.js/preload.js 작성 완료, close 이벤트에서 hide 처리, IPC 핸들러 등록",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-15T06:49:00.973Z",
+      "log": [
+        {
+          "at": "2026-09-14T06:35:00Z",
+          "owner": null,
+          "status": "done",
+          "note": "BrowserWindow + Tray(임시 빈 아이콘) + contextBridge 기반 preload + ipcMain data:load/data:save 핸들러 작성"
+        },
+        {
+          "at": "2026-09-15T06:49:00.973Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 지적으로 사후 버그 수정: window-all-closed 리스너가 인자 없는데 event.preventDefault() 호출(TypeError) — 핸들러를 no-op으로 교체. before-quit은 Windows 종료/로그아웃 시 미발생(Electron 문서 확인)해 B5.2 종료 경로가 없었음 — mainWindow에 session-end 리스너 추가해 app.isQuitting=true 설정하도록 보강."
+        }
+      ],
+      "done_at": "2026-09-15"
+    },
+    {
+      "id": "P0.5",
+      "status": "done",
+      "priority": "P0",
+      "category": "infra",
+      "title": "React 렌더러 뼈대 작성",
+      "summary": "main.jsx/App.jsx/Sidebar.jsx + 5개 화면(대시보드/프로젝트/할일전체/메모/일정) placeholder, 기본 레이아웃 CSS",
+      "where": "src/",
+      "parent": "P0",
+      "deps": [
+        "P0.2"
+      ],
+      "doc": "work-widget-requirements.md#B1.3",
+      "done_when": "사이드바 클릭으로 5개 화면 전환 가능",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T06:50:00Z",
+      "log": [
+        {
+          "at": "2026-09-14T06:50:00Z",
+          "owner": null,
+          "status": "done",
+          "note": "App.jsx에서 로컬 state로 화면 전환, Sidebar.jsx 메뉴 5개, 화면별 컴포넌트는 텍스트 placeholder만 포함"
+        }
+      ],
+      "done_at": "2026-09-14"
+    },
+    {
+      "id": "P0.6",
+      "status": "done",
+      "priority": "P0",
+      "category": "infra",
+      "title": "npm install 의존성 설치 완료",
+      "summary": "electron 패키지 postinstall(바이너리 다운로드)이 완료되지 않음. node_modules/electron 디렉토리 자체의 핸들이 잠겨 npm의 rename 기반 재설치가 EBUSY로 반복 실패.",
+      "where": "node_modules/electron",
+      "parent": "P0",
+      "deps": [
+        "P0.2"
+      ],
+      "doc": null,
+      "done_when": "node_modules/electron/dist 존재, npm install이 에러 없이 종료",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-15T06:24:53.086Z",
+      "log": [
+        {
+          "at": "2026-09-14T07:25:46Z",
+          "owner": null,
+          "status": "blocked",
+          "note": "1차 npm install이 30분 이상 진행 없이 정지(node_modules/electron 987K에서 불변). 원인 조사: npm 레지스트리·GitHub 릴리즈 다운로드 자체는 curl로 105MB/14초 정상, 프록시 없음, 디스크 737GB 여유 — 네트워크/디스크 문제 아님. 하네스 스타팅 프로세스 강제 종료 후 재설치 시도했으나 EBUSY(rename 'electron' -> '.electron-lBg9t3Cp')로 실패"
+        },
+        {
+          "at": "2026-09-14T07:27:36Z",
+          "owner": null,
+          "status": "blocked",
+          "note": "rm -rf/mv(MSYS)·PowerShell Remove-Item 모두 'resource busy'로 실패. 폴더 내 개별 파일은 전부 배타 오픈 가능(잠금 없음) — 디렉토리 핸들 자체만 잠김. 탐색기/터미널/에디터가 해당 경로를 열고 있는지 사용자에게 확인 요청 → 열려있는 것 없음으로 확인됨"
+        },
+        {
+          "at": "2026-09-14T07:34:03Z",
+          "owner": null,
+          "status": "blocked",
+          "note": "Windows Defender(MsMpEng.exe, 320MB 사용 확인)를 유력 원인으로 추정하되 미확정. Sysinternals handle.exe 등 부재로 정확한 잠금 프로세스 특정 못함. 재시도 반복 후에도 동일하게 실패해 일단 보류, 사용자와 다음 조치(백신 예외 처리 여부 등) 논의 필요"
+        },
+        {
+          "at": "2026-09-14T07:52:00Z",
+          "owner": null,
+          "status": "blocked",
+          "note": "시간 경과 후 재확인해도 동일 증상 지속. node_modules/electron뿐 아니라 상위 node_modules 폴더 자체 rename도 실패(PowerShell 'Access is denied'). icacls로 ACL 확인 결과 권한 문제는 아님(Authenticated Users Modify 권한 정상) — 원인 불명의 핸들 점유로 판단, 세션 내 우회 수단 소진. 사용자와 논의 후 PC 재부팅 후 재시도로 결정"
+        },
+        {
+          "at": "2026-09-15T06:24:53.086Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "재부팅 후 재확인: npm install이 exit 0으로 정상 종료(465 packages, up to date), node_modules/electron/dist/electron.exe 및 version(31.7.7) 존재 확인. 이전 EBUSY/핸들 잠김 문제는 재발하지 않음(원인은 끝내 미확정, Windows Defender 추정). 참고: npm audit 기준 취약점 12건(critical 1) 존재 — 이번 done_when과 무관해 별도 처리 필요."
+        }
+      ],
+      "done_at": "2026-09-15"
+    },
+    {
+      "id": "P0.7",
+      "status": "done",
+      "priority": "P0",
+      "category": "test",
+      "title": "vite build 렌더러 컴파일 검증",
+      "summary": "React/JSX가 에러 없이 번들되는지 확인",
+      "where": null,
+      "parent": "P0",
+      "deps": [
+        "P0.6"
+      ],
+      "doc": null,
+      "done_when": "npm run build 성공, dist/ 생성 확인",
+      "est_min": 10,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-15T06:25:19.545Z",
+      "log": [
+        {
+          "at": "2026-09-15T06:25:08.047Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "P0.6 완료로 착수 가능 — npm run build 재검증"
+        },
+        {
+          "at": "2026-09-15T06:25:19.545Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "dist/ 삭제 후 npm run build(vite build) 재실행: exit 0, dist/index.html + dist/assets 생성 확인(37 modules, 984ms)."
+        }
+      ],
+      "done_at": "2026-09-15"
+    },
+    {
+      "id": "P0.8",
+      "status": "done",
+      "priority": "P0",
+      "category": "test",
+      "title": "electron 앱 기동 테스트",
+      "summary": "npm run dev로 창 표시, 트레이 아이콘 생성, IPC(data:load) 정상 동작 확인",
+      "where": null,
+      "parent": "P0",
+      "deps": [
+        "P0.6"
+      ],
+      "doc": null,
+      "done_when": "창이 뜨고 대시보드 placeholder가 보임, 닫기(X) 시 트레이로 숨김 확인",
+      "est_min": 15,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-15T06:49:11.364Z",
+      "log": [
+        {
+          "at": "2026-09-15T06:25:27.902Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "P0.6/P0.7 완료로 착수 가능 — npm run dev로 실제 기동 검증 시도"
+        },
+        {
+          "at": "2026-09-15T06:27:46.314Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "npm run dev로 실제 기동: electron.exe 프로세스(main+renderer+gpu+utility) 정상 기동 확인, 스크린샷으로 창 표시·사이드바 5메뉴·대시보드 placeholder(오늘 마감/이번주 마감/진행중 프로젝트 현황/오늘 일정 4항목) 렌더링 실제 확인. 단 X 닫기→트레이 숨김은 라이브로 클릭 테스트하지 않았고 electron/main.js의 close 핸들러(preventDefault+hide, before-quit에서만 종료) 코드 검토로만 확인함 — 라이브 클릭 검증은 차후 필요시 보완. 검증 후 dev 프로세스는 정리(종료)함."
+        },
+        {
+          "at": "2026-09-15T06:49:11.364Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer가 done 근거 부족(X닫기 라이브 미검증)과 main.js 실제 버그 2건(window-all-closed event 없음, before-quit이 Windows 종료 시 미발생)을 지적 — 둘 다 사실로 확인(node_modules/electron/electron.d.ts 직접 확인) 후 수정(P0.4 로그 참고). 이후 npm run dev로 재기동해 PrintWindow API로 앱 창만 캡처(전체화면 캡처 아님, 다른 창/정보 노출 없음)해 사이드바 클릭→메모 화면 전환 확인. WM_CLOSE(X 버튼과 동일 신호)를 창에 직접 전송해 실제로 IsWindowVisible이 true→false로 바뀌고 프로세스는 계속 실행 중임을 확인 — done_when의 '닫기 시 트레이로 숨김'을 코드 검토가 아닌 실제 신호로 검증함. 트레이 아이콘 클릭 복귀는 미검증(빈 아이콘이라 클릭 좌표를 알 수 없음 — P7.1에서 실아이콘 적용 후 검증 필요)."
+        }
+      ],
+      "done_at": "2026-09-15"
+    },
+    {
+      "id": "P1",
+      "status": "todo",
+      "priority": "P1",
+      "category": "feature",
+      "title": "대시보드 화면 (B1.2)",
+      "summary": "오늘의 할일 요약 대시보드 — 오늘/이번주 마감, 프로젝트 현황, 오늘 일정",
+      "where": "src/screens/Dashboard.jsx",
+      "parent": null,
+      "deps": [
+        "P0"
+      ],
+      "doc": "work-widget-requirements.md#B1.2",
+      "done_when": "하위 항목 전부 done",
+      "est_min": null,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P1.1",
+      "status": "done",
+      "priority": "P1",
+      "category": "feature",
+      "title": "오늘 마감 할일 목록",
+      "summary": "todos에서 due_date=오늘인 항목 필터링해 표시",
+      "where": "src/screens/Dashboard.jsx",
+      "parent": "P1",
+      "deps": [
+        "P6.1"
+      ],
+      "doc": "work-widget-requirements.md#B1.2",
+      "done_when": "오늘 마감 todo가 목록으로 표시됨",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-16T05:16:51.671Z",
+      "log": [
+        {
+          "at": "2026-09-16T05:00:39.342Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "P1.5에서 만든 window.api.loadData() 연동 위에 오늘 마감(due_date=오늘) todo 필터링/표시 추가 착수"
+        },
+        {
+          "at": "2026-09-16T05:03:23.990Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "Dashboard.jsx에 오늘 마감(due_date=오늘) todo 필터링+우선순위(상/중/하) 정렬 구현 완료, lint 통과. 실행 검증: userData/data.json에 오늘/내일/마감없음 혼합 시딩 후 npm run dev로 기동, PrintWindow 캡처로 '오늘 마감 높은 우선순위'가 먼저, '오늘 마감 낮은 우선순위'가 다음, 내일 마감·마감없음 항목은 제외됨을 육안 확인. 검증 후 시딩 데이터 삭제로 원복. 리뷰 착수."
+        },
+        {
+          "at": "2026-09-16T05:08:28.686Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 반영 착수: (1)PRIORITY_ORDER['constructor'] 등 프로토타입 키로 NaN 비교자 나오는 문제 Object.hasOwn으로 방어, (2)id 없는 todo의 React key undefined 문제 필터로 방어, (3)due_date 포맷(로컬 YYYY-MM-DD) 계약을 dataStore.js 주석에 명시, (4)정렬 검증 가능하도록 화면에 priority 표시, (5)완료된 오늘마감 할일은 B2.2 패턴(취소선)으로 구분 표시, (6)자정경과/재표시 시 staleness는 기존 P1.6(트레이 재표시 시 재조회)으로 커버 범위임을 확인·연결, (7)deps가 P6.1이 아니라 실제로는 P1.5인 구조적 불일치는 CLI에 필드 수정 명령이 없어(add는 신규만, set-status는 상태만) 수정 불가 — note로 기록만 남김"
+        },
+        {
+          "at": "2026-09-16T05:16:51.671Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 지적 반영: (1)PRIORITY_ORDER['constructor'] 등 프로토타입 키로 NaN 비교자 나오던 문제 Object.hasOwn 가드로 수정, (2)id 없는 todo가 React key undefined 되는 문제 필터로 제외, (3)due_date는 로컬 YYYY-MM-DD 문자열이라는 계약을 electron/dataStore.js 주석에 명시, (4)정렬 검증 가능하도록 각 항목에 priority 표시, (5)완료된 오늘마감 할일은 B2.2 패턴대로 숨기지 않고 취소선 표시. 실행 검증: userData/data.json에 [완료+중], [미완료+상], [priority=constructor], [id없음] 4종 엣지케이스 시딩 후 npm run dev로 기동, PrintWindow 캡처로 (a)상 우선순위가 먼저 (b)완료 항목은 취소선 (c)constructor priority는 크래시 없이 맨 뒤 순위로 처리 (d)id 없는 항목은 목록에서 아예 제외 — 4가지 전부 육안 확인. 검증 후 시딩 데이터 삭제로 원복, 콘솔/로그에 앱 관련 에러 없음. staleness(자정경과/재표시 시 갱신 안됨) 갭은 기존 P1.6 범위로 커버됨을 재확인. deps가 P6.1이 아니라 실제로는 P1.5(loadData 제공자)인 구조적 불일치는 CLI에 필드 수정 명령이 없어(add=신규생성만, set-status=상태만) 고칠 수단이 없음 — 다음 세션/사람이 스키마 확장 또는 수동 backlog.json 편집 시 참고하도록 기록만 남김. done_when 문장 자체(오늘"
+        }
+      ],
+      "done_at": "2026-09-16"
+    },
+    {
+      "id": "P1.2",
+      "status": "done",
+      "priority": "P1",
+      "category": "feature",
+      "title": "이번주 마감 할일 목록",
+      "summary": "todos에서 이번주 범위 due_date 필터링해 표시",
+      "where": "src/screens/Dashboard.jsx",
+      "parent": "P1",
+      "deps": [
+        "P1.1"
+      ],
+      "doc": "work-widget-requirements.md#B1.2",
+      "done_when": "이번주 마감 todo가 목록으로 표시됨",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-16T06:25:30.036Z",
+      "log": [
+        {
+          "at": "2026-09-16T06:17:00.551Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "P1.1 패턴 이어서 이번주 마감(오늘 제외) todo 필터링/정렬 추가 착수. 주 시작 요일이 요구사항에 없어 월요일 시작으로 해석하기로 함."
+        },
+        {
+          "at": "2026-09-16T06:19:06.440Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "Dashboard.jsx에 이번주(월~일, 오늘 제외) 마감 todo 필터링+날짜우선/우선순위차순 정렬 구현, lint 통과. 실행 검증: 오늘/이번주 다른날짜 2건(동일날짜 우선순위 다름)/다음주/마감없음 혼합 시딩 후 npm run dev로 기동, PrintWindow 캡처로 목요일(상)이 먼저·금요일(상,완료취소선)·금요일(하) 순으로 표시되고 오늘/다음주/마감없음 항목은 이번주 섹션에서 제외됨을 육안 확인. 검증 후 시딩 데이터 삭제로 원복, 콘솔/로그 에러 없음."
+        },
+        {
+          "at": "2026-09-16T06:23:20.914Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 반영 착수: (1)[High] 필터가 due_date>today라 이번주 중 이미 지난 날짜(예: 오늘이 수요일이면 월/화 마감)가 오늘 섹션에도 이번주 섹션에도 안 뜨는 커버리지 누락 발견 — B4.1(대시보드가 마감 임박 확인의 유일한 경로)과 충돌하므로 수정. weekStart(월요일) 이상 && 오늘 제외로 하한 변경. (2)[Medium] 주 경계 계산(월요일 시작)을 src/lib/dateRange.js로 분리 — Todos.jsx(P3.1)가 나중에 같은 정의를 재구현하지 않도록. (3)[Medium] 반복적으로 지적된 테스트 러너 부재(gate 미설정)를 별도 backlog task로 분리 등록. (4)[Low] Dashboard.jsx 헤더 주석에서 완료된 P1.2 언급 제거."
+        },
+        {
+          "at": "2026-09-16T06:25:30.036Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 지적 반영: (1)[High] 필터 하한을 due_date>today에서 due_date!==today && due_date>=weekStart로 수정 — 이번주 중 이미 지난 마감(예: 오늘이 수요일이면 월/화)이 오늘/이번주 어느 섹션에도 안 뜨던 커버리지 누락 해소. B4.1(대시보드가 마감 확인의 유일한 경로)과 충돌하던 부분. (2)날짜 경계 계산을 src/lib/dateRange.js(formatLocalDate/getTodayDateString/getThisWeekRange)로 분리 — Todos.jsx(P3.1)가 같은 '이번주' 정의를 재구현하지 않고 공유하도록 함. (3)반복 지적된 테스트 러너 부재를 P6.5로 분리 등록. (4)Dashboard.jsx 헤더 주석에서 완료된 P1.2 언급 제거. 실행 검증: 이번주 중 이미 지난 날짜(월요일)+오늘+미래(목요일)+다음주 혼합 시딩 후 npm run dev로 기동, PrintWindow 캡처로 월요일(이미지남) 항목이 이번주 섹션 맨 위(날짜순)에 정상 표시되는 것 확인(수정 전엔 어디에도 안 보였음). 오늘/다음주는 여전히 올바르게 제외. 콘솔/로그 에러 없음. 주 시작 요일(월요일) 해석과 gate 미설정(P6.5로 이관)은 스펙 미규정/인프라 부재 영역으로 note에 근거 남김 — B1.1/P6.2 선례와 동일하게 처리."
+        }
+      ],
+      "done_at": "2026-09-16"
+    },
+    {
+      "id": "P1.3",
+      "status": "done",
+      "priority": "P1",
+      "category": "feature",
+      "title": "진행중 프로젝트 현황 카드",
+      "summary": "진행중 프로젝트 개수/progress(B6.1 계산값) 요약 표시",
+      "where": "src/screens/Dashboard.jsx",
+      "parent": "P1",
+      "deps": [
+        "P6.1"
+      ],
+      "doc": "work-widget-requirements.md#B1.2",
+      "done_when": "진행중 프로젝트 개수와 평균/개별 진행률이 표시됨",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-16T05:30:59.462Z",
+      "log": [
+        {
+          "at": "2026-09-16T05:23:46.910Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "P1.5(IPC 연동)+P1.1(오늘 마감 목록) 패턴 이어서, 진행중 프로젝트 개수와 개별/평균 진행률 표시 착수. src/lib/projectProgress.js의 calculateProjectProgress(P6.1)를 여기서 처음 실사용."
+        },
+        {
+          "at": "2026-09-16T05:26:04.647Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "Dashboard.jsx에 진행중 프로젝트(status=진행중) 필터링 + calculateProjectProgress(P6.1) 이용한 개별/평균 진행률 표시 구현 완료, lint 통과. 실행 검증: userData/data.json에 진행중 2개(50%/100%)+완료 1개(제외돼야함) 시딩 후 npm run dev로 기동, PrintWindow 캡처로 '진행중 2개·평균 진행률 75%'와 개별 50%/100%가 정확히 표시되고 완료 프로젝트는 제외됨을 육안 확인. 검증 후 시딩 데이터 삭제로 원복, 콘솔/로그 에러 없음. 리뷰 착수."
+        },
+        {
+          "at": "2026-09-16T05:30:59.462Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer: 기능적 코드 결함 없음(calculateProjectProgress 호출 시그니처 정확, B3.1 '저장 안하고 조회시 계산' 원칙 준수, 0나눗셈/부동소수점 문제 없음, key 안전성 P1.1과 동일 패턴 확인됨). 메타데이터 지적 반영: (1)deps가 P6.1만 있고 실제 선행조건인 P1.5(loadData 제공)가 빠져있음 — CLI에 deps 수정 명령이 없어 고칠 수단 없음, 기록만 남김. (2)summary의 'B6.1'은 요구사항 문서에 없는 절(오타) — progress의 실제 근거는 B3.1(139행 저장안함/조회시계산 원칙)과 backlog task P6.1(계산함수)임, 이것도 summary 필드라 CLI로 수정 불가, 기록만 남김. (3)평균 진행률 정의를 문서화: 프로젝트별 진행률(각각 반올림된 정수)의 단순 산술평균이며 할일 개수로 가중하지 않음 — 요구사항에 정의 없어 이 해석으로 확정. (4)status='진행중' 판정은 저장된 값을 그대로 신뢰함 — 프로젝트 자동 상태전환(B4.3/요구사항 196-198행)은 아직 어디에도 구현 안 됨, 별도 task 소관이며 이 화면의 버그 아님. (5)중복id 미방어/name 누락 미방어는 P6.3 계열 데이터 정규화 task로 이관 검토 대상, 이번 범위에서 수정 안함. (6)P1.5가 남긴 '일정 총 N개' placeholder는 P1.4(오늘 일정) 완료 시 정리 예정으로 이관. 실행검증은 in_review 전환 시 완료(진행중 2개/평균75%/개별50·100%/완료프로젝트 제외 육안 확인)."
+        }
+      ],
+      "done_at": "2026-09-16"
+    },
+    {
+      "id": "P1.4",
+      "status": "todo",
+      "priority": "P1",
+      "category": "feature",
+      "title": "오늘 일정 표시",
+      "summary": "schedules(반복 포함)에서 오늘 해당하는 일정만 계산해 표시",
+      "where": "src/screens/Dashboard.jsx",
+      "parent": "P1",
+      "deps": [
+        "P5.4"
+      ],
+      "doc": "work-widget-requirements.md#B1.2",
+      "done_when": "오늘 일정(일회성+반복 규칙 전개 결과)이 표시됨",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P1.5",
+      "status": "done",
+      "priority": "P1",
+      "category": "infra",
+      "title": "대시보드 데이터 IPC 연동",
+      "summary": "window.api.loadData()로 실제 data.json을 읽어 P1.1~P1.4에 연결",
+      "where": "src/screens/Dashboard.jsx",
+      "parent": "P1",
+      "deps": [
+        "P0.8"
+      ],
+      "doc": null,
+      "done_when": "실제 저장된 데이터 기준으로 대시보드가 갱신됨",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-16T04:57:05.359Z",
+      "log": [
+        {
+          "at": "2026-09-16T04:47:10.871Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "Dashboard.jsx에 window.api.loadData() 연동 착수 — electron/preload.js의 IPC(data:load)는 P0.8에서 이미 검증됨"
+        },
+        {
+          "at": "2026-09-16T04:48:14.566Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "Dashboard.jsx에 window.api.loadData() 연동 구현 완료(로딩/에러/미가용 상태 처리 포함), lint 통과. 리뷰 착수."
+        },
+        {
+          "at": "2026-09-16T04:53:03.994Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 반영 착수: (1)B1.2 스펙에 없는 '메모 총 N개' bullet 제거, (2)effect cleanup(unmount 후 setState 방지) 추가, (3)apiAvailable을 컴포넌트 내부로 이동, (4)err.message가 falsy일 때 무한 로딩되는 버그 수정, (5)gate=null 상태라 실행 검증 필요 — npm run dev로 실제 기동 확인 예정"
+        },
+        {
+          "at": "2026-09-16T04:57:05.359Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 지적 반영: (1)B1.2 스펙 외 '메모 총 N개' 제거, (2)effect ignore-flag cleanup 추가, (3)apiAvailable을 컴포넌트 내부에서 매 렌더 계산하도록 이동, (4)err.message falsy 시 무한 로딩되는 버그 수정(fallback 메시지). gate=null이라 실행 검증 직접 수행: userData/data.json에 검증용 더미(할일3/프로젝트2/일정1) 시딩 후 npm run dev로 기동, PrintWindow API로 앱 창 캡처해 화면에 '할일 총 3개/프로젝트 총 2개/일정 총 1개'가 정확히 표시됨을 육안 확인(스크린샷 증거 확보), electron 로그에 앱 관련 에러 없음 확인. 검증 후 프로세스 종료 및 시딩한 더미 data.json 삭제로 원복. 트레이 재표시 시 재조회 갭(리뷰 지적)은 P1.5 범위(초기 IPC 연동) 밖으로 판단해 P1.6으로 분리 등록함."
+        }
+      ],
+      "done_at": "2026-09-16"
+    },
+    {
+      "id": "P1.6",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "트레이 재표시 시 대시보드 데이터 재조회",
+      "summary": "현재 Dashboard.jsx는 mount 시 1회만 loadData() 호출. main.js의 X닫기는 hide만 하고 destroy하지 않아 트레이에서 다시 열어도 React 트리가 살아있어 최초 로드 시점 데이터가 그대로 남는다(리로드 안됨). 트레이 재표시/윈도우 show 시 최신 data.json을 다시 불러오도록 갱신 필요.",
+      "where": "electron/main.js src/screens/Dashboard.jsx",
+      "parent": "P1",
+      "deps": [
+        "P1.5"
+      ],
+      "doc": null,
+      "done_when": "트레이에서 숨겼다가 다시 열었을 때 그 사이 변경된 data.json 내용이 대시보드에 반영됨",
+      "est_min": 20,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-16T04:56:54.076Z",
+      "log": [
+        {
+          "at": "2026-09-16T05:22:57.200Z",
+          "owner": "claude",
+          "status": "todo",
+          "note": "구조 정리: add 시 배열 맨 끝에 push되던 버그(mutations.js findInsertionIndex 추가로 수정) 이후, 기존에 잘못 배치된 항목을 부모(P1) 형제들 옆으로 재배치"
+        }
+      ]
+    },
+    {
+      "id": "P1.7",
+      "status": "needs_info",
+      "priority": "P2",
+      "category": "feature",
+      "title": "[확인 필요] 오늘/이번주 마감 할일 행에 프로젝트명 표시 여부",
+      "summary": "critical-reviewer가 P9 리뷰 중 발견: docs/backlog/P1.1.md은 각 항목이 제목/우선순위/프로젝트명을 표시한다고 기술하지만, 현재 Dashboard.jsx(P9가 마크업을 다시 쓴 이후)는 dot/제목/마감일/우선순위만 표시하고 프로젝트명은 어디에도 없다. 이 프로젝트가 git 저장소가 아니라 P9 이전 상태와 diff할 수 없어, 원래 없었던 것(P1.1 미충족이 방치된 것)인지 P9가 재작성하며 빠뜨린 것(회귀)인지 코드만으로는 확정 불가.",
+      "where": "src/screens/Dashboard.jsx",
+      "parent": "P1",
+      "deps": [
+        "P1.1"
+      ],
+      "doc": null,
+      "done_when": "사람 확인 후: (a) 원래도 없었다면 P1.1을 재오픈해 프로젝트명 표시를 추가하거나 done_when 범위 밖임을 명시, (b) P9가 빠뜨린 회귀라면 Dashboard.jsx에 프로젝트명 표시 복구",
+      "est_min": 10,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-17T00:28:01.931Z",
+      "log": []
+    },
+    {
+      "id": "P2",
+      "status": "todo",
+      "priority": "P1",
+      "category": "feature",
+      "title": "프로젝트 화면 (B2.1)",
+      "summary": "장기/단기 목록 카드 + 상세 화면(할일/메모/진행률)",
+      "where": "src/screens/Projects.jsx",
+      "parent": null,
+      "deps": [
+        "P0"
+      ],
+      "doc": "work-widget-requirements.md#B2.1",
+      "done_when": "하위 항목 전부 done",
+      "est_min": null,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P2.1",
+      "status": "done",
+      "priority": "P1",
+      "category": "feature",
+      "title": "프로젝트 목록 카드 UI",
+      "summary": "장기/단기 구분된 카드형 목록",
+      "where": "src/screens/Projects.jsx",
+      "parent": "P2",
+      "deps": [
+        "P6.2"
+      ],
+      "doc": "work-widget-requirements.md#B2.1",
+      "done_when": "장기/단기 프로젝트가 카드로 구분 표시됨",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-16T06:50:41.376Z",
+      "log": [
+        {
+          "at": "2026-09-16T06:38:57.382Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "Projects.jsx에 Dashboard.jsx와 동일한 IPC 로딩 패턴(window.api.loadData) 적용 후, B2.1대로 장기/단기 구분 카드 목록 구현 착수. P2.2(상세화면 클릭 이동)는 범위 밖 — 카드는 이번엔 비인터랙티브."
+        },
+        {
+          "at": "2026-09-16T06:43:29.062Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "Projects.jsx에 Dashboard.jsx와 동일한 IPC 로딩 패턴 적용, project.type(장기/단기)로 그룹핑 + calculateProjectProgress로 진행률 계산해 카드 목록 렌더. id 없는 레코드 방어(P1.1/P1.3와 동일 패턴). lint 통과. 실행 검증: 장기1(진행중,50%,마감있음)+단기2(진행중 0%/완료 100%) 시딩 후 npm run dev로 기동, 사이드바 클릭 자동화(Alt키로 foreground lock 우회 후 SetCursorPos+mouse_event)로 프로젝트 탭 이동, PrintWindow 캡처로 장기/단기 섹션 분리, 진행률 %, 마감일 유무에 따른 조건부 표시 전부 정확히 확인. 콘솔/로그 에러 없음."
+        },
+        {
+          "at": "2026-09-16T06:47:44.077Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 반영 착수: (1)[High] done_when의 '카드'가 코드에 없던 문제 — Memos.jsx/index.css 선례(화면 task=마크업+index.css)에 맞춰 최소 카드 스타일(.project-card 등) 추가. (2)[High] type이 장기/단기가 아닌 프로젝트가 무성 소실되던 문제 — 현재 프로젝트 생성 경로가 수기 data.json 편집뿐이고 요구사항이 그걸 허용하므로 실 데이터 소실 위험, '미분류 N개' 안내 추가. (3)[Medium] groupProjectsByType을 src/lib/projectGrouping.js로 분리+export+vitest 테스트 추가(P6.1/P6.2처럼 gate=npm test 검증 가능하게). (4)deps/where 필드 공백(P6.1 누락, index.css 미기재)은 CLI 필드수정 불가로 기록만. (5)단기 전용 뷰(Part A 5.1)와 IPC 로딩 보일러플레이트 중복은 별도 task로 분리 등록 예정."
+        },
+        {
+          "at": "2026-09-16T06:50:41.376Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 지적 반영: (1)[High] done_when의 '카드' 미충족 — Memos.jsx/index.css 선례대로 .project-card(테두리+radius+padding) 등 최소 카드 스타일 추가. (2)[High] type이 장기/단기가 아닌 프로젝트가 무성 소실되던 문제 — groupProjectsByType에 'other' 그룹 추가, 있으면 빨간 안내문구로 노출(현재 프로젝트 생성이 data.json 수기편집뿐이라 실 데이터 소실 위험 있었음). (3)[Medium] groupProjectsByType을 src/lib/projectGrouping.js로 분리+export, vitest 테스트 5건 추가(장기/단기 분류, other 분류 3종 오타/null/누락, progress 계산, id방어, 배열아님 방어) — P6.1/P6.2처럼 gate=npm test로 검증 가능해짐. (4)deps(P6.1 누락)/where(index.css 누락) 필드 공백은 CLI 필드수정 불가로 기록만. (5)단기 전용 뷰(Part A 5.1)는 P2.6으로, IPC 로딩 보일러플레이트 중복(Dashboard와 3번째 이상 복제 예정)은 P10으로 분리 등록. 실행 검증: 장기1+단기1+미분류1(type='장기 ' 트레일링스페이스 오타) 시딩 후 npm run dev, 사이드바 클릭 자동화(Alt키 foreground우회)로 프로젝트 탭 이동, PrintWindow 캡처로 카드 테두리 스타일/미분류 안내문구/정상 그룹핑 전부 확인. npm test 35 tests PASS, lint 통과, 콘솔 에러 없음."
+        }
+      ],
+      "done_at": "2026-09-16"
+    },
+    {
+      "id": "P2.2",
+      "status": "todo",
+      "priority": "P1",
+      "category": "feature",
+      "title": "프로젝트 상세 화면",
+      "summary": "카드 클릭 시 상세 화면 진입(라우팅/레이아웃)",
+      "where": "src/screens/Projects.jsx",
+      "parent": "P2",
+      "deps": [
+        "P2.1"
+      ],
+      "doc": "work-widget-requirements.md#B2.1",
+      "done_when": "카드 클릭 시 상세 화면으로 전환됨",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P2.3",
+      "status": "todo",
+      "priority": "P1",
+      "category": "feature",
+      "title": "상세화면 내 할일 인라인 추가",
+      "summary": "별도 팝업 없이 입력창에서 바로 할일 추가",
+      "where": "src/screens/Projects.jsx",
+      "parent": "P2",
+      "deps": [
+        "P2.2"
+      ],
+      "doc": "work-widget-requirements.md#B2.1",
+      "done_when": "입력 후 엔터로 해당 프로젝트에 todo 추가됨",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P2.4",
+      "status": "todo",
+      "priority": "P1",
+      "category": "feature",
+      "title": "상세화면 메모/진행률/마감일 요약",
+      "summary": "프로젝트 상세에서 소속 메모·progress·due_date 표시",
+      "where": "src/screens/Projects.jsx",
+      "parent": "P2",
+      "deps": [
+        "P2.2",
+        "P6.1"
+      ],
+      "doc": "work-widget-requirements.md#B2.1",
+      "done_when": "상세 화면에서 메모/진행률/마감일이 함께 보임",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P2.5",
+      "status": "todo",
+      "priority": "P1",
+      "category": "feature",
+      "title": "프로젝트 CRUD IPC 연동",
+      "summary": "생성/수정/삭제를 data.json에 반영",
+      "where": "src/screens/Projects.jsx electron/dataStore.js",
+      "parent": "P2",
+      "deps": [
+        "P0.8"
+      ],
+      "doc": null,
+      "done_when": "프로젝트 추가/수정/삭제가 재시작 후에도 유지됨",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P2.6",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "단기 프로젝트 전용 뷰",
+      "summary": "요구사항 Part A 5.1: '단기 프로젝트만 별도로 모아서 볼 수 있는 뷰 필요'. 현재 P2.1은 장기/단기를 한 화면에 세로로 나열만 함 — 단기만 모아보는 별도 진입점(탭/필터)이 없어 이 요구사항이 아직 커버 안 됨.",
+      "where": "src/screens/Projects.jsx",
+      "parent": "P2",
+      "deps": [
+        "P2.1"
+      ],
+      "doc": "work-widget-requirements.md#5.1",
+      "done_when": "단기 프로젝트만 걸러서 볼 수 있는 화면/탭/필터가 있고 실제로 단기 항목만 표시됨",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-16T06:48:08.633Z",
+      "log": []
+    },
+    {
+      "id": "P2.7",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "프로젝트 카드에 진행률 바 추가",
+      "summary": "critical-reviewer가 P9 리뷰 중 발견: docs/backlog/P2.1.md은 프로젝트 카드가 '진행률 바'를 포함한다고 기술하지만 실제 Projects.jsx는 퍼센트 숫자 텍스트만 표시하고 progress-track/progress-fill(대시보드에서 이미 쓰는 CSS)을 쓰지 않는다. P9는 이 화면을 done_when상 'placeholder' 취급해 톤만 맞췄고 이 격차는 건드리지 않음.",
+      "where": "src/screens/Projects.jsx src/index.css",
+      "parent": "P2",
+      "deps": [
+        "P2.1"
+      ],
+      "doc": null,
+      "done_when": "프로젝트 카드 각각에 진행률 바(.progress-track/.progress-fill 재사용)가 표시되고 progress% 값과 일치함",
+      "est_min": 15,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-17T00:27:46.388Z",
+      "log": []
+    },
+    {
+      "id": "P3",
+      "status": "todo",
+      "priority": "P1",
+      "category": "feature",
+      "title": "할일전체 화면 (B2.2)",
+      "summary": "오늘/이번주/나중 그룹핑, 완료 취소선 유지, 화면 내 추가",
+      "where": "src/screens/Todos.jsx",
+      "parent": null,
+      "deps": [
+        "P0"
+      ],
+      "doc": "work-widget-requirements.md#B2.2",
+      "done_when": "하위 항목 전부 done",
+      "est_min": null,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P3.1",
+      "status": "in_progress",
+      "priority": "P1",
+      "category": "feature",
+      "title": "날짜 그룹핑(오늘/이번주/나중) UI",
+      "summary": "프로젝트 구분과 무관하게 날짜 기준 그룹핑",
+      "where": "src/screens/Todos.jsx",
+      "parent": "P3",
+      "deps": [
+        "P6.3"
+      ],
+      "doc": "work-widget-requirements.md#B2.2",
+      "done_when": "세 그룹으로 나뉘어 표시됨",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-16T23:34:56.919Z",
+      "log": [
+        {
+          "at": "2026-09-16T23:22:41.901Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "Todos.jsx에 오늘/이번주/나중 3그룹 구현 착수 — Dashboard.jsx(P1.1/P1.2)와 dateRange.js/useAppData 패턴 재사용. 우선순위 정렬 로직(PRIORITY_ORDER/priorityRank)은 Dashboard.jsx에 중복 생기기 전에 src/lib/priority.js로 선제 추출."
+        },
+        {
+          "at": "2026-09-16T23:28:19.203Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "Todos.jsx에 오늘/이번주/나중 3그룹 구현. groupTodosByDate를 src/lib/todoGrouping.js로 처음부터 export+테스트(P2.1 리뷰에서 지적된 패턴 선반영). 우선순위 로직도 PRIORITY_ORDER/priorityRank를 src/lib/priority.js로 추출해 Dashboard.jsx 중복 제거하고 재사용(Dashboard.jsx도 이걸 쓰도록 갱신). useAppData 훅 재사용. B2.2 미규정 영역(이번주보다 더 지난 것/마감없음의 소속) 해석을 주석에 명시. lint/test(43 tests, todoGrouping 5건+priority 3건 신규)/build 통과. 실행 검증: 오늘1+이번주2(과거+미래, 완료1건)+나중3(오래된과거/다음주/마감없음) 시딩 후 npm run dev, 사이드바 클릭 자동화로 할일전체 탭 이동, PrintWindow 캡처로 3그룹 분리·날짜순 정렬·완료취소선·마감없음 맨뒤 정렬 전부 정확히 확인. 콘솔 에러 없음."
+        },
+        {
+          "at": "2026-09-16T23:34:56.919Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 반영 착수: (1)[High] P3.4(정렬)와 P3.2(취소선 절반)를 이미 구현/테스트했음이 확인됨 — 별도로 처리(P3.4는 done, P3.2는 절반 완료 note만). (2)[Medium] '이번주' 판정식+정렬 비교자가 Dashboard.jsx/todoGrouping.js에 복붙돼 있던 것을 dateRange.js(isThisWeekExcludingToday)/priority.js(compareByDueDateThenPriority) 공유 함수로 승격해 양쪽이 재사용하도록 변경. (3)[Medium] 정렬 비교자가 due_date null/undefined를 비대칭으로 처리하던 버그(정렬 불안정) 수정 — 문자열 아니면 전부 '없음'으로 정규화. (4)[Medium] 주 경계값(09-14/09-20 포함, 09-13/09-21 제외)과 completed 항목 그룹 유지 테스트 추가. (5)'나중' 라벨이 지난 마감까지 포함한다는 걸 화면에 명시(제목 보강). (6)id 없는 todo가 조용히 드롭되던 것을 Projects.jsx(P2.1)와 동일하게 안내문구로 노출."
+        }
+      ]
+    },
+    {
+      "id": "P3.2",
+      "status": "todo",
+      "priority": "P1",
+      "category": "feature",
+      "title": "완료 체크(취소선 유지) + 숨김 토글",
+      "summary": "완료해도 목록에서 사라지지 않고 취소선 표시, 숨김 버튼 별도 제공",
+      "where": "src/screens/Todos.jsx",
+      "parent": "P3",
+      "deps": [
+        "P3.1"
+      ],
+      "doc": "work-widget-requirements.md#B2.2",
+      "done_when": "완료 체크 시 취소선 표시, 숨김 버튼으로 안 보이게 전환 가능",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P3.3",
+      "status": "todo",
+      "priority": "P1",
+      "category": "feature",
+      "title": "화면 내 할일 추가(프로젝트 지정)",
+      "summary": "이 화면에서 새 할일 추가 시 소속 프로젝트를 선택",
+      "where": "src/screens/Todos.jsx",
+      "parent": "P3",
+      "deps": [
+        "P3.1"
+      ],
+      "doc": "work-widget-requirements.md#B2.2",
+      "done_when": "프로젝트 선택 후 추가된 todo가 해당 프로젝트에 연결됨",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P3.4",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "정렬 로직(마감일→우선순위)",
+      "summary": "마감일 순, 동률이면 우선순위(상→중→하), 마감일 없는 항목은 맨 뒤",
+      "where": "src/screens/Todos.jsx",
+      "parent": "P3",
+      "deps": [
+        "P3.1"
+      ],
+      "doc": "work-widget-requirements.md#B4.2",
+      "done_when": "정렬 기준대로 목록이 정렬됨",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-16T23:42:35.523Z",
+      "log": [
+        {
+          "at": "2026-09-16T23:42:35.523Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer(P3.1 리뷰)가 발견: P3.1(날짜 그룹핑) 구현 중 src/lib/todoGrouping.js와 priority.js에 이 task의 done_when('정렬 기준대로 목록이 정렬됨' = B4.2: 마감일 순 우선, 같으면 우선순위 상→중→하, 마감일 없으면 맨 뒤)이 이미 정확히 구현되고 vitest로 회귀 테스트까지 붙어있음을 확인함(priority.test.js의 compareByDueDateThenPriority 케이스들, todoGrouping.test.js의 날짜/우선순위 정렬 케이스들). 실행 검증도 P3.1 진행 중 스크린샷으로 완료(할일전체 화면에서 이번주/나중 그룹이 날짜순, 동일날짜는 우선순위순으로 정렬됨 확인). 별도 구현 없이 done 처리 — 유령 작업 방지."
+        }
+      ],
+      "done_at": "2026-09-16"
+    },
+    {
+      "id": "P4",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "메모 화면 (B2.3)",
+      "summary": "좌측 목록/우측 편집 레이아웃, 프로젝트별/전체 메모",
+      "where": "src/screens/Memos.jsx",
+      "parent": null,
+      "deps": [
+        "P0"
+      ],
+      "doc": "work-widget-requirements.md#B2.3",
+      "done_when": "하위 항목 전부 done",
+      "est_min": null,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P4.1",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "목록/편집 2단 레이아웃",
+      "summary": "좌측 메모 목록, 우측 제목+본문 편집창",
+      "where": "src/screens/Memos.jsx",
+      "parent": "P4",
+      "deps": [],
+      "doc": "work-widget-requirements.md#B2.3",
+      "done_when": "좌우 2단 레이아웃 구현, 목록 클릭 시 편집창 전환",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-15T06:49:57.666Z",
+      "log": [
+        {
+          "at": "2026-09-15T06:31:41.249Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "병렬 fork로 착수 (P6.1/P6.3와 동시 진행)"
+        },
+        {
+          "at": "2026-09-15T06:31:49.555Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "src/screens/Memos.jsx를 좌(목록)/우(편집) 2단 레이아웃으로 구현: 목록 클릭 시 우측에 title/content 로드, '+새 메모'로 빈 메모 추가·선택, project_id 있으면 태그 표시. B3.3 필드 그대로 사용한 메모리 내 seed 데이터(영속화는 P4.2 범위, 여기선 미포함). src/index.css에 관련 클래스 추가. 병렬 fork로 구현 후 메인 세션이 직접 코드 리뷰 + eslint(개별 파일/전체) + vite build 재검증(전부 통과) 완료."
+        },
+        {
+          "at": "2026-09-15T06:49:57.666Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 지적 반영: 1) 새 메모 id가 Date.now() 기반이라 충돌 가능 — crypto.randomUUID()로 교체. 2) .memos-layout이 height:calc(100vh-120px) 매직넘버였고 .memo-editor에 min-width:0이 없어 420px 기본 창폭에서 가로 스크롤 발생(flex 기본 동작) — .content를 flex column으로, .memos-layout을 flex:1/min-height:0으로, .memo-list를 고정 220px에서 38%(96~200px)로, .memo-editor에 min-width:0 추가해 해결. 3) 'eslint/build 통과만으로 done 근거 삼음' 지적 — npm run dev로 재기동 후 PrintWindow API로 앱 창만 캡처(전체화면 아님)해 사이드바→메모 클릭 전환과 레이아웃을 실제로 확인, 수정 전(가로 스크롤 있음)/후(없음) 스크린샷 비교로 CSS 수정 효과도 확인. 태그가 project_id를 그대로 표시(프로젝트명 아님) 지적은 P4.3 범위라 P4.3에 인계 기록함."
+        }
+      ],
+      "done_at": "2026-09-15"
+    },
+    {
+      "id": "P4.2",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "메모 CRUD IPC 연동",
+      "summary": "생성/수정/삭제를 data.json에 반영",
+      "where": "src/screens/Memos.jsx",
+      "parent": "P4",
+      "deps": [
+        "P4.1",
+        "P0.8"
+      ],
+      "doc": null,
+      "done_when": "메모 추가/수정/삭제가 재시작 후에도 유지됨",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P4.3",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "프로젝트 태그 표시",
+      "summary": "소속 프로젝트가 있으면 목록에 태그로 표시, 없으면 태그 없음(전체 메모)",
+      "where": "src/screens/Memos.jsx",
+      "parent": "P4",
+      "deps": [
+        "P4.1"
+      ],
+      "doc": "work-widget-requirements.md#B2.3",
+      "done_when": "프로젝트 소속 메모에 태그가 표시됨",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-15T06:50:05.718Z",
+      "log": [
+        {
+          "at": "2026-09-15T06:50:05.718Z",
+          "owner": "claude",
+          "status": "todo",
+          "note": "인계 메모(P4.1 구현 중 critical-reviewer 지적): 현재 Memos.jsx의 태그가 project_id를 그대로 문자열로 표시 중(예: 'proj-1'). 요구사항(B2.3)과 이 태스크는 프로젝트명 표시를 요구하므로, 착수 시 projects 목록에서 이름을 조회하는 로직이 필요함 — 지금 태그가 있다고 이 태스크를 바로 done 처리하지 말 것."
+        }
+      ]
+    },
+    {
+      "id": "P5",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "일정 화면 (B2.4, 루틴 포함)",
+      "summary": "월간/주간 탭 전환, 반복 일정(요일 지정) 등록/수정",
+      "where": "src/screens/Schedule.jsx",
+      "parent": null,
+      "deps": [
+        "P0"
+      ],
+      "doc": "work-widget-requirements.md#B2.4",
+      "done_when": "하위 항목 전부 done",
+      "est_min": null,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P5.1",
+      "status": "todo",
+      "priority": "P2",
+      "category": "spike",
+      "title": "캘린더 라이브러리 선정",
+      "summary": "월간/주간 뷰 구현에 쓸 React 캘린더 라이브러리 조사·선정",
+      "where": null,
+      "parent": "P5",
+      "deps": [],
+      "doc": null,
+      "done_when": "라이브러리 선정 및 설치",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P5.2",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "월간 캘린더 뷰",
+      "summary": "월 단위 캘린더에 일정 표시",
+      "where": "src/screens/Schedule.jsx",
+      "parent": "P5",
+      "deps": [
+        "P5.1"
+      ],
+      "doc": "work-widget-requirements.md#B2.4",
+      "done_when": "월간 뷰에서 날짜별 일정이 보임",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P5.3",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "주간 뷰 + 상단 탭 전환",
+      "summary": "주 단위 뷰 추가, 월간/주간 상단 탭으로 전환",
+      "where": "src/screens/Schedule.jsx",
+      "parent": "P5",
+      "deps": [
+        "P5.2"
+      ],
+      "doc": "work-widget-requirements.md#B2.4",
+      "done_when": "탭 클릭으로 월간/주간 전환됨",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P5.4",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "반복 일정(요일 지정) 등록",
+      "summary": "recurrence_days 기반 반복 일정 등록 UI, 하나의 규칙 레코드로 관리",
+      "where": "src/screens/Schedule.jsx",
+      "parent": "P5",
+      "deps": [
+        "P5.2"
+      ],
+      "doc": "work-widget-requirements.md#B3.4",
+      "done_when": "요일 선택으로 반복 일정 생성, 화면에 매주 자동 노출",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P5.5",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "반복 일정 수정 시 전체 회차 일괄 반영",
+      "summary": "특정 회차만 예외 처리하는 기능 없이, 규칙 자체 수정 시 이후 모든 회차에 반영",
+      "where": "src/screens/Schedule.jsx",
+      "parent": "P5",
+      "deps": [
+        "P5.4"
+      ],
+      "doc": "work-widget-requirements.md#B2.4",
+      "done_when": "규칙 수정 시 이후 모든 회차가 함께 바뀜을 확인",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P6",
+      "status": "todo",
+      "priority": "P1",
+      "category": "infra",
+      "title": "데이터 계층 공통 로직 (B3/B4.3)",
+      "summary": "progress 계산, 프로젝트 상태 자동 전환, 스키마 검증 — 여러 화면이 공유하는 로직",
+      "where": "electron/dataStore.js src/",
+      "parent": null,
+      "deps": [
+        "P0"
+      ],
+      "doc": "work-widget-requirements.md#B3",
+      "done_when": "하위 항목 전부 done",
+      "est_min": null,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P6.1",
+      "status": "done",
+      "priority": "P1",
+      "category": "feature",
+      "title": "Project.progress 계산 함수",
+      "summary": "저장하지 않고 조회 시 소속 todo 완료 비율로 계산",
+      "where": "src/",
+      "parent": "P6",
+      "deps": [],
+      "doc": "work-widget-requirements.md#B3.1",
+      "done_when": "함수 단위로 progress 값이 올바르게 계산됨",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-15T06:49:21.698Z",
+      "log": [
+        {
+          "at": "2026-09-15T06:28:58.777Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "P0.6 완료로 착수, src/lib/projectProgress.js 구현"
+        },
+        {
+          "at": "2026-09-15T06:29:09.875Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "src/lib/projectProgress.js 구현(순수함수 calculateProjectProgress(projectId, todos), 소속 todo 없으면 0%). 4개 케이스(2/3완료→67, 0/1완료→0, 소속 todo 없음→0, 빈 배열→0) node로 직접 실행해 전부 PASS 확인. eslint 통과. 자동 테스트 러너(vitest 등)는 미설치 상태라 이번엔 수동 실행 근거로 대체 — critical-reviewer가 이미 지적한 사항(테스트 러너 부재)이라 별도 재보고하지 않음."
+        },
+        {
+          "at": "2026-09-15T06:49:21.698Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 지적 반영: todos가 undefined/null이면 TypeError 나던 것 가드 추가(Array.isArray 체크), 100% 완료(2/2) 경계값 케이스 누락 지적돼 추가 — 총 7개 케이스(2/3→67, 0/1→0, 2/2→100, 소속없음→0, 빈배열→0, undefined→0, null→0) 전부 PASS 재확인. 문서(P6.1.md)의 시그니처(project 객체)와 실제 구현(projectId 문자열) 불일치 지적은 코드가 아니라 문서 쪽 오기로 판단 — 이번 문서 재생성에서 실제 코드 기준으로 갱신됨. dead code(아직 어디서도 import 안 됨) 및 'progress 필드가 저장되면 안 되는데 걸러내는 로직이 없음' 지적은 P1.3/P2.1/P2.4(실제 사용처)와 P6.3(저장 필터링)에서 다룰 사항으로 이관, 별도 기록."
+        }
+      ],
+      "done_at": "2026-09-15"
+    },
+    {
+      "id": "P6.2",
+      "status": "done",
+      "priority": "P1",
+      "category": "feature",
+      "title": "프로젝트 상태 자동 전환 로직",
+      "summary": "모든 todo 완료 시 자동 '완료', 완료 후 재개 시 자동 '진행중', '보류'는 수동만",
+      "where": "src/",
+      "parent": "P6",
+      "deps": [
+        "P6.1"
+      ],
+      "doc": "work-widget-requirements.md#B4.3",
+      "done_when": "todo 완료/재개에 따라 프로젝트 status가 규칙대로 바뀜",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-16T05:50:47.146Z",
+      "log": [
+        {
+          "at": "2026-09-16T05:45:04.625Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "src/lib/projectStatus.js에 순수함수 deriveProjectStatus(currentStatus, todos) 구현 착수 — P6.1(projectProgress.js) 패턴 따름. 디자인(P9)은 보류 상태라 이 작업은 UI 없이 순수 로직만 다룸."
+        },
+        {
+          "at": "2026-09-16T05:45:42.174Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "src/lib/projectStatus.js에 deriveProjectStatus(currentStatus, todos) 구현 완료, lint 통과. 9개 케이스(일부미완료 유지/전부완료 전환/완료중 취소 복귀/완료 유지/보류 불변/todo0개 두 경우/undefined 방어/completed 비boolean 방어) node로 직접 실행해 전부 PASS 확인."
+        },
+        {
+          "at": "2026-09-16T05:49:59.617Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 반영 착수: (1)시그니처를 calculateProjectProgress(P6.1)와 동일 계약으로 통일 — deriveProjectStatus(currentStatus, projectId, todos)로 바꾸고 내부에서 project_id로 필터링(기존엔 todos를 무필터로 받아 소비처가 전체 배열을 잘못 넘기면 조용히 오작동할 위험 있었음), (2)0개 todo 해석(완료→진행중 복귀)을 스펙 미규정 해석임을 주석에 명시, (3)enum 밖 status 값이 들어와도 완료/보류가 아니면 '진행중'으로 정규화(저장 경로로 쓰레기 값이 그대로 흘러가지 않게). done_when('실제로 status가 바뀜')은 이 함수를 호출하는 소비처(저장 경로)가 아직 없어 완전히는 미충족 — P6.1 선례처럼 함수 계약 검증으로 범위를 좁혀 note에 명시하고, 소비처 연결은 향후 저장 경로 task(P6.3/P6.4 계열) 소관으로 이관."
+        },
+        {
+          "at": "2026-09-16T05:50:47.146Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 지적 반영: (1)시그니처를 deriveProjectStatus(currentStatus, projectId, todos)로 변경해 calculateProjectProgress(P6.1)와 동일 계약(내부에서 project_id 필터링)으로 통일 — 기존엔 todos를 무필터로 받아 소비처가 전체 배열을 잘못 넘기면 조용히 오작동할 위험이 있었음. (2)소속 todo 0개일 때 완료->진행중 복귀는 B4.3 미규정 영역의 해석임을 주석에 명시(progress 0% 해석과 방향 일치). (3)enum(진행중/완료/보류) 밖 status 값은 완료/보류가 아니면 진행중으로 정규화 — 저장 경로에 쓰레기 값이 그대로 흘러가지 않게 방어. 11개 케이스(프로젝트별 필터링 2, 완료복귀, 완료유지, 보류불변, todo0개 2, undefined방어, non-boolean completed 방어, enum밖 status 2)로 재검증 전부 PASS. done_when('todo 완료/재개에 따라 status가 바뀜')은 이 함수를 실제로 호출해 저장하는 소비처(IPC 저장 경로)가 아직 없어 완전히는 충족 안 됨 — P6.1 선례처럼 범위를 '함수 계약이 B4.3 규칙을 정확히 구현함'으로 좁혀 done 처리. 실제 저장 연동은 P6.3/P6.4 계열(저장 경로) task 소관으로 이관. P6.1이 P6.2로 넘긴 반올림/100%-상태불일치 이슈(progress 100%인데 status는 진행중으로 남는 경계case)는 이번에 해결하지 않음 — 표시 단계(향후 프로젝트 UI task)에서 다룰 사항으로 재이관."
+        }
+      ],
+      "done_at": "2026-09-16"
+    },
+    {
+      "id": "P6.3",
+      "status": "done",
+      "priority": "P2",
+      "category": "cleanup",
+      "title": "data.json 스키마 검증/마이그레이션 유틸",
+      "summary": "필드 누락/타입 불일치 방어, 향후 스키마 변경 대비",
+      "where": "electron/dataStore.js",
+      "parent": "P6",
+      "deps": [],
+      "doc": null,
+      "done_when": "손상되거나 구버전 data.json에서도 앱이 죽지 않음",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-15T06:49:34.750Z",
+      "log": [
+        {
+          "at": "2026-09-15T06:30:12.720Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "P0.6 완료로 착수, electron/dataStore.js에 손상/구버전 data.json 방어 로직 추가"
+        },
+        {
+          "at": "2026-09-15T06:31:00.170Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "electron/dataStore.js에 normalizeData() 추가(배열 키 누락/타입불일치 보정, 배열 내 비객체 항목 제거) + JSON 파싱 실패/구조 전체가 잘못된 경우 덮어쓰기 전 원본을 <path>.corrupt-<timestamp>로 백업 후 기본값 반환(critical-reviewer가 지적한 '조용히 무시→다음 저장에서 원본 소실' 문제 해결). saveData()도 저장 전 normalizeData 통과. normalizeData만 electron 의존성 없이 분리 실행해 5개 케이스(정상/키누락/타입불일치/배열내비객체/빈객체) 전부 PASS 확인. eslint 통과."
+        },
+        {
+          "at": "2026-09-15T06:49:34.750Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer가 Critical 결함 지적: saveData가 저장 전 normalizeData를 통과시켜 누락된 최상위 키를 []로 채움 → 렌더러가 부분 객체(예: {memos:[...]}만)로 saveData 호출 시 나머지 엔티티가 조용히 전량 삭제되는 경로였음(재현 테스트로 확인). 수정: saveData는 더 이상 키를 채우지 않고 4개 배열 키가 전부 없으면 예외를 던짐(부분 저장 거부) — loadData의 normalizeData(관용적 보정)와 saveData(엄격 거부)를 분리. 추가로 지적된 DEFAULT_DATA 얕은 복사 공유 참조 버그(로드마다 같은 배열 인스턴스 반환)도 normalizeData({})로 교체해 수정, saveData를 tmp+rename 원자적 쓰기로 변경(쓰다 중단돼도 파일 안 깨짐), I/O 실패 시 throw 대신 기본값 폴백 추가. 재현 테스트 6종(최초로드/정상저장복원/부분객체거부/손상JSON백업/참조공유없음/tmp잔존없음) 전부 PASS. 단, '레코드 단위 필드 기본값·버전 마이그레이션'(critical-reviewer의 High 지적, 예: 구버전 todo에 tags 없으면 이후 .map에서 죽음)은 이번 범위에 포함하지 않음 — 최상위 구조 손상 방어만 완료된 상태이고 done_when의 '구버전 data.json' 부분은 부분 충족. 레코드 검증은 P6.4로 분리 등록."
+        }
+      ],
+      "done_at": "2026-09-15"
+    },
+    {
+      "id": "P6.4",
+      "status": "todo",
+      "priority": "P2",
+      "category": "cleanup",
+      "title": "data.json 레코드 단위 필드 기본값/마이그레이션",
+      "summary": "P6.3은 최상위 구조(4개 배열 키) 손상만 방어함. 구버전 레코드에 B3 신규 필드(예: todo.tags, todo.priority)가 없으면 다운스트림에서 그대로 죽을 수 있어 레코드 단위 기본값 채우기가 필요.",
+      "where": "electron/dataStore.js",
+      "parent": "P6",
+      "deps": [
+        "P6.3"
+      ],
+      "doc": "work-widget-requirements.md#B3",
+      "done_when": "구버전 형식(B3 신규 필드 누락)의 projects/todos/memos/schedules 레코드를 읽어도 각 필드가 기본값으로 채워지고, 화면 렌더링 시 죽지 않음",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-15T06:49:43.650Z",
+      "log": [
+        {
+          "at": "2026-09-16T05:23:04.102Z",
+          "owner": "claude",
+          "status": "todo",
+          "note": "구조 정리: 같은 이유로 부모(P6) 형제들 옆으로 재배치"
+        }
+      ]
+    },
+    {
+      "id": "P6.5",
+      "status": "done",
+      "priority": "P2",
+      "category": "infra",
+      "title": "테스트 러너 도입(vitest)",
+      "summary": "critical-reviewer가 P1.1/P1.3/P6.2/P1.2에서 반복 지적: src/lib/*.js의 순수함수들이 gate=null 상태로 수동 node 실행 검증에만 의존 중. package.json에 test 스크립트/러너가 전혀 없어 backlog-workflow.md §6의 '미설정 검사' 상태가 계속 쌓임.",
+      "where": "package.json src/lib",
+      "parent": "P6",
+      "deps": [],
+      "doc": null,
+      "done_when": "npm test로 src/lib의 기존 함수(projectProgress/projectStatus/dateRange)에 대한 회귀 테스트가 자동 실행되고, 이후 task들이 gate에 npm test 지정 가능",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-16T06:38:20.330Z",
+      "log": [
+        {
+          "at": "2026-09-16T06:25:46.915Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "package.json에 vitest devDependency 추가, npm test 스크립트 연결, src/lib(projectProgress/projectStatus/dateRange) 각각의 수동 검증 케이스를 영구 테스트 파일로 전환 착수."
+        },
+        {
+          "at": "2026-09-16T06:28:45.006Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "vitest@2(vite 5와 호환되는 메이저) devDependency 추가, package.json에 test 스크립트(vitest run) 연결. src/lib 기존 3개 모듈(projectProgress/projectStatus/dateRange) 전부 세션 중 수동 node 실행으로 검증했던 케이스를 vitest 테스트로 전환: projectProgress.test.js(7), projectStatus.test.js(11), dateRange.test.js(10, 요일 7개 전수 + 연도경계 vi.setSystemTime으로 고정). 실행 검증: npm test 실제 실행 결과 3 test files / 28 tests 전부 PASS. npm run lint, npm run build도 회귀 없이 통과 확인(테스트 파일이 실제 앱 번들에 안 딸려들어가는 것도 build 출력 크기로 확인)."
+        },
+        {
+          "at": "2026-09-16T06:34:28.931Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 반영 착수: (1)[High] 'gate에 npm test 지정 가능'이 실제로는 아무 훅도 gate를 안 읽어서 공허한 주장이었음 — 대신 .claude/hooks/stop-full-check.js와 .codex/hooks/stop-full-check.js 양쪽(rules §3: 두 런타임 항상 같이 수정)에 npm test를 실제 4번째 검사로 추가해 Stop 시점에 실제로 자동 실행되게 함. (2)projectProgress.test.js에 .5 반올림 경계값 + completed 비boolean/null원소 방어 케이스 추가(그동안 projectStatus만 검증됐던 계약). (3)vite.config.js에 test.include를 src/**/*.test.js로 한정(향후 scripts/backlog에 다른 형식 테스트 생겨도 안 섞이게, 예방적). (4)CLAUDE.md의 오래된 'Project status'(패키지 없음/명령 없음) 문구를 실제 명령으로 갱신. (5)deps 공백(P6.1/P6.2/P1.2 미기재)과 deriveProjectStatus가 아직 어디서도 호출 안 되는 점(테스트는 보호하지만 실사용 연결은 없음)은 note로 정확히 기록만."
+        },
+        {
+          "at": "2026-09-16T06:38:20.330Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 지적 반영: (1)[High] 'gate에 npm test 지정 가능' 주장이 실제로는 아무 훅도 gate를 안 읽어 공허했던 문제 — .claude/hooks/stop-full-check.js와 .codex/hooks/stop-full-check.js 양쪽에 vitest run을 실제 3번째 검사로 추가해 Stop 시점에 진짜로 자동 실행되게 만듦(gate 문자열 자체에는 여전히 의존하지 않음). (2)projectProgress.test.js에 .5 반올림 경계(1/8=12.5→13)와 completed 비boolean('true')/배열 null원소 방어 케이스 2건 추가 — projectStatus와 동일한 계약을 이제 양쪽 다 회귀보호. (3)vite.config.js에 test.include=['src/**/*.test.js'] 추가(예방적 범위 한정). (4)CLAUDE.md/AGENTS.md의 오래된 'package.json 없음' Project status 문구를 실제 npm 명령 목록으로 갱신. 실행 검증: npm test(30 tests PASS), npm run lint/build 회귀 없음, .claude/hooks/stop-full-check.js를 실제 stdin({}) 입력으로 직접 실행해 exit 0(전부 통과) 확인. 실패 경로도 검증: projectProgress.test.js에 일부러 실패하는 케이스를 추가해 같은 hook을 재실행 → exit 2 + vitest 실패 상세(expected 1 to be 2)가 정확히 report에 포함됨을 확인, 이후 원본으로 복구하고 다시 exit 0 확인. deps 공백(P6.1/P6.2/P1.2 미기재)은 CLI 필드수정 불가로 기록만. deriveProjectStatus가 아직 실사용 호출부 없이 테스트만 있다는 점(테스트가 보호하는 건 계약이지 실제 자동전환 동작이 아님)도 정확히 인지 — 저장 경로 연결 task에서 마저 다룰 부분."
+        }
+      ],
+      "done_at": "2026-09-16"
+    },
+    {
+      "id": "P7",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "위젯 운영 동작 (B5)",
+      "summary": "트레이 아이콘, 시작프로그램 등록, 자동 백업",
+      "where": "electron/",
+      "parent": null,
+      "deps": [
+        "P0"
+      ],
+      "doc": "work-widget-requirements.md#B5",
+      "done_when": "하위 항목 전부 done",
+      "est_min": null,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P7.1",
+      "status": "todo",
+      "priority": "P2",
+      "category": "cleanup",
+      "title": "실제 트레이 아이콘 리소스 적용",
+      "summary": "현재 nativeImage.createEmpty() 임시 아이콘을 실제 아이콘 파일로 교체",
+      "where": "electron/main.js",
+      "parent": "P7",
+      "deps": [],
+      "doc": null,
+      "done_when": "트레이에 실제 아이콘이 표시됨",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P7.2",
+      "status": "todo",
+      "priority": "P2",
+      "category": "infra",
+      "title": "Windows 시작프로그램 자동 등록",
+      "summary": "electron-builder nsis 옵션 또는 app.setLoginItemSettings로 시작 시 자동 실행",
+      "where": "package.json electron/main.js",
+      "parent": "P7",
+      "deps": [],
+      "doc": "work-widget-requirements.md#2",
+      "done_when": "Windows 로그인 시 위젯이 자동 실행됨",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P7.3",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "데이터 자동 백업",
+      "summary": "하루 1회 data.json 백업본 생성, 최근 며칠치만 보관(정확한 주기·개수는 구현 시 조정)",
+      "where": "electron/dataStore.js",
+      "parent": "P7",
+      "deps": [],
+      "doc": "work-widget-requirements.md#B5.3",
+      "done_when": "백업 파일이 주기적으로 생성되고 오래된 백업은 정리됨",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P8",
+      "status": "todo",
+      "priority": "P3",
+      "category": "release",
+      "title": "패키징/배포",
+      "summary": "electron-builder 설정 마무리 및 로컬 배포 빌드 테스트",
+      "where": "package.json",
+      "parent": null,
+      "deps": [
+        "P0.7",
+        "P0.8"
+      ],
+      "doc": null,
+      "done_when": "하위 항목 전부 done",
+      "est_min": null,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P8.1",
+      "status": "todo",
+      "priority": "P3",
+      "category": "release",
+      "title": "electron-builder 설정 다듬기",
+      "summary": "앱 아이콘, 버전, productName 등 배포 메타데이터 정리",
+      "where": "package.json",
+      "parent": "P8",
+      "deps": [],
+      "doc": null,
+      "done_when": "설정값이 실제 배포용으로 채워짐",
+      "est_min": 20,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P8.2",
+      "status": "todo",
+      "priority": "P3",
+      "category": "test",
+      "title": "로컬 배포 빌드 테스트",
+      "summary": "npm run dist 실행 후 생성된 설치본으로 실제 설치/실행 확인",
+      "where": null,
+      "parent": "P8",
+      "deps": [
+        "P8.1"
+      ],
+      "doc": null,
+      "done_when": "설치본 실행 시 정상 동작 확인",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-14T07:34:03Z",
+      "log": []
+    },
+    {
+      "id": "P9",
+      "status": "done",
+      "priority": "P1",
+      "category": "feature",
+      "title": "비주얼 디자인 적용 (다크 글래스)",
+      "summary": "승인된 디자인 목업(다크 배경/글래스 카드/시안 포인트 컬러, Claude Design 캔버스 https://claude.ai/artifact/QcYrpj1rKyj947SLgAj9tx)을 실제 5개 화면(대시보드/프로젝트/할일전체/메모/일정)과 사이드바에 적용. 기존 기능 로직(P1.1/P1.3/P4.1 등)은 그대로 유지하고 시각 레이어만 교체.",
+      "where": "src/index.css src/components src/screens",
+      "parent": null,
+      "deps": [],
+      "doc": null,
+      "done_when": "index.css에 다크 글래스 디자인 토큰 적용, 사이드바에 아이콘+활성 pill 스타일 적용, 대시보드/메모 화면이 목업과 시각적으로 일치(실 데이터 기준), 프로젝트/할일전체/일정 placeholder 화면도 동일 톤으로 재스타일링, npm run dev 실행 시 콘솔 에러 없이 전 화면 렌더 확인",
+      "est_min": 90,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-17T00:28:33.166Z",
+      "log": [
+        {
+          "at": "2026-09-16T05:44:34.370Z",
+          "owner": "claude",
+          "status": "blocked",
+          "note": "사용자 요청으로 일시 보류 — 승인된 목업(https://claude.ai/artifact/QcYrpj1rKyj947SLgAj9tx)은 그대로 유효하나, 실제 코드 반영은 나중에 이어가기로 함. 착수했던 변경(index.css/Sidebar.jsx/Dashboard.jsx 부분 적용, icons.jsx 신규)은 전부 원복해서 P1.5/P1.1/P1.3 done 시점 상태로 되돌림 — 코드베이스에 미완성 상태로 안 남게 정리함. 재개 시 이 note와 목업 링크 기준으로 다시 시작."
+        },
+        {
+          "at": "2026-09-16T23:47:06.113Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "오해로 blocked됐던 것 확인 후 재개 — 사용자가 원한 건 '디자인 작업 중단'이 아니라 '병렬로 진행'이었음. git 미등록 상태도 확인됨(P9 끝난 뒤 git init 예정, 별도 논의). 승인된 목업(다크 글래스, https://claude.ai/artifact/QcYrpj1rKyj947SLgAj9tx) 기준으로 실제 코드 적용 재개: index.css 다크 토큰, 사이드바 아이콘, Dashboard/Projects/Todos/Memos/Schedule 전 화면 재스타일링."
+        },
+        {
+          "at": "2026-09-17T00:09:28.980Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료: index.css 전면 재작성(oklch 다크 글래스 토큰 + sidebar/card/todo-row/priority-chip/project-row/progress/info-card/empty-state-card/memo-* 전체), icons.jsx 신규(5개 stroke 아이콘), Sidebar.jsx 아이콘+라벨 렌더링, Dashboard/Todos/Projects/Memos/Schedule 5개 화면 전부 다크 클래스 적용(App.jsx의 main.content와 화면 루트 section.content 중첩 버그 발견해 화면 루트를 Fragment로 수정), priorityClassName(priority.js) 추가. npm run lint/test(52 passed)/build 전부 통과. 실행 검증: npm run dev로 Electron 실행 후 %APPDATA%/work-widget/data.json에 오늘/이번주/나중/우선순위/미분류 케이스를 포함한 시드 데이터 넣고 PowerShell PrintWindow로 5개 화면(대시보드/프로젝트/할일전체/메모/일정) 전부 스크린샷 확인 — 목업(https://claude.ai/artifact/QcYrpj1rKyj947SLgAj9tx) 톤과 일치, 콘솔 에러 없음. 검증 후 시드 data.json은 삭제, dev 프로세스 종료함."
+        },
+        {
+          "at": "2026-09-17T00:28:33.166Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer(스냅샷 sha256=9b0f5f8d8fc74c3e59b3924b471715fb83e6bbba48316ee481bb260721712f97) 지적 반영: (1)Dashboard.jsx:145 진행률 %에 className=percent 누락으로 index.css의 강조색 규칙이 죽어있던 버그 수정. (2).todo-title에 min-width:0/overflow:hidden/text-overflow:ellipsis/white-space:nowrap 추가 — 420px 창에서 긴 제목이 우선순위 chip을 밀어내는 가로 오버플로 위험 방지. (3).sidebar button/.memo-list-item이 all:unset으로 포커스 링까지 지워버린 접근성 회�귀를 :focus-visible 아웃라인으로 복구. (4)죽은 CSS 2곳 정리: 미사용 .content>section 규칙 삭제, 배경이 단색이라 시각적 효과가 전혀 없던 backdrop-filter:blur(.card/.project-card)를 제거(카드 반투명 배경/테두리는 그대로 유지돼 시각적 회귀 없음). (5).project-row+.project-row의 margin-top이 .card-list의 gap과 중복되던 간격 불일치 제거(다른 카드 목록과 리듬 통일). (6):root에 color-scheme:dark 추가(입력창 placeholder/스크롤바가 라이트 테마로 새는 문제), --text-muted를 65%→70%로 올려 소형 텍스트 대비 여유 확보. (7)priority 필드가 없는 할일에 빈 우선순위 chip이 렌더되던 문제를 Dashboard.jsx/Todos.jsx 양쪽에서 {t.priority && ...} 가드로 수정. 반영 후 lint/test(52 passed)/build 재통과 확인, npm run dev 재기동해 롱타이틀+priority누락 케이스 포함 시딩으로 대시보드/프로젝트 화면 재스크린샷 — percent 강조색 정상 표시, 우선순위 없는 항목 chip 미표시 확인. 검증 후 시딩 데이터 삭제/프로세스 종료. docs/backlog/P9.md는 backlog-explainer로 별도 생성 완료(스냅샷 검증됨). 리뷰가 지적했으나 CLI에 필드수정 명령이 없어(add=신규생성만, set-status=상태전이만) 고칠 수단이 없는 항목은 기록만 남김: (a)done_when이 gate=null 상태에서 실행 렌더 확인을 요구하는 문제 — P1.1/P1.2/P1.3/P2.1/P3.1 등 앞선 모든 화면 task와 동일한 선례(스크린샷 기반 수동 실행검증으로 대체)를 그대로 따름. (b)done_when의 '목업과 시각적으로 일치'가 저장소 밖 외부 URL 기준이라 재현 불가능한 합격기준인 점. (c)where에 이번에 실제로 건드린 src/lib/priority.js(priorityClassName 추가)가 누락된 점. (d)done_when이 프로젝트/할일전체 화면을 'placeholder'로 잘못 기술해 검수기준이 낮아 보이는 점(실제로는 P2.1/P3.1에서 이미 실데이터 기능 구현됨). (e)메모 화면 done_when의 '실 데이터 기준'이 P4.2(IPC연동) 전까지는 문자 그대로 충족 불가능한 점(현재 SEED_MEMOS 하드코딩, P4.1 선례와 동일 갭). 리뷰가 P9 범위 밖으로 명시적으로 분리 권고한 두 건은 별도 task로 등록: 프로젝트 카드 진행률 바 누락(P2.7, P2.1 선례와 불일치), 대시보드 할일 행 프로젝트명 표시 여부 확인 필요(P1.7, needs_info — git 이력 부재로 P9 회귀인지 기존 갭인지 코드만으론 판정 불가)."
+        }
+      ],
+      "done_at": "2026-09-17"
+    },
+    {
+      "id": "P10",
+      "status": "done",
+      "priority": "P3",
+      "category": "cleanup",
+      "title": "화면 공통 IPC 로딩 훅 추출",
+      "summary": "critical-reviewer(P2.1 리뷰)가 지적: Dashboard.jsx와 Projects.jsx의 window.api.loadData IPC 로딩 보일러플레이트(apiAvailable/data/error state + useEffect+ignore flag + 3분기 조기 반환)가 글자 단위로 복제됨. Todos(P3.1)/Memos(P4.2)까지 합치면 4곳 중복 예정 — 로딩/에러 처리 정책이 바뀌면 4곳을 손으로 맞춰야 함.",
+      "where": "src/lib src/screens",
+      "parent": null,
+      "deps": [
+        "P1.5"
+      ],
+      "doc": null,
+      "done_when": "Dashboard.jsx/Projects.jsx가 공통 훅(예: useBacklogData)을 사용하도록 리팩터링되고 기존 동작(로딩/에러/데이터 표시)이 회귀 없이 동일하게 유지됨",
+      "est_min": 30,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-16T23:22:00.932Z",
+      "log": [
+        {
+          "at": "2026-09-16T06:51:03.683Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "src/lib/useBacklogData.js 훅 추출 착수 — Dashboard.jsx/Projects.jsx의 동일한 apiAvailable/data/error+useEffect(ignore flag) 로딩 로직을 공통화. 렌더링(제목/조기반환 JSX)은 화면마다 다르므로 그대로 두고 상태 로직만 공유."
+        },
+        {
+          "at": "2026-09-16T06:53:48.436Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "src/lib/useBacklogData.js 신규 — apiAvailable/data/error state + useEffect(ignore flag) 로딩 로직을 훅으로 추출. Dashboard.jsx/Projects.jsx 둘 다 이 훅으로 교체(렌더링/제목 문구는 화면별로 그대로 유지). lint/test(35 tests)/build 전부 통과. 실행 검증: 오늘마감 todo+진행중 프로젝트 시딩 후 npm run dev로 기동, 대시보드 화면 정상(오늘 할일/진행률 정확), 사이드바 클릭 자동화로 프로젝트 탭 이동해서도 카드/그룹핑 정상 — 리팩터링 전후 동작 100% 동일함을 스크린샷으로 확인. useBacklogData 자체 단위테스트는 React 훅이라 jsdom 등 DOM 테스트 환경 없이는 불가(P6.5 리뷰에서 이미 확인된 한계) — 대신 두 소비 화면의 실행 결과로 회귀 없음을 검증."
+        },
+        {
+          "at": "2026-09-16T23:18:05.325Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer(Bash 없이 파일 대조로 검토, dist 번들까지 역추적해서 중복 제거를 실제로 확인함) 지적 반영 착수: (1)[High] gate=null이고 회귀없음 주장을 증명할 저장소 내 산출물이 없다는 지적 — 이미 실행한 스크린샷 검증(리팩터링 전/후 Dashboard/Projects 화면 동일 동작)을 done 기록에 구체적으로 남겨 보완. (2)[High] Projects.jsx의 로딩 로직이 실제로는 P2.5(문서화된 산출물) 소유 영역이고, 지금 훅은 읽기 전용이라 P2.5/P4.2가 필요로 할 저장 후 재조회(reload)를 구조적으로 지원 못함 — 지금 기능을 넓히진 않고 훅 주석+note로 명시. (3)[Medium] 훅 이름 'useBacklogData'가 이 프로젝트의 다른 개념인 backlog.json(개발 추적용, 전용 CLI+직접읽기차단훅까지 있는 파일)과 이름이 겹쳐 향후 세션이 혼동할 위험 — useAppData로 개명. (4)[Medium] 3분기 조기반환 JSX 중복은 여전히 남아있음(상태 로직만 공유됐음)을 note에 명시, 이번엔 범위 확장 안함(Todos/Memos 연동 시 함께 처리). (5)where/id 표기 이슈는 CLI 필드수정 불가로 기록만."
+        },
+        {
+          "at": "2026-09-16T23:22:00.932Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 지적 반영: (1)훅을 src/lib/useBacklogData.js -> useAppData.js로 개명(함수명도 useAppData) — backlog.json(개발추적용, 별도 CLI+직접읽기차단훅 있는 파일)과 이름 충돌 방지. (2)훅 파일 상단 주석에 읽기전용 한계 명시: P2.5/P4.2가 필요로 할 saveData 후 재조회(reload)를 지금 구조로는 지원 못함 — 지금 당장 기능 확장은 안 하고(아직 쓰는 곳 없음) 그 두 task 착수 시 훅에 reload를 추가해야 함을 문서화. (3)3분기 조기반환 JSX 중복이 여전히 남아있음(상태 로직만 공유, summary가 지적한 문제의 절반만 해소)을 인지 — Todos/Memos 연동 시 함께 다룰 사항으로 이번엔 범위 확장 안함. (4)deps에 실제로는 P2.5 소유 영역(Projects.jsx 로딩 코드, docs/backlog/P2.5.md 명시)을 건드렸다는 관계는 CLI 필드수정 불가로 note 기록만. 실행검증(reviewer가 지적한 '저장소에 회귀없음 증거가 없다'는 점 보완): 개명 후 lint/test(35 tests)/build 전부 통과(빌드 산출물 해시가 개명 전과 동일 — 순수 리네임임을 방증), npm run dev로 재기동해 대시보드 화면 정상 렌더(진행중 1개·50%, 오늘 마감 없음 정상) 스크린샷 확인, 콘솔 에러 없음. 이전 in_review 시점에도 Dashboard+Projects 두 화면 모두 스크린샷으로 리팩터링 전후 동일 동작 확인한 바 있음(둘 다 gate=null이라 이 실행 증거가 유일한 검증 수단)."
+        }
+      ],
+      "done_at": "2026-09-16"
+    }
+  ]
+}

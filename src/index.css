@@ -1,0 +1,440 @@
+/* 디자인 토큰 — 승인된 디자인 목업(다크 글래스) 기준.
+   https://claude.ai/artifact/QcYrpj1rKyj947SLgAj9tx */
+:root {
+  color-scheme: dark;
+  --bg: oklch(20% 0.02 260);
+  --sidebar-bg: oklch(17% 0.02 260);
+  --sidebar-border: oklch(30% 0.02 260);
+  --sidebar-hover: oklch(28% 0.02 260);
+  --card-bg: oklch(25% 0.025 260 / 0.75);
+  --card-border: oklch(40% 0.02 260);
+  --text: oklch(95% 0.005 260);
+  --text-muted: oklch(70% 0.01 260);
+  --text-faint: oklch(55% 0.01 260);
+  --accent: oklch(75% 0.15 200);
+  --accent-strong: oklch(80% 0.14 200);
+  --accent-soft-bg: oklch(30% 0.05 200 / 0.35);
+  --accent-soft-border: oklch(75% 0.15 200 / 0.4);
+  --track-bg: oklch(35% 0.01 260);
+  --danger: oklch(75% 0.17 25);
+  --priority-high: oklch(65% 0.19 25);
+  --priority-high-text: oklch(75% 0.17 25);
+  --priority-high-bg: oklch(32% 0.06 25 / 0.4);
+  --priority-mid: oklch(75% 0.15 85);
+  --priority-mid-text: oklch(80% 0.13 85);
+  --priority-mid-bg: oklch(32% 0.05 85 / 0.4);
+  --priority-low-text: oklch(65% 0.01 260);
+  --priority-low-bg: oklch(30% 0.01 260);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+/* ---- 사이드바 ---- */
+.sidebar {
+  width: 84px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 10px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+}
+
+.sidebar button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 8px 4px;
+  border-radius: 14px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.sidebar button:hover {
+  background: var(--sidebar-hover);
+}
+
+.sidebar button.active {
+  background: var(--accent-soft-bg);
+  border: 1px solid var(--accent-soft-border);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.sidebar button.active:hover {
+  background: var(--accent-soft-bg);
+}
+
+.sidebar button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- 화면 공통 ---- */
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: 20px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+
+.content h1 {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.content h2 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+.empty-text {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.data-issue-notice {
+  color: var(--danger);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ---- 글래스 카드 ---- */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.card-count-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-strong);
+  background: var(--accent-soft-bg);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ---- 할일 행(대시보드/할일전체 공통) ---- */
+.todo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.todo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.todo-dot.high { background: var(--priority-high); }
+.todo-dot.mid { background: var(--priority-mid); }
+.todo-dot.low { background: var(--priority-low-text); }
+
+.todo-title {
+  font-size: 13px;
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todo-title.completed {
+  color: var(--text-faint);
+  text-decoration: line-through;
+}
+
+.todo-due-date {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.priority-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.priority-chip.high { color: var(--priority-high-text); background: var(--priority-high-bg); }
+.priority-chip.mid { color: var(--priority-mid-text); background: var(--priority-mid-bg); }
+.priority-chip.low { color: var(--priority-low-text); background: var(--priority-low-bg); }
+
+/* ---- 프로젝트 진행률(대시보드) ---- */
+.project-progress-summary {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.project-row-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.project-row-header .percent {
+  color: var(--accent-strong);
+}
+
+.progress-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--track-bg);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+/* ---- 아이콘 + 한 줄 안내 카드 ---- */
+.info-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.info-card svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.info-card span {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* ---- 아직 구현 안 된 화면의 빈 상태 ---- */
+.empty-state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px 16px;
+  text-align: center;
+  flex: 1;
+}
+
+.empty-state-card svg {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.empty-state-card p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* ---- 프로젝트 카드(프로젝트 화면) ---- */
+.project-card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.project-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.project-card-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.project-card-meta {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  margin-top: 4px;
+}
+
+/* ---- 메모 화면 ---- */
+.memos-layout {
+  display: flex;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+
+.memo-list {
+  width: 34%;
+  min-width: 96px;
+  max-width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.memo-add-btn {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--accent-soft-border);
+  background: var(--accent-soft-bg);
+  color: var(--accent-strong);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.memo-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.memo-list-item {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.memo-list-item:hover {
+  background: var(--sidebar-hover);
+}
+
+.memo-list-item.active {
+  background: var(--accent-soft-bg);
+  border-color: var(--accent-soft-border);
+}
+
+.memo-list-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.memo-list-title {
+  width: 100%;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memo-tag {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--accent-strong);
+  background: oklch(25% 0.03 200 / 0.5);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.memo-editor {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.memo-title-input,
+.memo-content-input {
+  width: 100%;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: inherit;
+}
+
+.memo-title-input {
+  font-size: 15px;
+  font-weight: 700;
+  padding: 8px 10px;
+}
+
+.memo-content-input {
+  flex: 1;
+  padding: 10px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  resize: none;
+}
+
+.memo-empty {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}

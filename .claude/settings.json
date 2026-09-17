@@ -1,0 +1,54 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Grep|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/교육/바이브코딩교육/.claude/hooks/block-backlog-direct-read.js\"",
+            "timeout": 10,
+            "statusMessage": "backlog.json 직접 읽기 검사 중..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/교육/바이브코딩교육/.claude/hooks/validate-backlog.js\"",
+            "timeout": 10,
+            "statusMessage": "backlog.json 무결성 검사 중..."
+          },
+          {
+            "type": "command",
+            "command": "node \"C:/교육/바이브코딩교육/.claude/hooks/check-no-notifications.js\"",
+            "timeout": 10,
+            "statusMessage": "데스크톱 알림 API 사용 검사 중..."
+          },
+          {
+            "type": "command",
+            "command": "node \"C:/교육/바이브코딩교육/.claude/hooks/lint-changed-file.js\"",
+            "timeout": 25,
+            "statusMessage": "방금 편집한 파일 lint/길이 검사 중..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/교육/바이브코딩교육/.claude/hooks/stop-full-check.js\"",
+            "timeout": 210,
+            "statusMessage": "전체 lint/build 검증 중..."
+          }
+        ]
+      }
+    ]
+  }
+}

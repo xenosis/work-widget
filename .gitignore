@@ -1,0 +1,7 @@
+node_modules
+dist
+release
+backlog.json.bak
+json.json
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
