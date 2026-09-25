@@ -3,7 +3,7 @@
 
 const fs = require('fs');
 const crypto = require('crypto');
-const { BacklogError, assertValid, findCycle } = require('./schema');
+const { BacklogError, assertValid, findCycle, findParentCycle } = require('./schema');
 
 const DEFAULT_BACKLOG_PATH = 'C:/교육/바이브코딩교육/backlog.json';
 
@@ -42,6 +42,10 @@ function loadAndValidate(filePath) {
   const cyc = findCycle(file.json.tasks);
   if (cyc) {
     throw new BacklogError('SCHEMA_ERROR', 'backlog.json deps에 순환 의존성이 있습니다', [cyc.join(' -> ')]);
+  }
+  const parentCyc = findParentCycle(file.json.tasks);
+  if (parentCyc) {
+    throw new BacklogError('SCHEMA_ERROR', 'backlog.json parent에 순환 참조가 있습니다', [parentCyc.join(' -> ')]);
   }
   return file;
 }
@@ -92,6 +96,13 @@ function loadMutateValidateSave(filePath, expectedVersion, mutateFn) {
   const cyc = findCycle(after.tasks);
   if (cyc) {
     throw new BacklogError('SCHEMA_ERROR', '변경 결과 deps에 순환 의존성이 생깁니다', [cyc.join(' -> ')]);
+  }
+  // deps 순환과 별개 그래프라 위 findCycle이 안 잡아준다(P11 critical-reviewer 지적) — parent도
+  // 여기서 최종 방어선으로 확인한다. set-field의 assertNoParentCycle은 사람이 읽을 수 있는
+  // 필드 단위 오류를 먼저 주기 위한 것일 뿐, 유일한 방어선이 아니다.
+  const parentCyc = findParentCycle(after.tasks);
+  if (parentCyc) {
+    throw new BacklogError('SCHEMA_ERROR', '변경 결과 parent에 순환 참조가 생깁니다', [parentCyc.join(' -> ')]);
   }
 
   atomicWrite(filePath, after, before.raw);

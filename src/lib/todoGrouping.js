@@ -4,11 +4,16 @@
 // 오늘 제외 월~일 범위(이미 지난 이번주 날짜 포함), 그 밖의 전부(더 이전에 지난 것 + 마감일
 // 없음 + 다음주 이후)는 "나중"으로 묶는다 — 3그룹 구조를 그대로 따르기 위함(화면에는 "나중"
 // 제목에 "지난 마감 포함"을 덧붙여 라벨과 실제 내용이 어긋나지 않게 함).
-import { getTodayDateString, isThisWeekExcludingToday } from './dateRange.js';
+import { getTodayDateString, getThisWeekRange, isThisWeekExcludingToday } from './dateRange.js';
 import { priorityRank, compareByDueDateThenPriority } from './priority.js';
 
 export function groupTodosByDate(todos) {
+  // today/weekRange를 순회 전에 한 번만 계산해 모든 todo에 동일하게 적용한다 — todo마다
+  // isThisWeekExcludingToday가 새로 계산하게 두면, 자정을 걸쳐 순회가 실행될 때 "오늘"이
+  // 중간에 바뀌어 어떤 todo도 오늘/이번주 어디에도 못 들어가고 나중으로 새는 경로가 생긴다
+  // (critical-reviewer 지적).
   const today = getTodayDateString();
+  const weekRange = getThisWeekRange();
   // id 없는 레코드는 React key로 못 쓰므로 제외한다(Dashboard.jsx/Projects.jsx와 동일한 방어).
   const valid = (Array.isArray(todos) ? todos : []).filter((t) => t && typeof t.id === 'string');
   const droppedCount = (Array.isArray(todos) ? todos.length : 0) - valid.length;
@@ -18,7 +23,7 @@ export function groupTodosByDate(todos) {
   const later = [];
   for (const t of valid) {
     if (t.due_date === today) todayGroup.push(t);
-    else if (isThisWeekExcludingToday(t.due_date)) week.push(t);
+    else if (isThisWeekExcludingToday(t.due_date, today, weekRange)) week.push(t);
     else later.push(t);
   }
 

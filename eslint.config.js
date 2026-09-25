@@ -48,4 +48,15 @@ module.exports = [
       'max-lines': ['error', { max: MAX_LINES, skipBlankLines: false, skipComments: false }],
     },
   },
+  {
+    // P7.3/P11: vitest 패키지 자체가 require()로 불러오면 에러를 내서(ESM 전용) 이 파일들만
+    // import 문법을 쓴다 — electron/*.js, scripts/backlog/*.js 나머지는 여전히
+    // commonjs(main 프로세스·CLI 관행).
+    files: ['electron/**/*.test.js', 'scripts/**/*.test.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: { ...globals.node },
+    },
+  },
 ];

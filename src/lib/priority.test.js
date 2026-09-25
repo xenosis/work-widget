@@ -45,6 +45,13 @@ describe('compareByDueDateThenPriority', () => {
     expect(compareByDueDateThenPriority(nullDate, undefinedDate)).toBe(0);
     expect(compareByDueDateThenPriority(undefinedDate, nullDate)).toBe(0);
   });
+
+  it('빈 문자열 due_date도 "없음"으로 취급해 맨 뒤로 보낸다(맨 앞으로 새는 버그 방지)', () => {
+    const withDate = { due_date: '2026-09-17', priority: '하' };
+    const emptyDate = { due_date: '', priority: '상' };
+    expect(compareByDueDateThenPriority(withDate, emptyDate)).toBeLessThan(0);
+    expect(compareByDueDateThenPriority(emptyDate, withDate)).toBeGreaterThan(0);
+  });
 });
 
 describe('priorityClassName', () => {

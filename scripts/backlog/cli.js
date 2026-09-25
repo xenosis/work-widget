@@ -13,6 +13,13 @@
 //        [--expected-version=<hash>] [--note=...] [--owner=...]
 //   node scripts/backlog/cli.js reorder <id> [--note=...] [--owner=...] [--expected-version=<hash>]
 //        (parent가 같은 마지막 형제 task 바로 뒤로 위치만 옮긴다. status/내용은 안 바뀜)
+//   node scripts/backlog/cli.js set-field <id> --<field>=<value> [--<field2>=<value2> ...] \
+//        --note=<수정 근거> [--owner=...] [--expected-version=<hash>]
+//        (허용 필드: title, summary, where, doc, done_when, est_min, gate, priority, category,
+//        parent, deps(콤마 구분, 중복 제거됨). status/id/log/updated_at/done_at/claimed_at은
+//        여기서 못 고침 — status는 set-status 전용. 모든 값은 문자열이어야 함(--field만 값 없이
+//        넘기면 거부됨). where/doc/gate/parent는 빈 문자열이나 "null"을 주면 null로 비워짐.
+//        parent를 바꾸면 add/reorder와 같은 규칙으로 새 부모의 형제 옆으로 위치도 옮겨짐.)
 //
 // 모든 명령에 공통 옵션: --file=<backlog.json 경로> (기본값: 프로젝트 실제 backlog.json)
 //
@@ -67,6 +74,8 @@ function main() {
         'add --id= --title= --status= --priority= --category= --summary= --done_when= [--where=] [--parent=] [--deps=a,b] [--doc=] [--est_min=] [--owner=] [--note=] [--expected-version=]',
         'set-status <id> <new-status> [--expected-status=] [--expected-version=] [--note=] [--owner=]',
         'reorder <id> [--note=] [--owner=] [--expected-version=] (parent 형제 옆으로 위치만 이동)',
+        'set-field <id> --<field>=<value>... --note= [--owner=] [--expected-version=] ' +
+          '(field: title/summary/where/doc/done_when/est_min/gate/priority/category/parent/deps)',
         '공통: --file=<backlog.json 경로>',
       ],
     });
@@ -153,6 +162,23 @@ function main() {
         owner: flags.owner,
       });
       printJson({ _source: lib.sourceMeta(result), reordered: lib.getTask(result, id) });
+      return;
+    }
+
+    if (cmd === 'set-field') {
+      const id = positional[0];
+      if (!id) throw new lib.BacklogError('VALIDATION', 'set-field <id> --<field>=<value>... 형식으로 지정하세요.');
+      const RESERVED_FLAGS = ['file', 'note', 'owner', 'expected-version', 'help'];
+      const updates = {};
+      for (const key of Object.keys(flags)) {
+        if (RESERVED_FLAGS.includes(key)) continue;
+        updates[key] = flags[key];
+      }
+      const result = lib.setField(filePath, flags['expected-version'], id, updates, {
+        note: flags.note,
+        owner: flags.owner,
+      });
+      printJson({ _source: lib.sourceMeta(result), updated: lib.getTask(result, id) });
       return;
     }
 

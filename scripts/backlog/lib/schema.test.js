@@ -1,0 +1,78 @@
+import { describe, it, expect } from 'vitest';
+import { validateSchema, findCycle, findParentCycle } from './schema.js';
+
+// P11 critical-reviewer 지적(Critical): findCycle은 deps 그래프만 보고 parent는 안 본다는
+// 사실이 주석에만 있고 테스트가 없었다 — findParentCycle을 deps 순환 검사와 나란히 검증해
+// 둘이 서로 다른 그래프라는 걸 회귀 테스트로 고정한다.
+
+function task(overrides) {
+  return {
+    id: 'P1', status: 'todo', priority: 'P1', category: 'feature', title: 't', summary: 's',
+    where: null, parent: null, deps: [], doc: null, done_when: 'd', est_min: null, gate: null,
+    owner: null, claimed_at: null, updated_at: '2026-01-01T00:00:00.000Z', log: [],
+    ...overrides,
+  };
+}
+
+const enums = { status: ['todo', 'done'], priority: ['P1'], category: ['feature'] };
+
+describe('validateSchema', () => {
+  it('정상 구조는 에러가 없다', () => {
+    const json = { enums, tasks: [task({ id: 'P1' }), task({ id: 'P2', parent: 'P1' })] };
+    expect(validateSchema(json)).toEqual([]);
+  });
+
+  it('id 중복을 잡는다', () => {
+    const json = { enums, tasks: [task({ id: 'P1' }), task({ id: 'P1' })] };
+    expect(validateSchema(json).some((e) => e.includes('id 중복'))).toBe(true);
+  });
+
+  it('존재하지 않는 parent 참조를 잡는다', () => {
+    const json = { enums, tasks: [task({ id: 'P1', parent: 'P9' })] };
+    expect(validateSchema(json).some((e) => e.includes('parent'))).toBe(true);
+  });
+});
+
+describe('findCycle (deps 그래프)', () => {
+  it('deps에 순환이 없으면 null', () => {
+    const tasks = [task({ id: 'P1', deps: [] }), task({ id: 'P2', deps: ['P1'] })];
+    expect(findCycle(tasks)).toBeNull();
+  });
+
+  it('deps 순환을 찾는다', () => {
+    const tasks = [task({ id: 'P1', deps: ['P2'] }), task({ id: 'P2', deps: ['P1'] })];
+    expect(findCycle(tasks)).not.toBeNull();
+  });
+
+  it('parent만 순환이고 deps는 정상이면 findCycle은 못 잡는다(별개 그래프)', () => {
+    const tasks = [task({ id: 'P1', parent: 'P2', deps: [] }), task({ id: 'P2', parent: 'P1', deps: [] })];
+    expect(findCycle(tasks)).toBeNull();
+  });
+});
+
+describe('findParentCycle', () => {
+  it('parent 체인이 트리 구조면 null', () => {
+    const tasks = [task({ id: 'P1' }), task({ id: 'P1.1', parent: 'P1' }), task({ id: 'P1.1.1', parent: 'P1.1' })];
+    expect(findParentCycle(tasks)).toBeNull();
+  });
+
+  it('부모-자식이 서로를 가리키는 순환을 찾는다', () => {
+    const tasks = [task({ id: 'P1', parent: 'P2' }), task({ id: 'P2', parent: 'P1' })];
+    expect(findParentCycle(tasks)).not.toBeNull();
+  });
+
+  it('자기 자신을 parent로 가리키는 것도 순환으로 잡는다', () => {
+    const tasks = [task({ id: 'P1', parent: 'P1' })];
+    expect(findParentCycle(tasks)).not.toBeNull();
+  });
+
+  it('존재하지 않는 parent를 가리키는 건 순환이 아니라 참조 무결성 문제(validateSchema 담당)라 통과시킨다', () => {
+    const tasks = [task({ id: 'P1', parent: 'P9' })];
+    expect(findParentCycle(tasks)).toBeNull();
+  });
+
+  it('deps만 순환이고 parent는 정상이면 findParentCycle은 못 잡는다(별개 그래프)', () => {
+    const tasks = [task({ id: 'P1', deps: ['P2'] }), task({ id: 'P2', deps: ['P1'] })];
+    expect(findParentCycle(tasks)).toBeNull();
+  });
+});

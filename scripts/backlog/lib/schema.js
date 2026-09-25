@@ -101,4 +101,30 @@ function findCycle(tasks) {
   return null;
 }
 
-module.exports = { ID_PATTERN, BacklogError, validateSchema, assertValid, findCycle };
+// deps 순환(findCycle)과 별개다 — parent 체인은 deps 배열과 무관한 별도 그래프라 findCycle이
+// 이 순환을 잡아주지 않는다(P11 critical-reviewer 지적: mutations.js 주석이 findCycle이
+// parent 순환도 막아준다고 잘못 적어놨었음). 참조 무결성(parent가 존재하는 id인지)은
+// validateSchema가 이미 확인하므로, 여기서는 "존재하는 id들로만 이뤄진 순환"만 찾는다.
+function findParentCycle(tasks) {
+  const byId = new Map(tasks.map((t) => [t.id, t]));
+  const WHITE = 0, GRAY = 1, BLACK = 2;
+  const color = new Map(tasks.map((t) => [t.id, WHITE]));
+
+  for (const t of tasks) {
+    if (color.get(t.id) !== WHITE) continue;
+    const path = [];
+    let cursor = t.id;
+    while (cursor && byId.has(cursor) && color.get(cursor) !== BLACK) {
+      if (color.get(cursor) === GRAY) {
+        return path.slice(path.indexOf(cursor)).concat(cursor);
+      }
+      color.set(cursor, GRAY);
+      path.push(cursor);
+      cursor = byId.get(cursor).parent;
+    }
+    for (const id of path) color.set(id, BLACK);
+  }
+  return null;
+}
+
+module.exports = { ID_PATTERN, BacklogError, validateSchema, assertValid, findCycle, findParentCycle };

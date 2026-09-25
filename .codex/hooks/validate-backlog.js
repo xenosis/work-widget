@@ -52,6 +52,8 @@ function readStdin() {
     const errors = lib.validateSchema(file.json);
     const cyc = lib.findCycle(file.json.tasks || []);
     if (cyc) errors.push(`deps 순환 의존성: ${cyc.join(' -> ')}`);
+    const parentCyc = lib.findParentCycle(file.json.tasks || []);
+    if (parentCyc) errors.push(`parent 순환 참조: ${parentCyc.join(' -> ')}`);
 
     if (errors.length) {
       console.error('[backlog.json 검증 실패] 다음 문제를 고친 뒤 다시 저장하세요:');

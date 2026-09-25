@@ -66,4 +66,19 @@ describe('isThisWeekExcludingToday (시스템 시각 2026-09-16 수요일 고정
     expect(isThisWeekExcludingToday(null)).toBe(false);
     expect(isThisWeekExcludingToday(undefined)).toBe(false);
   });
+
+  it('0패딩 없는/빈 문자열 등 YYYY-MM-DD 형식이 아니면 false(사전순 비교로 이번주에 잘못 걸리지 않음)', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 16));
+    expect(isThisWeekExcludingToday('2026-9-18')).toBe(false); // 0패딩 없음 — 사전순으로는 범위 안
+    expect(isThisWeekExcludingToday('')).toBe(false);
+    expect(isThisWeekExcludingToday('2026-09-16T00:00:00.000Z')).toBe(false); // 시각 포함 ISO
+  });
+
+  it('today/weekRange를 인자로 주입하면 매번 새로 계산하지 않고 그 값을 그대로 쓴다', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 16)); // 실제 오늘은 09-16이지만
+    // 주입한 today(09-19)를 기준으로 판정해야 하므로, 09-16은 "이번주이면서 오늘 아님"이 된다.
+    expect(isThisWeekExcludingToday('2026-09-16', '2026-09-19', { weekStart: '2026-09-14', weekEnd: '2026-09-20' })).toBe(true);
+  });
 });

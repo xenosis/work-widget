@@ -16,12 +16,14 @@ export function priorityClassName(priority) {
 }
 
 // B4.2: 마감일 순 우선(없으면 맨 뒤), 같으면 우선순위 순.
-// due_date가 문자열이 아니면(null/undefined 등 전부) "없음"으로 정규화해서 비교한다 — null과
-// undefined를 다르게 취급하면 compare(a,b)와 compare(b,a)가 둘 다 양수를 반환하는 비대칭
-// 비교자가 되어 정렬 결과가 자바스크립트 엔진 구현에 따라 달라지는 버그가 생긴다.
+// due_date가 문자열이 아니거나(null/undefined 등) 빈 문자열이면 "없음"으로 정규화해서 비교한다.
+// 빈 문자열을 그대로 두면 모든 'YYYY-MM-DD'보다 사전순으로 작아 "마감일 없음"이 맨 뒤가 아니라
+// 맨 앞으로 정렬되는 버그가 생긴다(critical-reviewer 지적 — 지금은 todoFactory.js가 항상 null을
+// 쓰므로 재현되지 않지만, 수정 폼에 빈 date input이 생기는 순간 현실화된다). null과 undefined를
+// 다르게 취급해도 비대칭 비교자가 되는 건 마찬가지라 같은 값으로 정규화한다.
 export function compareByDueDateThenPriority(a, b) {
-  const aDate = typeof a.due_date === 'string' ? a.due_date : null;
-  const bDate = typeof b.due_date === 'string' ? b.due_date : null;
+  const aDate = typeof a.due_date === 'string' && a.due_date !== '' ? a.due_date : null;
+  const bDate = typeof b.due_date === 'string' && b.due_date !== '' ? b.due_date : null;
   if (aDate !== bDate) {
     if (aDate === null) return 1;
     if (bDate === null) return -1;

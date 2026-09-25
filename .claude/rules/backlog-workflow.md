@@ -8,7 +8,7 @@ CLAUDE.md의 "Backlog 기반 작업 실행 순서"(1~9단계)의 상세 규칙�
 
 | 주체 | 쓸 수 있는 것 | 방법 / 근거 |
 |---|---|---|
-| 메인 세션(Claude) | 상태 전이, task 추가 | `node scripts/backlog/cli.js set-status` / `add` 만 사용 |
+| 메인 세션(Claude) | 상태 전이, task 추가, 위치 정리, 메타데이터 필드 교정 | `node scripts/backlog/cli.js set-status` / `add` / `reorder` / `set-field`(P11, status 제외 필드용) 만 사용 |
 | `critical-reviewer` 서브에이전트 | 없음 | Write 도구 자체가 없음(`.claude/agents/critical-reviewer.md` frontmatter) |
 | `backlog-explainer` 서브에이전트 | `docs/backlog/<id>.md` | Write 도구는 있으나 경로 제한은 프롬프트 지침(도구 수준 강제 아님) |
 | 사람이 직접 Edit/Write | 원칙적으로 금지 | 실제 경로(`C:/교육/바이브코딩교육/backlog.json`)에 대한 Read/Grep/Bash 직접 접근은 `block-backlog-direct-read.js`(PreToolUse)가 차단. 그래도 직접 고친 결과물은 `validate-backlog.js`(PostToolUse)가 사후 검증 |
@@ -45,7 +45,7 @@ CLAUDE.md의 "Backlog 기반 작업 실행 순서"(1~9단계)의 상세 규칙�
 
 ## 5. 동시 실행 중 입력 고정
 
-- critical-reviewer/backlog-explainer를 병렬 실행하는 동안(CLAUDE.md 5단계) 메인 세션은 `set-status`/`add`로 backlog.json을 바꾸지 않는다 — 두 에이전트가 같은 `_source.sha256` 스냅샷을 기준으로 서로 다른 관점을 내는 것이 설계 의도이므로, 중간에 스냅샷이 바뀌면 두 결과가 서로 다른 버전을 검토한 셈이 된다.
+- critical-reviewer/backlog-explainer를 병렬 실행하는 동안(CLAUDE.md 5단계) 메인 세션은 `set-status`/`add`/`reorder`/`set-field` 등 CLI 변경 명령으로 backlog.json을 바꾸지 않는다 — 두 에이전트가 같은 `_source.sha256` 스냅샷을 기준으로 서로 다른 관점을 내는 것이 설계 의도이므로, 중간에 스냅샷이 바뀌면 두 결과가 서로 다른 버전을 검토한 셈이 된다.
 - backlog.json 갱신은 메인 세션만 한다(§1) — 두 서브에이전트 결과를 받은 뒤 메인 세션이 반영한다.
 
 ## 6. 완료 근거로 인정하지 않는 것
@@ -69,6 +69,7 @@ CLAUDE.md의 "Backlog 기반 작업 실행 순서"(1~9단계)의 상세 규칙�
 | backlog.json 직접 Read/Grep/Bash 금지 | **hook 검사** | `.claude/hooks/block-backlog-direct-read.js` (PreToolUse) |
 | backlog.json 구조·참조 무결성(중복 id, deps/parent 존재성, 순환) | **hook 검사** | `.claude/hooks/validate-backlog.js` (PostToolUse, `scripts/backlog/lib` 공유) |
 | `done` 전이 시 `--note` 필수 | **CLI 자체 검증**(훅 아님) | `scripts/backlog/lib/mutations.js` |
+| `set-field`로 필드 교정 시 `--note` 필수, 허용 필드 화이트리스트(status/id/log/updated_at/done_at/claimed_at 제외) | **CLI 자체 검증**(훅 아님) | `scripts/backlog/lib/mutations.js`(`setField`, P11) |
 | src/electron에서 알림 API 사용 시 경고 | **hook 검사**(비차단 경고) | `.claude/hooks/check-no-notifications.js` |
 | 변경 파일 lint 통과 + 300줄 제한 | **hook 검사** | `.claude/hooks/lint-changed-file.js` (PostToolUse) |
 | 전체 lint + vite build + electron 문법 검사 | **hook 검사** | `.claude/hooks/stop-full-check.js` (Stop) |

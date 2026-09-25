@@ -43,9 +43,35 @@
   }
   button:hover { background: #f0f2f5; }
   #loadBtn { font-weight: 600; }
-  #integrityBadge { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); font-weight: 600; }
+  #integrityBadge { border-color: var(--danger); background: var(--danger); color: #fff; font-weight: 700; }
   #integrityBadge[hidden] { display: none; }
   #readonlyNote { font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+
+  /* ---- 현황 요약 바 (상태별 개수, 클릭하면 그 상태로 필터링) ---- */
+  #statsBar {
+    flex: 0 0 auto; display: flex; gap: 8px; flex-wrap: wrap;
+    padding: 10px 12px; background: var(--panel); border-bottom: 1px solid var(--border);
+  }
+  #statsBar[hidden] { display: none; }
+  .stat-card {
+    flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-width: 78px; padding: 8px 12px; border-radius: 10px; cursor: pointer; border: 2px solid transparent;
+    font-family: inherit; transition: transform .08s ease, filter .08s ease;
+  }
+  .stat-card:hover { transform: translateY(-1px); filter: brightness(1.08); }
+  .stat-card.active { border-color: var(--text); }
+  .stat-card .stat-count { font-size: 19px; font-weight: 800; line-height: 1.1; }
+  .stat-card .stat-label { font-size: 11px; font-weight: 700; margin-top: 2px; white-space: nowrap; }
+  .stat-card.stat-all { background: #111827; color: #fff; }
+  .stat-card.stat-todo { background: #64748b; color: #fff; }
+  .stat-card.stat-in_progress { background: #2563eb; color: #fff; }
+  .stat-card.stat-in_review { background: #7c3aed; color: #fff; }
+  .stat-card.stat-needs_info { background: #f59e0b; color: #402d00; }
+  .stat-card.stat-blocked { background: #dc2626; color: #fff; }
+  .stat-card.stat-done { background: #16a34a; color: #fff; }
+  .stat-card.stat-cancelled { background: #9ca3af; color: #fff; }
+  .stat-card.stat-cancelled .stat-label { text-decoration: line-through; }
+  .stat-card.stat-unknown { background: #ea580c; color: #fff; }
 
   #integrityDrop {
     position: absolute; top: 40px; right: 12px; z-index: 20; width: min(480px, 92vw);
@@ -95,16 +121,16 @@
   tbody tr { cursor: pointer; }
   tbody tr:hover { background: #f5f7fa; }
   tbody tr.selected { background: #e8f0fe; }
-  .badge { display: inline-block; border-radius: 999px; padding: 2px 9px; font-size: 13px; font-weight: 600; background: var(--chip-bg); color: var(--text); }
-  .badge.warn { background: var(--warn-bg); color: var(--warn); }
+  .badge { display: inline-block; border-radius: 999px; padding: 2px 9px; font-size: 13px; font-weight: 700; background: var(--chip-bg); color: var(--text); }
+  .badge.warn { background: #ea580c; color: #fff; }
   /* 상태별 색상 (enums.status: todo, in_progress, in_review, needs_info, blocked, done, cancelled) */
-  .badge.st-todo { background: #e5e7eb; color: #374151; }
-  .badge.st-in_progress { background: #dbeafe; color: #1d4ed8; }
-  .badge.st-in_review { background: #ede9fe; color: #7c3aed; }
-  .badge.st-needs_info { background: #fff4e0; color: #92600a; }
-  .badge.st-blocked { background: #fdecea; color: #b3261e; }
-  .badge.st-done { background: #e6f4ea; color: #1a7f37; }
-  .badge.st-cancelled { background: #e5e7eb; color: #6b7280; text-decoration: line-through; }
+  .badge.st-todo { background: #64748b; color: #fff; }
+  .badge.st-in_progress { background: #2563eb; color: #fff; }
+  .badge.st-in_review { background: #7c3aed; color: #fff; }
+  .badge.st-needs_info { background: #f59e0b; color: #402d00; }
+  .badge.st-blocked { background: #dc2626; color: #fff; }
+  .badge.st-done { background: #16a34a; color: #fff; }
+  .badge.st-cancelled { background: #9ca3af; color: #f3f4f6; text-decoration: line-through; }
   .muted { color: var(--muted); }
   .empty-msg { color: var(--muted); padding: 20px 4px; text-align: center; }
 
@@ -154,6 +180,8 @@
   <button id="integrityBadge" hidden></button>
   <span id="readonlyNote">읽기 전용 · gate 미실행</span>
 </div>
+
+<div id="statsBar" hidden></div>
 
 <div id="integrityDrop" hidden>
   <h2 id="integrityTitle"></h2>
@@ -236,6 +264,7 @@
   const docStatus = document.getElementById('docStatus');
   const searchInput = document.getElementById('searchInput');
   const statusFilter = document.getElementById('statusFilter');
+  const statsBar = document.getElementById('statsBar');
   const integrityBadge = document.getElementById('integrityBadge');
   const integrityDrop = document.getElementById('integrityDrop');
   const integrityTitle = document.getElementById('integrityTitle');
@@ -407,6 +436,7 @@
 
   function showError(message) {
     initialHint.hidden = true;
+    statsBar.hidden = true;
     split.hidden = true;
     statusMsg.hidden = false;
     statusMsg.classList.add('error');
@@ -417,6 +447,7 @@
     statusMsg.hidden = true;
     statusMsg.classList.remove('error');
     statusMsg.textContent = '';
+    statsBar.hidden = false;
     split.hidden = false;
     setListWidth(listPane.getBoundingClientRect().width); // split이 실제로 보이게 된 뒤 폭을 실제 컨테이너 기준으로 재보정
   }

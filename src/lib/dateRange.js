@@ -28,13 +28,23 @@ export function getThisWeekRange() {
   return { weekStart: formatLocalDate(monday), weekEnd: formatLocalDate(sunday) };
 }
 
+// scheduleGrid.js(P5.1)도 같은 형식 검증을 재사용한다 — 0 채움 없는 날짜("2026-9-15")가
+// 사전순 문자열 비교를 틀어지게 하는 문제를 두 곳에서 각자 막지 않기 위함.
+export const DATE_STRING_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 // "이번주(월~일) 범위이면서 오늘은 아닌" 날짜인지. Dashboard.jsx(오늘/이번주 마감 목록)와
 // src/lib/todoGrouping.js(오늘/이번주/나중 그룹) 둘 다 이 판정을 쓴다 — 각자 조건식을 따로 들고
 // 있으면 한쪽만 고쳤을 때 두 화면의 "이번주"가 조용히 갈라지기 때문에 여기 한 곳으로 모았다.
-export function isThisWeekExcludingToday(dueDate) {
-  if (typeof dueDate !== 'string') return false;
-  const today = getTodayDateString();
+// 0패딩된 YYYY-MM-DD 형식이 아니면(수기 편집된 data.json 등) "이번주"로 조용히 오분류되지 않도록
+// 마감일 없음과 동일하게 취급한다(critical-reviewer 지적 — 문자열 사전순 비교라 포맷이 깨지면
+// 엉뚱한 그룹에 들어갈 수 있었음).
+// today/weekRange를 선택 인자로 받는다 — 한 화면에서 여러 todo를 순회하며 이 함수를 여러 번
+// 부르는 호출부(todoGrouping.js, Dashboard.jsx)가 매번 새로 계산하지 않고 한 번 계산해 넘기면,
+// 그 순회 도중 자정을 넘겨도 "오늘"이 중간에 바뀌는 일이 없다(critical-reviewer 지적). 인자를
+// 생략하면 기존처럼 즉시 계산하므로 기존 호출부는 그대로 동작한다.
+export function isThisWeekExcludingToday(dueDate, today = getTodayDateString(), weekRange = getThisWeekRange()) {
+  if (typeof dueDate !== 'string' || !DATE_STRING_RE.test(dueDate)) return false;
   if (dueDate === today) return false;
-  const { weekStart, weekEnd } = getThisWeekRange();
+  const { weekStart, weekEnd } = weekRange;
   return dueDate >= weekStart && dueDate <= weekEnd;
 }

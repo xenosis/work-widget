@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateProjectProgress } from './projectProgress.js';
+import { calculateProjectProgress, progressBarWidth } from './projectProgress.js';
 
 describe('calculateProjectProgress', () => {
   it('2/3 완료면 67(반올림)', () => {
@@ -51,5 +51,23 @@ describe('calculateProjectProgress', () => {
   it('completed가 boolean true가 아니면 미완료로 취급 + 배열 내 null 원소 방어(projectStatus와 동일 계약)', () => {
     const todos = [null, { project_id: 'p1', completed: true }, { project_id: 'p1', completed: 'true' }];
     expect(calculateProjectProgress('p1', todos)).toBe(50);
+  });
+});
+
+describe('progressBarWidth', () => {
+  it('정상 범위 정수는 그대로 퍼센트 문자열로 만든다', () => {
+    expect(progressBarWidth(0)).toBe('0%');
+    expect(progressBarWidth(37)).toBe('37%');
+    expect(progressBarWidth(100)).toBe('100%');
+  });
+
+  it('undefined/NaN은 0%로 방어한다(calculateProjectProgress를 거치지 않은 raw 값이 들어올 경우 대비)', () => {
+    expect(progressBarWidth(undefined)).toBe('0%');
+    expect(progressBarWidth(NaN)).toBe('0%');
+  });
+
+  it('범위를 벗어난 값은 0~100으로 클램프한다', () => {
+    expect(progressBarWidth(-5)).toBe('0%');
+    expect(progressBarWidth(150)).toBe('100%');
   });
 });

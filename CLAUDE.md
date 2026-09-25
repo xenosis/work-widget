@@ -49,7 +49,7 @@ Anything not covered above (exact UI pixel behavior, backup cadence, etc.) shoul
 3. **착수 기록**: `cli.js set-status <id> in_progress --owner=<식별자> --note=<착수 근거>`로 실제 착수 사실을 backlog.json에 반영한다(추정으로 채우지 않는다).
 4. **구현**: `eslint.config.js` 규칙(src/electron 분리, max-lines 300)을 지키며 구현한다. 건드리는 영역이 위 "스택 관련 참고 스킬" 표에 해당하면 구현 전에 그 스킬을 먼저 불러온다. PostToolUse 훅(`validate-backlog.js`, `check-no-notifications.js`, `lint-changed-file.js`)이 매 Write/Edit마다 자동 실행된다.
 5. **병렬 검토 착수**: `cli.js list` 결과의 `_source.sha256`(입력 버전)를 고정해 `critical-reviewer`와 `backlog-explainer`(`.claude/agents/`) 서브에이전트 프롬프트에 동일 스냅샷으로 넣고 병렬 실행한다. `set-status <id> in_review`로 전환하고, 두 에이전트가 끝날 때까지 메인 세션은 backlog.json을 갱신하지 않는다.
-6. **반영과 재검증**: critical-reviewer가 파일/코드 근거를 댄 지적만 반영한다(근거 없는 추측은 7번처럼 needs_info로 남긴다). 반영 후 `set-status`/`add`로 갱신하면 `validate-backlog.js`가 자동 재검증한다.
+6. **반영과 재검증**: critical-reviewer가 파일/코드 근거를 댄 지적만 반영한다(근거 없는 추측은 7번처럼 needs_info로 남긴다). 반영 후 `set-status`/`add`/`set-field`로 갱신하면 `validate-backlog.js`가 자동 재검증한다.
 7. **완료 기록**: done_when 충족 + 관련 훅 전부 통과(TIMEOUT/미검증도 미통과로 간주) + critical-reviewer 지적 반영 확인, 이 세 가지가 모두 될 때만 `cli.js set-status <id> done --note=<근거>`. 하나라도 빠지면 `needs_info` 또는 `blocked`로 남긴다.
 8. **문서·대시보드 확인**: backlog.json이 바뀌면 `docs/backlog/<id>.md`가 최신인지 확인하고(필요하면 backlog-explainer 재실행), `tools/backlog-dashboard.html`에서 파일을 다시 선택해 최신 상태를 눈으로 확인한다.
 9. **상태는 항상 backlog.json에 기록**: 상태가 바뀔 때마다 `set-status`로 즉시 반영한다 — 세션이 끊겨도 다음 세션이 backlog.json만 보고 바로 이어갈 수 있어야 한다(전역 CLAUDE.md의 세션 시작 확인 규칙의 전제조건).

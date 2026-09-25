@@ -6,14 +6,29 @@
 //
 // 읽기 전용: GET/HEAD 외 메서드는 거부하고, 쓰기 로직 자체가 없다.
 // 127.0.0.1에만 바인딩해 로컬 밖에서는 접근할 수 없다.
+//
+// 단일 인스턴스 + 유휴 자동 종료: 프로젝트 경로별로 os.tmpdir()에 lock 파일(pid+port)을
+// 둔다. 이미 이 프로젝트용 서버가 떠 있으면 새로 띄우지 않고 그 서버의 브라우저 탭만
+// 연다(다른 프로젝트가 먼저 기본 포트를 차지해도 자동으로 다음 포트를 골라 "하나만
+// 계속 보이는" 문제를 없앤다). 또한 일정 시간 요청이 없으면(브라우저를 닫고 아무도
+// 안 보는 경우 포함) 스스로 종료한다 — /min으로 띄운 백그라운드 프로세스가 영원히
+// 남지 않도록.
 'use strict';
 
 const http = require('http');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
+const crypto = require('crypto');
+const { spawn } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
-const PORT = process.env.PORT ? Number(process.env.PORT) : 5175;
+const BASE_PORT = process.env.PORT ? Number(process.env.PORT) : 5175;
+const PORT_TRIES = 20;
+const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10분 무요청 시 자동 종료
+
+const rootHash = crypto.createHash('md5').update(ROOT).digest('hex').slice(0, 8);
+const LOCK_PATH = path.join(os.tmpdir(), `work-widget-dashboard-${rootHash}.json`);
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -28,7 +43,55 @@ function send(res, status, headers, body) {
   res.end(body);
 }
 
+function isAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function openBrowser(url) {
+  spawn('cmd', ['/c', 'start', '""', url], {
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true,
+  }).unref();
+}
+
+function readLock() {
+  try {
+    return JSON.parse(fs.readFileSync(LOCK_PATH, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function writeLock(port) {
+  fs.writeFileSync(LOCK_PATH, JSON.stringify({ pid: process.pid, port }));
+}
+
+function clearLock() {
+  try {
+    fs.unlinkSync(LOCK_PATH);
+  } catch {
+    // 이미 없으면 무시
+  }
+}
+
+const existing = readLock();
+if (existing && isAlive(existing.pid)) {
+  console.log(`이미 이 프로젝트의 대시보드가 실행 중입니다: http://127.0.0.1:${existing.port}/`);
+  openBrowser(`http://127.0.0.1:${existing.port}/`);
+  process.exit(0);
+}
+
+let lastRequestAt = Date.now();
+
 const server = http.createServer((req, res) => {
+  lastRequestAt = Date.now();
+
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     send(res, 405, { 'Content-Type': 'text/plain; charset=utf-8' }, '읽기 전용 서버입니다 (GET만 허용)');
     return;
@@ -58,6 +121,37 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, '127.0.0.1', () => {
-  console.log(`Backlog 대시보드: http://127.0.0.1:${PORT}/ (Ctrl+C로 종료)`);
-});
+function tryListen(port, triesLeft) {
+  server.once('error', (err) => {
+    if (err.code === 'EADDRINUSE' && triesLeft > 0) {
+      tryListen(port + 1, triesLeft - 1);
+      return;
+    }
+    console.error('서버를 시작하지 못했습니다:', err.message);
+    process.exit(1);
+  });
+  server.listen(port, '127.0.0.1', () => {
+    writeLock(port);
+    const url = `http://127.0.0.1:${port}/`;
+    console.log(`Backlog 대시보드: ${url} (10분간 요청 없으면 자동 종료, 바로 끄려면 Ctrl+C)`);
+    openBrowser(url);
+  });
+}
+
+tryListen(BASE_PORT, PORT_TRIES);
+
+const idleCheck = setInterval(() => {
+  if (Date.now() - lastRequestAt > IDLE_TIMEOUT_MS) {
+    console.log('10분간 요청이 없어 대시보드 서버를 자동 종료합니다.');
+    clearInterval(idleCheck);
+    clearLock();
+    server.close(() => process.exit(0));
+  }
+}, 60 * 1000);
+
+function shutdown() {
+  clearLock();
+  process.exit(0);
+}
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);

@@ -1,18 +1,70 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage } = require('electron');
 const path = require('path');
 const { loadData, saveData } = require('./dataStore');
+const { loadWindowState, saveWindowState, MIN_WINDOW_SIZE } = require('./windowState');
+const { getAutoLaunchFlagPath, hasRegisteredAutoLaunch, markAutoLaunchRegistered } = require('./autoLaunch');
 
 let mainWindow;
 let tray;
 
+// P7.6: P7.2(로그인 자동 실행)로 트레이 상주 프로세스가 로그인 시 항상 떠 있는 게 일상이 되면,
+// 사용자가 바탕화면/시작메뉴 바로가기로 앱을 또 실행할 가능성이 커진다(critical-reviewer 지적,
+// P7.2 리뷰) — 두 번째 인스턴스가 그대로 뜨면 트레이 아이콘 2개, 창 2개가 생기고 두 프로세스가
+// 같은 data.json/window-state.json을 각자 통째로 덮어써 한쪽 편집이 유실될 수 있다. 락을 못
+// 받으면(이미 다른 인스턴스가 실행 중) 창/트레이를 만들기 전에 바로 종료해 그 경합 자체가
+// 생기지 않게 한다. Node CommonJS 모듈 최상위의 return은 유효하다(각 파일이 함수로 감싸져
+// 실행됨) — 이후 코드(app.whenReady 등) 전체를 else로 감싸는 대신 여기서 바로 빠져나온다.
+// critical-reviewer 지적: 이 return은 이 파일이 CJS로 로드된다는 전제에 기댄다 —
+// package.json에 "type":"module"을 추가하거나 이 파일을 .mjs로 바꾸면 SyntaxError가 나서 앱
+// 전체가 뜨지 않는다. 이 프로젝트는 electron/scripts 전역을 commonjs로 통일하고 있어(eslint.config.js)
+// 바뀔 계획이 없지만, 나중에 이 파일을 손대는 사람을 위해 여기 남긴다.
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+  return;
+}
+
+app.on('second-instance', () => {
+  // 두 번째 실행 시도가 있었다는 신호 — 새 창을 만들지 않고 기존 창을 앞으로 가져온다.
+  // isDestroyed() 가드는 이 파일의 다른 리스너(captureAndSaveWindowState, notifyDataChanged)와
+  // 같은 이유 — 종료 시퀀스 도중(session-end 이후 창이 실제로 파괴되는 짧은 구간) 두 번째
+  // 실행 시도가 들어오면 파괴된 BrowserWindow 호출이 예외를 던질 수 있다(critical-reviewer 지적).
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+});
+
 function createWindow() {
+  // P7.5 결정(사람, 2026-09-25): 저장된 위치/크기가 있고 지금 연결된 화면 안에 있으면 그대로
+  // 쓰고, 없거나(최초 실행) 화면 밖이면(모니터 구성 변경) 기본값으로 시작한다.
+  const savedState = loadWindowState();
   mainWindow = new BrowserWindow({
-    width: 420,
-    height: 640,
+    width: savedState ? savedState.width : 420,
+    height: savedState ? savedState.height : 640,
+    ...(savedState ? { x: savedState.x, y: savedState.y } : {}),
+    // P7.4 결정: B1.1은 리사이즈/이동 가능·always-on-top 아님을 요구할 뿐 최소 크기는 정하지
+    // 않는다 — resizable/movable=true, alwaysOnTop=false는 Electron 기본값이라 이미 충족되지만
+    // 최소 크기는 비어 있었다. minWidth는 검증된 유일한 폭(420, P1.7/P3.3/P4.3 텍스트 오버플로
+    // 수정이 전부 이 폭 "안에서" 일어남 — 420 미만은 실제로 깨지는지 확인된 적이 없어 보수적
+    // 하한으로만 씀)으로 둔다. minHeight는 처음 360으로 뒀다가 critical-reviewer 지적으로 실측:
+    // .sidebar는 .app의 기본 align-items:stretch로 창 높이만큼 늘어나는데 5개 메뉴 버튼의
+    // 실제 필요 높이(padding+gap 포함)가 약 327px라, 360(프레임 포함 외곽 기준이라 실제
+    // 콘텐츠 영역은 더 작음, 실측 시 295px)에서는 사이드바 마지막 메뉴가 창 밖으로 잘렸다.
+    // 420이면 콘텐츠 영역이 약 355px로 327px보다 넉넉해 안 잘리는 것을 Playwright로 실측
+    // 확인했다 — 폭과 같은 420으로 맞춰 외우기 쉽게 한다.
+    minWidth: MIN_WINDOW_SIZE,
+    minHeight: MIN_WINDOW_SIZE,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // P4.2: 메모 화면의 디바운스 자동저장(setTimeout)이 트레이로 숨겨진 동안(B5.1, destroy
+      // 아님) Chromium의 백그라운드 타이머 스로틀링에 걸려 지연되지 않도록 끈다. 이 창은 항상
+      // 최대 1개뿐이고 숨겨져 있어도 트레이 상주 위젯이라 백그라운드 CPU 비용을 아낄 이유가
+      // 없다(critical-reviewer 지적: 꺼두지 않으면 숨긴 채로 오래 두면 대기 중이던 저장이
+      // 임의로 늦어질 수 있음).
+      backgroundThrottling: false,
     },
   });
 
@@ -22,8 +74,48 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
-  // B5.1: 닫기(X)는 완전 종료가 아니라 트레이로 숨김
+  // P7.5 결정(사람, 2026-09-25): resize/move마다 즉시 저장하지 않고 디바운스해 드래그 중
+  // 수십 번씩 파일을 쓰지 않는다. 최대화/최소화 상태에서는 getBounds()가 화면을 가득 채운
+  // 값이나 비정상 좌표를 줄 수 있어(critical-reviewer 지적, P7.5 리뷰) getNormalBounds()로
+  // "일반 상태였다면 가졌을 크기"를 저장하고, 최소화 중에는 저장 자체를 건너뛴다.
+  let saveStateTimer = null;
+  function captureAndSaveWindowState() {
+    if (mainWindow.isDestroyed() || mainWindow.isMinimized()) return;
+    saveWindowState(mainWindow.getNormalBounds());
+  }
+  function scheduleSaveWindowState() {
+    if (saveStateTimer) clearTimeout(saveStateTimer);
+    saveStateTimer = setTimeout(() => {
+      saveStateTimer = null;
+      captureAndSaveWindowState();
+    }, 500);
+  }
+  mainWindow.on('resize', scheduleSaveWindowState);
+  mainWindow.on('move', scheduleSaveWindowState);
+
+  // B5.1: 닫기(X)는 완전 종료가 아니라 트레이로 숨김 — 프로덕션 동작.
+  // DEV_QUIT_ON_CLOSE(run-widget.bat 전용 개발 편의 플래그)가 설정된 경우에만 예외로
+  // 닫기를 실제 종료로 취급한다: 개발 중 창을 닫았는데 프로세스가 트레이에 남아있으면
+  // 다음 실행 때 포트(5173) 충돌로 이어지는 문제가 있었음. app.isPackaged 가드로 이 예외가
+  // 배포 빌드(CLAUDE.md가 잠근 "닫기≠종료" 결정)에 새어들지 못하게 막는다(critical-reviewer
+  // 지적: 이 분기가 backlog 어디에도 기록돼 있지 않았음).
+  // P7.5: 창 상태 저장은 hide/quit 분기와 무관하게 항상 먼저 실행한다 — 두 close 리스너를
+  // 따로 등록해 순서에 의존하면 나중에 리스너 순서가 바뀔 때 조용히 깨질 수 있다(critical-reviewer
+  // 지적). 디바운스 타이머가 남아 있으면 취소하고 그 자리에서 바로 저장해, 아직 안 끝난
+  // 마지막 변경도 놓치지 않는다(B5.1상 close는 항상 도달하는 유일한 저장 지점 —
+  // session-end/before-quit은 발생이 보장되지 않음).
   mainWindow.on('close', (event) => {
+    if (saveStateTimer) {
+      clearTimeout(saveStateTimer);
+      saveStateTimer = null;
+    }
+    captureAndSaveWindowState();
+
+    if (process.env.DEV_QUIT_ON_CLOSE && !app.isPackaged) {
+      app.isQuitting = true;
+      app.quit();
+      return;
+    }
     if (!app.isQuitting) {
       event.preventDefault();
       mainWindow.hide();
@@ -31,15 +123,44 @@ function createWindow() {
   });
 
   // B5.2: before-quit은 Windows 종료/로그아웃 시 발생하지 않는다(Electron 문서 명시) —
-  // session-end로 그 경로를 따로 잡아 close 핸들러가 종료를 막지 않게 한다.
+  // session-end로 그 경로를 따로 잡아 close 핸들러가 종료를 막지 않게 한다. 이 경로는 close를
+  // 안 거칠 수 있어(critical-reviewer 지적) 여기서도 창 상태를 저장해 둔다.
   mainWindow.on('session-end', () => {
     app.isQuitting = true;
+    captureAndSaveWindowState();
   });
+
+  // P1.6: X닫기는 destroy가 아니라 hide라(B5.1) React 트리가 트레이에 숨어있는 동안도 계속
+  // 살아있다 — 다시 보여질 때마다 최신 data.json을 다시 읽도록 렌더러에 신호를 보낸다.
+  // 'show'만으로는 최소화(minimize) 후 복원(restore)은 못 잡는다 — Electron에서 그건 별도
+  // 'restore' 이벤트로 온다(critical-reviewer 지적: "트레이에 며칠 떠 있을 수 있다"는 이
+  // task의 전제가 최소화 상태에도 똑같이 적용됨). isDestroyed() 가드는 렌더러가 아직 없거나
+  // 이미 정리된 시점에 이 콜백이 불려도 예외를 던지지 않기 위함 — 그 시점의 초기 로드는 이
+  // 신호와 무관하게 useAppData의 마운트 시 load()가 담당한다.
+  function notifyDataChanged() {
+    if (!mainWindow.webContents.isDestroyed()) {
+      mainWindow.webContents.send('data:changed');
+    }
+  }
+  mainWindow.on('show', notifyDataChanged);
+  mainWindow.on('restore', notifyDataChanged);
+  // P5.7 critical-reviewer 지적: show/restore만으로는 "창을 띄운 채로 자정을 넘기고 그냥
+  // 클릭만 하는" 경우를 못 잡는다 — focus도 같은 신호를 보내 재조회 계기를 넓힌다(정책 자체는
+  // 안 바뀜: 렌더러의 Schedule.jsx가 이 신호로 다시 렌더될 때 오늘 날짜가 바뀌었는지 비교해서
+  // 바뀐 경우에만 리셋한다).
+  mainWindow.on('focus', notifyDataChanged);
 }
 
+// P7.1: 저장소에 이미지 처리 라이브러리가 전혀 없어(package.json 확인) 순수 Node(zlib)로
+// 만든 32x32 PNG(electron/assets/tray-icon.png, 앱 accent 색 원 + 체크마크)를 로드한다.
+// nativeImage.createFromPath는 파일이 없거나 읽기에 실패하면 예외 대신 빈 이미지를 반환하므로
+// isEmpty()로 확인해 개발 중 경로 실수를 조용히 넘기지 않는다.
 function createTray() {
-  // TODO: 실제 아이콘 리소스로 교체
-  const icon = nativeImage.createEmpty();
+  const iconPath = path.join(__dirname, 'assets', 'tray-icon.png');
+  const icon = nativeImage.createFromPath(iconPath);
+  if (icon.isEmpty()) {
+    console.error('트레이 아이콘을 불러오지 못했습니다:', iconPath);
+  }
   tray = new Tray(icon);
   tray.setToolTip('업무 위젯');
   tray.setContextMenu(Menu.buildFromTemplate([
@@ -50,10 +171,38 @@ function createTray() {
   });
 }
 
+// P7.2: Windows 로그인 시 자동 실행(work-widget-requirements.md 방향 21행 — "서비스 또는 시작
+// 프로그램 등록"). 패키지 빌드에서만 실제로 등록한다 — app.isPackaged가 false인 개발 모드에서
+// 그대로 실행하면 개발 중 띄운 electron.exe 경로가 실제 사용자의 Windows 시작 프로그램에
+// 등록돼 매 로그인마다 개발용 프로세스가 뜨는 부작용이 생긴다(DEV_QUIT_ON_CLOSE와 같은 이유의
+// dev/prod 분리). 최초 1회만 등록하는 이유는 autoLaunch.js 주석 참고(P7.2 결정, critical-reviewer
+// 지적 반영 — 매번 강제 재등록하면 사용자가 Windows에서 직접 끈 것도 앱이 되돌려버림).
+function configureAutoLaunch() {
+  if (!app.isPackaged) return;
+  const flagPath = getAutoLaunchFlagPath();
+  if (hasRegisteredAutoLaunch(flagPath)) return;
+  app.setLoginItemSettings({ openAtLogin: true });
+  markAutoLaunchRegistered(flagPath);
+}
+
 app.whenReady().then(() => {
   createWindow();
   createTray();
+  configureAutoLaunch();
 });
+
+// P7.1 critical-reviewer 지적: tray는 모듈 스코프 변수라 바깥에서 실제 Tray 인스턴스를
+// 확인할 방법이 없어, 독립적으로 같은 파일을 다시 읽어보는 간접 검증만 가능했다 — Playwright의
+// electronApp.evaluate()가 CDP로 주입하는 코드는 모듈 스코프 require를 못 쓰므로(전역이
+// 아님), global에 최소한만 노출한다(프로덕션 동작에는 영향 없음, 렌더러는 이 값을 쓰지 않고
+// IPC만 씀).
+global.__mainProcessTestHooks = {
+  getTray: () => tray,
+  getMainWindow: () => mainWindow,
+  configureAutoLaunch,
+  getAutoLaunchFlagPath,
+  hasRegisteredAutoLaunch,
+};
 
 // B5.2: 별도 종료 메뉴 없음 — OS 종료/로그아웃 시에만 실제 종료
 app.on('before-quit', () => {

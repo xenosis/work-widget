@@ -75,4 +75,31 @@ describe('groupTodosByDate (시스템 시각 2026-09-17 목요일 고정 — 이
     vi.setSystemTime(new Date(2026, 8, 17));
     expect(groupTodosByDate(undefined)).toEqual({ today: [], week: [], later: [], droppedCount: 0 });
   });
+
+  it('주 경계(월요일 기준): 지난주 일요일은 나중, 이번주 일요일은 이번주로 나뉜다', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 14)); // 월요일, 이번주 09-14~09-20
+
+    const todos = [
+      { id: 'last-sunday', due_date: '2026-09-13', priority: '상' },
+      { id: 'this-sunday', due_date: '2026-09-20', priority: '상' },
+    ];
+    const { week, later } = groupTodosByDate(todos);
+    expect(week.map((t) => t.id)).toEqual(['this-sunday']);
+    expect(later.map((t) => t.id)).toEqual(['last-sunday']);
+  });
+
+  it('빈 문자열/형식이 잘못된 due_date는 마감일 없음과 동일하게 나중으로 간다(이번주로 오분류되지 않음)', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 17));
+
+    const todos = [
+      { id: 't-empty', due_date: '', priority: '상' },
+      { id: 't-malformed', due_date: '2026-9-18', priority: '상' }, // 0패딩 없음
+    ];
+    const { today, week, later } = groupTodosByDate(todos);
+    expect(today).toEqual([]);
+    expect(week).toEqual([]);
+    expect(later.map((t) => t.id).sort()).toEqual(['t-empty', 't-malformed']);
+  });
 });

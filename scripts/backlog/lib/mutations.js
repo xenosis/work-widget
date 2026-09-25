@@ -1,4 +1,6 @@
 // 변경 명령의 실제 규칙: 작업 추가(add), 상태 수정(set-status), 배치 위치 정리(reorder).
+// status 이외 메타데이터 필드 교정(set-field, P11)은 eslint max-lines 때문에 fieldMutations.js로
+// 분리 — findInsertionIndex를 그쪽에서도 써서 여기서 export한다.
 // 전부 store.loadMutateValidateSave를 통해서만 파일에 쓴다(검증 통과 후 원자적 저장).
 'use strict';
 
@@ -161,4 +163,4 @@ function setStatus(filePath, expectedVersion, id, newStatus, opts) {
   });
 }
 
-module.exports = { addTask, setStatus, reorderTask };
+module.exports = { addTask, setStatus, reorderTask, findInsertionIndex };

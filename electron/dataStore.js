@@ -12,13 +12,135 @@ function getDataPath() {
   return path.join(app.getPath('userData'), 'data.json');
 }
 
+const BACKUP_DIR_NAME = 'backups';
+// B5.3: "정확한 주기·보관 개수는 구현 시 조정 가능"이라고 명시돼 있어 하루 1회·최근 7개로 정한다.
+// critical-reviewer 지적: "최근 7일치"가 아니라 정확히는 "형식이 맞는 파일 최근 7개"다 —
+// 미래 날짜 파일이나 사람이 손댄 파일이 섞이면 날짜와 개수가 어긋날 수 있어 이렇게 부른다.
+const BACKUP_RETENTION_COUNT = 7;
+
+function getBackupDir() {
+  return path.join(app.getPath('userData'), BACKUP_DIR_NAME);
+}
+
+function todayDateStamp() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// 오래된 백업을 최근 retentionCount개만 남기고 정리한다 — 파일명이 "data-YYYY-MM-DD.json" 형식이라
+// 문자열 정렬이 곧 날짜순 정렬이다. critical-reviewer 지적: 시계가 앞으로 틀어졌던 적이 있어
+// 미래 날짜 파일이 섞이면 그게 항상 "최신"으로 정렬돼 방금 만든 오늘자 백업이 오히려 개수 밀림으로
+// 삭제될 수 있었다 — protectedName(오늘자 파일명)은 삭제 후보에서 항상 제외한다.
+function pruneOldBackups(dir, protectedName, retentionCount = BACKUP_RETENTION_COUNT) {
+  let files;
+  try {
+    files = fs
+      .readdirSync(dir)
+      .filter((f) => /^data-\d{4}-\d{2}-\d{2}\.json$/.test(f))
+      .sort();
+  } catch {
+    return;
+  }
+  const excess = files.length - retentionCount;
+  if (excess <= 0) return;
+  let removed = 0;
+  for (const file of files) {
+    if (removed >= excess) break;
+    if (file === protectedName) continue;
+    try {
+      fs.unlinkSync(path.join(dir, file));
+      removed += 1;
+    } catch (err) {
+      console.error('오래된 백업 정리 실패:', file, err);
+    }
+  }
+}
+
+// B5.3 자동 백업. 렌더러가 데이터를 불러올 때마다(마운트 시 + 트레이 재표시 시마다,
+// useAppData.js의 onDataChanged 패턴) loadData()가 호출되지만, 오늘 날짜 백업이 이미 있으면
+// 곧바로 리턴하므로 실제로는 하루에 한 번만 파일을 복사한다. saveData 끝에서도 이 함수를
+// 불러(existsSync 한 번뿐이라 비용이 거의 없음) 한 화면만 며칠째 띄워둔 채 편집만 하는(트레이
+// 재표시/탭 전환이 아예 없는) 드문 경우에도 그날의 첫 저장 시점에 백업이 생기게 한다 —
+// critical-reviewer 지적: loadData에만 있으면 이 경로가 done_when의 "주기적으로"를 못 지킨다.
+// atomicWriteJson과 같은 이유로 tmp 파일에 복사한 뒤 rename한다 — 복사 도중 실패해도 잘린
+// 파일이 최종 이름으로 남아 그날의 백업 재시도를 영구히 막는 일이 없게 한다.
+function backupIfNeeded(filePath) {
+  const dir = getBackupDir();
+  const backupName = `data-${todayDateStamp()}.json`;
+  const backupPath = path.join(dir, backupName);
+  if (fs.existsSync(backupPath)) return; // 오늘 이미 백업함
+  const tmpPath = `${backupPath}.tmp-${process.pid}`;
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.copyFileSync(filePath, tmpPath);
+    fs.renameSync(tmpPath, backupPath);
+    pruneOldBackups(dir, backupName);
+  } catch (err) {
+    console.error('데이터 백업 실패:', err);
+    try {
+      fs.unlinkSync(tmpPath);
+    } catch {
+      // tmp 정리 실패는 무시 — 다음 백업 시도 때 덮어써진다
+    }
+  }
+}
+
+// P6.4: 구버전 레코드에 B3 스키마가 나중에 추가한 필드가 없으면(undefined) 기본값으로 채운다.
+// 범위는 "누락된 필드 채우기"로 한정한다 — 이미 값이 있지만 타입이 잘못된 경우(예: title이
+// 객체, is_recurring이 문자열 "false")까지 고치는 건 하지 않는다. 그런 임의 손상 방어는 각
+// 화면이 이미 부분적으로 갖춘 패턴(Array.isArray 가드, id 없는 레코드 제외 등)에 맡기고,
+// 여기서는 명시적으로 다루지 않는다 — is_recurring 등 boolean 필드의 타입 불일치(화면마다
+// truthy 판정과 === true 판정이 섞여 있음)는 critical-reviewer 지적으로 P6.6에 별도 등록했다.
+// B3가 non-nullable로 규정하지만(type/priority/date/created_at/updated_at) 안전한 "빈" 기본값이
+// 없는 필드는 null로 둔다 — "필드 없음"과 "null"을 이미 동일하게 취급하는 기존 소비 코드
+// 기준으로는 회귀가 아니지만, 엄밀히는 스펙이 정하지 않은 해석이다(work-widget-requirements.md
+// B3 결정 문단 참고).
+// 이 정규화는 loadData() 호출 시 메모리에서만 적용된다 — 화면들이 저장할 때 loadData가 돌려준
+// 전체 객체를 그대로 spread해서 saveData로 보내므로(예: Todos.jsx), 어느 화면에서든 저장이
+// 한 번 일어나면 편집 대상이 아니었던 나머지 레코드들의 기본값도 함께 디스크에 반영된다.
+const FIELD_DEFAULTS = {
+  projects: { name: '', type: null, status: '진행중', description: null, due_date: null, created_at: null, updated_at: null },
+  todos: {
+    project_id: null,
+    title: '',
+    completed: false,
+    completed_at: null,
+    due_date: null,
+    priority: null,
+    tags: [],
+    created_at: null,
+    updated_at: null,
+  },
+  memos: { project_id: null, title: '', content: '', created_at: null, updated_at: null },
+  schedules: { title: '', date: null, is_recurring: false, recurrence_days: null, created_at: null, updated_at: null },
+};
+
+// critical-reviewer 지적: FIELD_DEFAULTS의 배열 기본값(tags)이 레코드마다 같은 인스턴스를
+// 공유하면, 한 레코드의 배열을 제자리에서 바꿀 때(push 등) 다른 레코드까지 영향받을 수 있다 —
+// 이 렌더러는 불변 갱신만 쓰지만(critical-reviewer도 확인), 방어적으로 매번 새 배열을 만든다.
+function cloneDefaultValue(value) {
+  return Array.isArray(value) ? [...value] : value;
+}
+
+function applyFieldDefaults(entityKey, record) {
+  const defaults = FIELD_DEFAULTS[entityKey];
+  const result = { ...record };
+  for (const field of Object.keys(defaults)) {
+    if (result[field] === undefined) {
+      result[field] = cloneDefaultValue(defaults[field]);
+    }
+  }
+  return result;
+}
+
 // 필드 누락/타입 불일치 방어(P6.3): 4개 키가 없거나 배열이 아니면 빈 배열로 보정하고,
 // 배열 안에 객체가 아닌 항목은 제거한다. 향후 스키마가 늘어나도 이 함수만 확장하면 된다.
 function normalizeData(data) {
   const result = {};
   for (const key of ARRAY_KEYS) {
     const value = data && data[key];
-    result[key] = Array.isArray(value) ? value.filter((item) => item && typeof item === 'object') : [];
+    const items = Array.isArray(value) ? value.filter((item) => item && typeof item === 'object') : [];
+    result[key] = items.map((item) => applyFieldDefaults(key, item));
   }
   return result;
 }
@@ -72,6 +194,9 @@ function loadData() {
     backupCorruptFile(filePath, raw);
     return normalizeData({});
   }
+  // critical-reviewer 지적: 파싱 성공(=복구 가치가 있는 상태) 확인 전에 백업하면 손상된 파일이
+  // 그대로 정상 백업 칸을 차지해 더 오래된 멀쩡한 백업을 밀어낸다 — 파싱을 통과한 뒤에만 백업한다.
+  backupIfNeeded(filePath);
   return normalizeData(parsed);
 }
 
@@ -87,7 +212,20 @@ function saveData(data) {
       );
     }
   }
-  atomicWriteJson(getDataPath(), data);
+  const filePath = getDataPath();
+  atomicWriteJson(filePath, data);
+  // 이 화면만 며칠째 띄워둔 채 편집만 하는 경우(트레이 재표시/탭 전환이 없어 loadData가 다시
+  // 안 불리는 경우)에도 그날의 첫 저장에서 백업이 생기게 한다 — loadData 쪽 backupIfNeeded와
+  // 동일 함수라 오늘 이미 백업했으면 곧바로 리턴한다(existsSync 한 번, 비용 무시할 만함).
+  backupIfNeeded(filePath);
 }
 
-module.exports = { loadData, saveData, getDataPath, normalizeData };
+module.exports = {
+  loadData,
+  saveData,
+  getDataPath,
+  normalizeData,
+  pruneOldBackups,
+  backupIfNeeded,
+  todayDateStamp,
+};
