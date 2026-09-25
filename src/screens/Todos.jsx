@@ -105,11 +105,11 @@ export default function Todos() {
   // 가드에 걸리면(이론상으로만 — disabled가 실제 클릭을 먼저 막음) 조용히 성공한 척 리턴하지
   // 않고 던진다 — 호출한 폼이 이미 실패를 표시하고 입력을 보존하는 catch를 갖고 있다
   // (critical-reviewer 지적: 조용히 return하면 호출부가 저장 성공으로 오인해 입력창을 비웠음).
-  async function handleAddTodo(title, projectId) {
+  async function handleAddTodo(title, projectId, dueDate) {
     if (saving) throw new Error('저장이 진행 중입니다. 잠시 후 다시 시도하세요.');
     setSaving(true);
     try {
-      const nextTodos = [...data.todos, createTodo(projectId, title)];
+      const nextTodos = [...data.todos, createTodo(projectId, title, dueDate)];
       const nextProjects = applyProjectStatusForTodos(data.projects, projectId, nextTodos);
       const newData = { ...data, todos: nextTodos, projects: nextProjects };
       await window.api.saveData(newData);

@@ -3,6 +3,7 @@
 // (P5.2/P5.3/P5.4)와 Dashboard.jsx(P1.4, 오늘 일정)가 이 모듈을 공유한다 — dateRange.js가
 // "이번주" 정의를 여러 화면에 공유하는 것과 같은 이유(한쪽만 고치면 두 화면의 주/반복 판정이
 // 조용히 갈라짐).
+import { isHoliday } from 'korean-holidays';
 import { formatLocalDate, DATE_STRING_RE } from './dateRange.js';
 
 // B2.2/대시보드가 이미 월요일 시작을 확정했으므로(dateRange.js) 일정 화면도 같은 주 경계를 쓴다.
@@ -57,6 +58,45 @@ export function getWeekDates(dateString) {
 export function getDayLabel(dateString) {
   const [y, m, d] = dateString.split('-').map(Number);
   return DAY_LABELS[new Date(y, m - 1, d).getDay()];
+}
+
+// P12.8(P12.7 결정): 공휴일 판정을 korean-holidays 패키지에 위임한다. 이 라이브러리는 Date
+// 객체의 로컬 연/월/일만 보고 판정하므로(내부적으로 UTC 변환을 하지 않음 — README 예제도
+// new Date(y, m, d) 형태의 로컬 Date를 씀), dateString을 new Date(y, m-1, d)로 그대로
+// 풀어서 넘긴다. 반환값을 그대로 쓰지 않고 이 프로젝트가 이미 쓰는 필드명(name)으로 다시 감싸서
+// 호출부가 라이브러리의 원본 인터페이스(nameKo 등)를 몰라도 되게 한다.
+export function getHolidayInfo(dateString) {
+  const [y, m, d] = dateString.split('-').map(Number);
+  const holiday = isHoliday(new Date(y, m - 1, d));
+  if (!holiday) return null;
+  return { name: holiday.nameKo, isSubstitute: holiday.isSubstitute, isLunar: holiday.isLunar };
+}
+
+// P12.6: 월간/주간 헤더·셀에 주말 색을 구분해 붙이기 위한 순수 판정. 컴포넌트가 getDayLabel과
+// 같은 dateString 인자 하나만으로 호출할 수 있게 해서, 월간 그리드(인접 달 날짜 포함)와 주간
+// 그리드(getWeekDates) 양쪽에서 같은 함수를 그대로 재사용한다.
+export function getWeekdayKind(dateString) {
+  const [y, m, d] = dateString.split('-').map(Number);
+  const dow = new Date(y, m - 1, d).getDay();
+  if (dow === 0) return 'sunday';
+  if (dow === 6) return 'saturday';
+  return 'weekday';
+}
+
+// P12.19(critical-reviewer 지적): 월간 그리드 셀의 CSS 클래스 계산(주말/공휴일/다른 달/오늘/
+// 선택됨)이 ScheduleMonthView.jsx와 DueDatePicker.jsx 두 곳에 그대로 복붙돼 있어서, 한쪽만
+// 고치면 두 달력의 색·상태 표시가 조용히 갈라질 위험이 있었다 — 공용 순수 함수로 뽑아 두 곳이
+// 같은 걸 쓰게 한다. `cell`은 getMonthGrid가 돌려주는 { date, inCurrentMonth } 형태.
+export function getDayCellClassNames(cell, { today, selectedDate } = {}) {
+  const weekdayKind = getWeekdayKind(cell.date);
+  const holiday = getHolidayInfo(cell.date);
+  const classNames = ['schedule-day-cell'];
+  if (weekdayKind !== 'weekday') classNames.push(`is-${weekdayKind}`);
+  if (holiday) classNames.push('is-holiday');
+  if (!cell.inCurrentMonth) classNames.push('is-outside');
+  if (cell.date === today) classNames.push('is-today');
+  if (cell.date === selectedDate) classNames.push('is-selected');
+  return classNames.join(' ');
 }
 
 // P6.6 결정(critical-reviewer 지적, P6.4 리뷰): schedule.is_recurring이 boolean이 아닌 값(예:

@@ -25,6 +25,9 @@
   --priority-mid-bg: oklch(32% 0.05 85 / 0.4);
   --priority-low-text: oklch(65% 0.01 260);
   --priority-low-bg: oklch(30% 0.01 260);
+  /* P12.6: 토=파랑/일=빨강은 대부분의 달력 UI에서 통용되는 배색이라 그대로 따른다. 일요일은
+     기존 --danger(빨강 계열)를 재사용해 색 토큰을 늘리지 않는다. */
+  --weekend-sat-text: oklch(72% 0.13 250);
 }
 
 * {
@@ -171,6 +174,44 @@ body {
   margin-bottom: 10px;
 }
 
+/* P12.5: 마감일 입력을 제목 입력과 한 행(.project-edit-row)에 나란히 넣으면서, 이 안의
+   .todo-add-input(전역 규칙 width:100%)이 flex row 맥락에서 날짜 입력 자리를 침범하지 않게
+   범위를 좁혀 재정의한다. .todo-add-form은 이 컴포넌트(ProjectDetail.jsx의 AddTodoForm)에만
+   쓰이는 클래스라 다른 화면에 영향 없다(grep으로 확인). */
+.todo-add-form .todo-add-input {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+/* P12.5 critical-reviewer 지적: .project-edit-row의 공유 규칙(input[type=date]도 flex:1)을
+   그대로 두면 제목 입력과 날짜 입력이 폭을 반씩 나눠 가져 주 입력인 제목 칸이 좁아진다 —
+   이 폼(.todo-add-form)에서만 날짜 입력을 내용 폭으로 고정해 제목이 남는 공간을 전부 갖게
+   했었다. P12.19(critical-reviewer 지적, 죽은 규칙 정리): 날짜 입력이 DueDatePicker(일반
+   div, .project-edit-row select/input[type=date]의 flex:1 대상이 아님)로 바뀌면서 이 규칙이
+   더는 아무것도 선택하지 않게 됐다 — DueDatePicker는 기본 flex(0 1 auto)라 원래 의도(제목이
+   남는 공간을 다 가져가고 날짜는 내용 폭만 차지)가 별도 규칙 없이도 그대로 성립해 삭제한다. */
+
+/* 스크린리더에는 남기고 화면에는 안 보이게 하는 표준 패턴 — ProjectDetail.jsx의
+   AddTodoForm처럼 시각적 제출 버튼 없이 Enter로만 제출하는 폼에서, 날짜 입력처럼 암묵적
+   제출(implicit submission)을 막는 필드가 섞이면 브라우저가 Enter를 무시할 수 있어
+   (critical-reviewer 지적, P12.5 재검증: 실제로 날짜 입력에서 Enter가 안 먹는 것을 확인)
+   숨은 submit 버튼을 하나 둬 항상 제출되게 한다. P12.19(critical-reviewer 지적, 재검증):
+   AddTodoForm의 날짜 입력이 DueDatePicker(버튼)로 바뀌면서 암묵적 제출을 막는 필드가 이제
+   제목 하나뿐이라 이 버튼이 없어도 제목 필드의 Enter 제출은 원래 된다 — 그래도 무해하고 다른
+   폼에서도 재사용하는 범용 유틸 클래스라 방어적으로 남겨 둔다(ProjectDetail.jsx 참고). */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .todo-add-input {
   width: 100%;
   background: var(--card-bg);
@@ -203,6 +244,21 @@ body {
   align-items: center;
 }
 
+/* P12.4 critical-reviewer 지적: .project-add-form은 Projects.jsx(AddProjectForm)뿐 아니라
+   TodoAddForm.jsx(P3.3, 할일전체 화면)도 그대로 공유한다 — 처음엔 이 클래스 자체를 column으로
+   바꿔 마감일 필드를 위한 두 줄 레이아웃을 만들려 했는데, 그러면 TodoAddForm의 한 줄 레이아웃
+   (제목+프로젝트 select+버튼)까지 세로로 쌓이며 깨졌다(렌더링 확인 안 하고 넘어갔던 회귀).
+   그래서 별도 modifier 클래스로 범위를 좁혔다 — 이 클래스를 실제로 붙인 곳이 두 줄, 안 붙인
+   곳이 원래 한 줄이라는 뜻이며 특정 컴포넌트 이름으로 고정된 규칙이 아니다. P12.5에서
+   TodoAddForm.jsx도 필드가 4개(제목/프로젝트/마감일/버튼)로 늘어 같은 이유로 이 modifier를
+   붙였다(AddProjectForm과 TodoAddForm 둘 다 두 줄) — 여전히 한 줄인 곳은 이 클래스를 안 붙인
+   .project-add-form 사용처뿐이다.
+*/
+.project-add-form--stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
 .project-add-form .todo-add-input {
   flex: 1;
   min-width: 0;
@@ -226,15 +282,19 @@ body {
 }
 
 .project-edit-row select,
-.project-edit-row input[type='date'] {
+.project-edit-row input[type='date'],
+.project-edit-row .field-toggle-group {
   flex: 1;
   min-width: 0;
 }
 
-/* P3.3: .project-add-form은 P2.5(장기/단기 고정 2글자 select)뿐 아니라 이제 Todos.jsx의
-   프로젝트명 select(길이 제한 없는 사용자 데이터)도 쓴다 — 옵션 텍스트가 길면 select가
+/* P3.3: .project-add-form은 원래 P2.5(장기/단기 고정 2글자 select)뿐 아니라 Todos.jsx의
+   프로젝트명 select(길이 제한 없는 사용자 데이터)도 썼다 — 옵션 텍스트가 길면 select가
    부풀어 옆의 제목 입력창을 0폭으로 찌그러뜨리는, P1.7이 이미 겪은 것과 같은 클래스의
-   버그라 여기도 min-width:0으로 줄어들 수 있게 하고 최대폭을 제한한다(critical-reviewer 지적). */
+   버그라 여기도 min-width:0으로 줄어들 수 있게 하고 최대폭을 제한한다(critical-reviewer 지적).
+   critical-reviewer 지적(P12.13 4차 재검증): P12.13 이후 AddProjectForm(Projects.jsx)의
+   장기/단기 유형은 FieldToggleGroup으로 바뀌어 더는 select가 아니다 — 이 규칙은 이제
+   TodoAddForm.jsx의 프로젝트명 select에만 적용된다. */
 .project-add-form select {
   min-width: 0;
   max-width: 45%;
@@ -278,6 +338,42 @@ body {
 }
 
 .project-edit-save:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* P12.11: 편집 폼(프로젝트/할일/일정)의 취소 버튼이 지금까지 뒤로가기용 .back-button(텍스트
+   링크 스타일)을 재사용해 옆의 저장 버튼(pill 버튼)과 크기/모양이 안 맞았다 — .project-edit-save와
+   같은 박스 모델(패딩/폰트/radius/테두리 두께)을 쓰되 색만 보조(muted) 계열로 낮춰서, 나란히
+   있을 때 "주 액션/보조 액션"으로만 구분되게 한다. */
+.project-edit-cancel {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  text-align: center;
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+/* critical-reviewer 지적(Medium): :disabled 가드가 없어서 저장 진행 중(disabled=true)에도
+   마우스를 올리면 배경/글자색이 바뀌어 "눌리는 것처럼" 보였다 — 저장 버튼에는 애초에 hover
+   자체가 없어 비대칭이기도 했다. */
+.project-edit-cancel:hover:not(:disabled) {
+  background: var(--sidebar-hover);
+  color: var(--text);
+}
+
+.project-edit-cancel:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.project-edit-cancel:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -860,6 +956,14 @@ body {
   padding-bottom: 6px;
 }
 
+.schedule-month-grid th.is-saturday {
+  color: var(--weekend-sat-text);
+}
+
+.schedule-month-grid th.is-sunday {
+  color: var(--danger);
+}
+
 .schedule-month-grid td {
   text-align: center;
   padding: 1px;
@@ -902,6 +1006,75 @@ body {
 .schedule-day-cell.is-selected {
   background: var(--accent-soft-bg);
   border-color: var(--accent-soft-border);
+}
+
+.schedule-day-cell.is-saturday .schedule-day-number {
+  color: var(--weekend-sat-text);
+}
+
+.schedule-day-cell.is-sunday .schedule-day-number {
+  color: var(--danger);
+}
+
+/* P12.6(critical-reviewer 지적으로 주석 정정): is-today(963)와 주말(973/977) 규칙은 특이도가
+   같은 (0,3,0)이라 소스 순서상 뒤에 있는 주말 규칙이 이미 이긴다 — 즉 지금도 주말 색이 보인다.
+   다만 그 결과가 "이 파일에서 주말 규칙을 나중에 썼기 때문"이라는 우연에 기대고 있어서, 누가
+   두 블록의 순서를 바꾸면 조용히 뒤집힌다. 두 클래스를 모두 거는 (0,4,0) 규칙을 별도로 둬서
+   순서와 무관하게 항상 주말 색이 이기도록 고정한다. font-weight는 .is-today 규칙 값을 그대로
+   물려받는다(여기선 color만 다시 정한다 — "오늘"이라는 신호는 굵기로만 남는다). */
+.schedule-day-cell.is-today.is-saturday .schedule-day-number {
+  color: var(--weekend-sat-text);
+}
+
+.schedule-day-cell.is-today.is-sunday .schedule-day-number {
+  color: var(--danger);
+}
+
+/* P12.6(critical-reviewer 지적, High): is-outside(959)는 버튼 전체의 color만 흐리게 하고
+   .schedule-day-number는 그 색을 상속받는 구조인데, 주말 규칙(973/977)이 .schedule-day-number에
+   색을 직접 지정해버려서 다른 달 주말 날짜가 이번 달 주말과 똑같이 진하게 보이던 회귀 —
+   "다른 달"이라는 신호가 사라졌었다. opacity로 주말 색 자체를 흐리게 해서 두 신호(주말=색,
+   다른 달=흐림)를 동시에 유지한다. */
+.schedule-day-cell.is-outside.is-saturday .schedule-day-number,
+.schedule-day-cell.is-outside.is-sunday .schedule-day-number {
+  opacity: 0.55;
+}
+
+/* P12.8: 공휴일도 "주말과 같은 계열" 색으로 표시한다(기획 요청) — 일요일과 같은 --danger를
+   재사용한다. is-holiday가 평일에 붙는 경우(예: 신정, 광복절)도 있으므로 .is-saturday/.is-sunday와
+   같은 방식으로 .schedule-day-number에 직접 색을 건다. */
+.schedule-day-cell.is-holiday .schedule-day-number {
+  color: var(--danger);
+}
+
+/* P12.6에서 겪은 것과 같은 종류의 문제(동일 특이도 규칙이 소스 순서에 우연히 기대는 것)를
+   처음부터 피하기 위해, 공휴일이 겹칠 수 있는 조합(토요일=파랑, 오늘=accent)마다 명시적으로
+   (0,4,0) 규칙을 둬서 공휴일 색이 항상 이기게 한다. 일요일은 이미 같은 --danger라 별도 규칙이
+   필요 없다(색이 같아 누가 이겨도 결과가 같음). */
+.schedule-day-cell.is-saturday.is-holiday .schedule-day-number,
+.schedule-day-cell.is-today.is-holiday .schedule-day-number {
+  color: var(--danger);
+}
+
+/* 오늘 + 주말 + 공휴일이 동시에 겹치는 드문 경우(예: 토요일인 대체공휴일이 오늘인 경우) — 위
+   두 개의 (0,4,0) 규칙끼리는 서로 다른 색(파랑 vs 빨강)을 주장하며 특이도가 같아 다시 소스
+   순서에 기대게 되므로, (0,5,0) 규칙으로 공휴일 색이 확실히 이기도록 고정한다. */
+.schedule-day-cell.is-today.is-saturday.is-holiday .schedule-day-number,
+.schedule-day-cell.is-today.is-sunday.is-holiday .schedule-day-number {
+  color: var(--danger);
+}
+
+/* is-outside(959-961/995-1003)와 같은 이유로, 다른 달의 공휴일도 "다른 달" 흐림 신호가
+   사라지지 않게 opacity를 별도로 건다. */
+.schedule-day-cell.is-outside.is-holiday .schedule-day-number {
+  opacity: 0.55;
+}
+
+.schedule-holiday-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--danger);
+  margin: 0 0 6px;
 }
 
 .schedule-day-number {
@@ -1021,6 +1194,26 @@ body {
   color: var(--text-faint);
 }
 
+.schedule-weekday-label.is-saturday {
+  color: var(--weekend-sat-text);
+}
+
+.schedule-weekday-label.is-sunday {
+  color: var(--danger);
+}
+
+/* P12.8(critical-reviewer 지적, Medium): 요일 라벨도 숫자(.schedule-day-cell.is-holiday
+   .schedule-day-number)와 같은 규칙을 탄다 — is-holiday는 평일 라벨에도 붙을 수 있으니 기본
+   규칙을, is-saturday와는 특이도가 같아 소스 순서에 기대지 않도록 조합 규칙을 둔다. is-sunday는
+   이미 같은 --danger라 조합이 필요 없다(P12.6/P12.8 셀 규칙과 같은 이유). */
+.schedule-weekday-label.is-holiday {
+  color: var(--danger);
+}
+
+.schedule-weekday-label.is-saturday.is-holiday {
+  color: var(--danger);
+}
+
 .schedule-recurring-toggle {
   display: flex;
   align-items: center;
@@ -1060,6 +1253,261 @@ body {
 }
 
 .schedule-weekday-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* P12.13(사람 결정): 옵션이 고정된 적은 수(장기/단기, 진행중/완료/보류, 우선순위)인 select는
+   네이티브 select 드롭다운을 쓰지 않고 이 토글 버튼 그룹으로 대체한다 — 팝업 자체가 없으니
+   Windows에서 select 옵션 목록이 OS 네이티브 콤보박스로 그려져 다크 테마를 못 따르는 문제
+   (아래 P12.13 select 규칙 주석 참고)가 원천적으로 생기지 않는다. .schedule-weekday-chip
+   (P5.6, 다중 선택 요일 토글)과 같은 패턴이되 단일 선택(radio류)이라 별도 클래스로 둔다. */
+.field-toggle-group {
+  display: flex;
+  gap: 4px;
+}
+
+.field-toggle-option {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  flex: 1;
+  text-align: center;
+  padding: 8px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--card-border);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* critical-reviewer 지적(Medium): :hover(0,3,0)가 .active(0,2,0)보다 특이도가 높아서, 선택된
+   버튼에 마우스를 올리면 accent 배경이 sidebar-hover로 덮여 선택 표시가 사라졌다 —
+   :not(.active)로 범위를 좁혀 선택된 버튼은 hover에서도 accent 배경을 유지한다. */
+.field-toggle-option:hover:not(:disabled):not(.active) {
+  background: var(--sidebar-hover);
+}
+
+.field-toggle-option.active {
+  background: var(--accent-soft-bg);
+  border-color: var(--accent-soft-border);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.field-toggle-option:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.field-toggle-option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- P12.13: select/date 입력 트리거 테마 통일 ----
+   옵션이 고정 소수인 select 3종류(장기/단기, 진행중/완료/보류, 우선순위) — 실제 인스턴스로는
+   4곳(Projects.jsx AddProjectForm의 유형, ProjectEditForm.jsx의 유형+상태, TodoEditForm.jsx의
+   우선순위. critical-reviewer 지적: 이전 주석/backlog 필드가 "3개"로 세서 어긋나 있었음,
+   정정)은 위 .field-toggle-*로 대체했다. 여기 남은 select는 옵션 목록이 늘어날 수 있는
+   "소속 프로젝트" select 3곳(TodoAddForm.jsx/TodoEditForm.jsx/Memos.jsx)뿐이다 — 항목 수가
+   가변이라 토글 버튼으로 바꿀 수 없어 네이티브 select를 유지한다(사람 결정, 2026-09-25).
+   date 입력은 당시 7곳 전부(.project-edit-row input[type='date']가 전부 커버) 대상이었으나,
+   P12.19(critical-reviewer 지적: 이 주석이 갱신 안 돼 있었음, 정정)에서 프로젝트/할일 관련
+   5곳이 DueDatePicker(커스텀 컴포넌트, 이 규칙의 대상이 아님)로 바뀌어, 이제 이 규칙은
+   일정 화면의 날짜 입력 2곳(ScheduleAddForm.jsx/ScheduleEditForm.jsx)에만 적용된다.
+   이 파일 맨 끝에 모아 둔 이유: 위쪽의 각 컨텍스트별 규칙(.project-add-form select 등)이 이미
+   background/padding을 shorthand로 선언하고 있어서, 같은 선택자에 더 앞쪽에서 끼워 넣으면
+   나중에 나오는 그 shorthand 선언이 내가 추가한 background-image/padding-right을 조용히
+   되돌려버린다(같은 특이도라 소스 순서가 이긴다) — 그래서 파일에서 가장 나중에 선언해 항상
+   이기도록 한다.
+   **알려진 한계(critical-reviewer 지적, Playwright 스크린샷으로 실측 확인, 사람 결정으로 수용)**:
+   이 3곳의 열린 옵션 목록(드롭다운 팝업)은 Windows에서 Chromium이 OS 네이티브 콤보박스
+   컨트롤로 그려서, 아래 option 규칙(배경/글자색)과 :root의 color-scheme:dark로는 못 고친다
+   — electron/main.js의 nativeTheme.themeSource='dark'도 시도했지만 이 팝업에는 마찬가지로
+   효과가 없었다(critical-reviewer 지적: main.js 주석이 "효과가 있다"는 듯 적혀 있었던 걸
+   정정 — 그 설정 자체는 다른 OS 네이티브 UI를 위해 남겨두되 이 팝업 문제의 해결책은 아님).
+   CSS/Electron API로는 더 고칠 수 없는 플랫폼 제약으로 확인돼 그대로 둔다(닫힌 상태 필드
+   모양은 다른 select들과 동일하게 통일됨). */
+.project-add-form select,
+.project-edit-row select,
+.memo-project-select {
+  appearance: none;
+  -webkit-appearance: none;
+  color-scheme: dark;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 16px) center,
+    calc(100% - 11px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 26px;
+  cursor: pointer;
+}
+
+/* critical-reviewer 지적(High, 이후 select 3종류가 토글로 바뀌면서 남은 네이티브 select는
+   2개(TodoAddForm.jsx/TodoEditForm.jsx)로 줄었다 — "나머지 6개"는 그 이전 개수라 정정):
+   .memo-project-select만 radius가 12px라 나머지 select들(10px)과 "같은 모양"이 아니었다 —
+   done_when이 명시적으로 요구하는 항목(radius)만 맞춘다. padding/font-size는 done_when이
+   요구하지 않고, 메모 편집기 안의 다른 입력(.memo-title-input 등)과 짝을 맞추려고 일부러
+   다르게 잡은 값이라 그대로 둔다. */
+.memo-project-select {
+  border-radius: 10px;
+}
+
+.project-add-form select:hover:not(:disabled),
+.project-edit-row select:hover:not(:disabled),
+.memo-project-select:hover:not(:disabled) {
+  border-color: var(--accent-soft-border);
+}
+
+.project-add-form select:focus-visible,
+.project-edit-row select:focus-visible,
+.memo-project-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.project-add-form select:disabled,
+.project-edit-row select:disabled,
+.memo-project-select:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* 펼쳐진 옵션 목록의 배경/글자색을 노려서 넣지만, critical-reviewer 지적(재검증)대로 이
+   프로젝트(Windows + 이 Electron/Chromium 버전)에서는 실제로 효과가 없는 것으로 실측 확인됐다
+   (위 "알려진 한계" 주석 참고) — 그래도 규칙 자체는 지워지지 않는데, 이 플랫폼 조합에서만
+   안 먹는 것이지 CSS 자체가 틀린 건 아니고(다른 OS/Chromium 조합에서는 실제로 반영될 수 있음),
+   지워도 얻는 게 없어 남겨둔다. --card-bg(alpha 0.75, 반투명)를 안 쓰고 --sidebar-bg(불투명)를
+   쓰는 이유: 팝업이 어떤 배경과 합성될지 예측할 수 없어 반투명 값의 결과를 보장 못하므로,
+   혹시라도 반영되는 환경에서는 최소한 불투명 값이 안전하다. */
+.project-add-form select option,
+.project-edit-row select option,
+.memo-project-select option {
+  background: var(--sidebar-bg);
+  color: var(--text);
+}
+
+/* date 입력에도 select와 같은 수준의 상태 피드백을 맞춘다. 달력 아이콘은 :root의
+   color-scheme:dark 덕에 이미 밝은 색으로 뜨지만(브라우저 기본 다크 렌더링), opacity로
+   대기/hover 대비를 줘서 다른 컨트롤과 상태 언어를 통일한다 — 아이콘 자체를 --accent로
+   덧칠하는 filter 값은 브라우저마다 달라 깨지기 쉬워 opacity만 쓴다. */
+.project-edit-row input[type='date']:hover:not(:disabled) {
+  border-color: var(--accent-soft-border);
+}
+
+.project-edit-row input[type='date']:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.project-edit-row input[type='date']:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.project-edit-row input[type='date']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.project-edit-row input[type='date']:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+.project-edit-row input[type='date']:disabled::-webkit-calendar-picker-indicator {
+  cursor: default;
+  opacity: 0.4;
+}
+
+/* ---- P12.19: 프로젝트/할일 마감일 커스텀 날짜 선택기 ----
+   트리거는 기존 네이티브 date input과 같은 박스 모델(배경/테두리/radius/패딩/폰트)을 쓰고,
+   팝오버 안의 월간 그리드는 ScheduleMonthView.jsx와 완전히 같은 클래스(.schedule-month-grid/
+   .schedule-day-cell 등)를 재사용해 일정 화면과 시각적으로 동일하게 보이게 한다 — 주말/공휴일
+   색 규칙은 이미 위에서(P12.6/P12.8) 정의돼 있어 여기서 다시 선언하지 않는다. */
+.due-date-picker {
+  position: relative;
+}
+
+.due-date-trigger {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12.5px;
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+
+.due-date-trigger:hover:not(:disabled) {
+  border-color: var(--accent-soft-border);
+}
+
+.due-date-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.due-date-trigger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.due-date-placeholder {
+  color: var(--text-faint);
+}
+
+/* critical-reviewer 발견 전 자체 실측(Playwright 스크린샷): left:0 기준으로 트리거 왼쪽에
+   맞춰 오른쪽으로 펼치면, 이 앱 폭(420px)에서 트리거가 보통 행의 중간~오른쪽에 있어 팝오버가
+   카드/창 오른쪽 경계를 넘어가 가로 스크롤이 생겼다 — right:0으로 트리거 오른쪽 끝에 맞춰
+   왼쪽으로 펼치도록 바꾸고 폭도 220px로 줄였다(월간 그리드 7칸이 들어갈 최소 폭은 유지). */
+.due-date-popover {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 220px;
+  max-width: calc(100vw - 32px);
+  background: var(--sidebar-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.due-date-popover .schedule-month-grid {
+  font-size: 10.5px;
+}
+
+.due-date-clear {
+  all: unset;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  text-align: center;
+  cursor: pointer;
+  margin-top: 8px;
+  padding: 6px 0;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.due-date-clear:hover {
+  background: var(--sidebar-hover);
+  color: var(--text);
+}
+
+.due-date-clear:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

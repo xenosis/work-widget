@@ -2,22 +2,34 @@
 // eslint max-lines(300)에 근접해(critical-reviewer 지적) 여기로 뺐다. 상태/핸들러는 그대로
 // 로컬 useState이며, 실제 저장/삭제는 부모가 props로 넘긴 onSave/onDelete가 담당한다.
 import { useState } from 'react';
+import FieldToggleGroup from './FieldToggleGroup.jsx';
+import DueDatePicker from './DueDatePicker.jsx';
+import { isValidDateString } from '../lib/dateRange.js';
 
 const PROJECT_TYPES = ['장기', '단기'];
 const PROJECT_STATUSES = ['진행중', '완료', '보류'];
+const PROJECT_TYPE_OPTIONS = PROJECT_TYPES.map((t) => ({ value: t, label: t }));
+const PROJECT_STATUS_OPTIONS = PROJECT_STATUSES.map((s) => ({ value: s, label: s }));
 
 // P2.5: 요약 카드를 보기/수정 두 모드로 전환. 팝업 없이 같은 카드 안에서 바로 편집하는
 // 방식(P2.3의 "별도 팝업 없음" 기조와 통일).
 export function EditProjectForm({ project, onSave, onCancel }) {
   const [name, setName] = useState(project.name);
-  // 구버전/손상 레코드가 enum 밖 값을 가진 채로 들어와도 <select>가 비제어 상태(value=undefined)로
-  // 빠지지 않도록 알려진 값이 아니면 첫 옵션으로 폴백한다(critical-reviewer 지적: 폴백이 없으면
-  // "화면엔 첫 옵션이 보이는데 저장 시 그 필드가 통째로 빠지는" 표시-저장 불일치가 생김).
+  // 구버전/손상 레코드가 enum 밖 값을 가진 채로 들어와도(P12.13 이후: FieldToggleGroup의
+  // 버튼 중 어느 것도 active가 안 된 채로 알 수 없는 값이 그대로 저장되지 않도록) 알려진
+  // 값이 아니면 첫 옵션으로 폴백한다(critical-reviewer 지적: 폴백이 없으면 "화면엔 아무
+  // 버튼도 선택 안 된 것처럼 보이는데 저장 시 원래 값이 그대로 남는" 표시-저장 불일치가 생김).
   const [type, setType] = useState(PROJECT_TYPES.includes(project.type) ? project.type : PROJECT_TYPES[0]);
   const [status, setStatus] = useState(
     PROJECT_STATUSES.includes(project.status) ? project.status : PROJECT_STATUSES[0]
   );
-  const [dueDate, setDueDate] = useState(project.due_date ?? '');
+  // critical-reviewer 지적(P12.19 리뷰, High): 형식 검증 없이 project.due_date를 그대로
+  // 넘기면(문자열이 아니거나 형식이 깨진 손상 데이터) DueDatePicker 마운트 시 크래시로 이어질
+  // 수 있었다 — DueDatePicker 자체도 방어하지만, 여기서도 TodoEditForm.jsx의 toDateInputValue와
+  // 같은 방식으로 정규화해 두 폼이 손상 데이터를 똑같이(빈 값으로) 다루게 한다. 형태만 보는
+  // 정규식 대신 isValidDateString(왕복 검증 포함)을 써서 "2026-13-45"처럼 형태는 맞지만 실제로
+  // 없는 날짜도 걸러낸다(critical-reviewer 지적 재검증 2라운드).
+  const [dueDate, setDueDate] = useState(isValidDateString(project.due_date) ? project.due_date : '');
   const [description, setDescription] = useState(project.description ?? '');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
@@ -53,28 +65,27 @@ export function EditProjectForm({ project, onSave, onCancel }) {
         onChange={(e) => setName(e.target.value)}
         placeholder="프로젝트명"
       />
+      {/* critical-reviewer 지적(Playwright 스크린샷으로 실측): select 2개+date 한 줄은
+          괜찮았지만, 토글 버튼 그룹(2+3개, 총 5개 버튼)까지 한 줄에 다 넣으니 420px 폭에서
+          "진행중"이 줄바꿈되고 나머지 버튼/날짜 입력이 잘렸다 — 상태 토글(옵션 3개, 가장 넓음)
+          만 별도 줄로 빼서 각 버튼이 충분한 폭을 갖게 한다. */}
       <div className="project-edit-row">
-        <select value={type} disabled={saving} onChange={(e) => setType(e.target.value)}>
-          {PROJECT_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-        <select value={status} disabled={saving} onChange={(e) => setStatus(e.target.value)}>
-          {PROJECT_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={dueDate}
+        <FieldToggleGroup
+          options={PROJECT_TYPE_OPTIONS}
+          value={type}
+          onChange={setType}
           disabled={saving}
-          onChange={(e) => setDueDate(e.target.value)}
+          ariaLabel="프로젝트 유형"
         />
+        <DueDatePicker value={dueDate} onChange={setDueDate} disabled={saving} />
       </div>
+      <FieldToggleGroup
+        options={PROJECT_STATUS_OPTIONS}
+        value={status}
+        onChange={setStatus}
+        disabled={saving}
+        ariaLabel="프로젝트 상태"
+      />
       <textarea
         className="project-edit-description"
         value={description}
@@ -88,7 +99,7 @@ export function EditProjectForm({ project, onSave, onCancel }) {
         <button type="submit" className="project-edit-save" disabled={saving}>
           저장
         </button>
-        <button type="button" className="back-button" disabled={saving} onClick={onCancel}>
+        <button type="button" className="project-edit-cancel" disabled={saving} onClick={onCancel}>
           취소
         </button>
       </div>

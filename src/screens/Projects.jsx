@@ -18,12 +18,21 @@ import { applyProjectUpdate, removeProjectCascade } from '../lib/projectMutation
 import { applyProjectStatusForTodos } from '../lib/todoMutations.js';
 import ProjectCard from '../components/ProjectCard.jsx';
 import ProjectDetail from '../components/ProjectDetail.jsx';
+import FieldToggleGroup from '../components/FieldToggleGroup.jsx';
+import DueDatePicker from '../components/DueDatePicker.jsx';
 
 const PROJECT_TYPES = ['장기', '단기'];
+// critical-reviewer 지적(P12.13 재검증): 별도 리터럴로 두면 한쪽만 고쳐질 위험이 있어
+// PROJECT_TYPES에서 파생시킨다(ProjectEditForm.jsx의 PROJECT_TYPE_OPTIONS와 같은 패턴).
+const PROJECT_TYPE_OPTIONS = PROJECT_TYPES.map((t) => ({ value: t, label: t }));
 
 function AddProjectForm({ onAdd, defaultType }) {
   const [name, setName] = useState('');
   const [type, setType] = useState(defaultType);
+  // P12.4: 마감일을 추가 폼에서 바로 선택할 수 있게 함 — 지금까지는 상세→수정에 들어가야만
+  // 설정 가능했다. 선택 입력이라 비워도 되고(due_date=null 유지), B2.1의 "바로 타이핑해서
+  // 추가"(별도 팝업 없음)와는 상충하지 않는다고 판단했다(같은 폼 안의 선택 필드일 뿐).
+  const [dueDate, setDueDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
@@ -34,8 +43,9 @@ function AddProjectForm({ onAdd, defaultType }) {
     setSaving(true);
     setSaveError(null);
     try {
-      await onAdd(trimmed, type);
+      await onAdd(trimmed, type, dueDate || null);
       setName('');
+      setDueDate('');
     } catch (err) {
       console.error('프로젝트 저장 실패:', err);
       setSaveError('프로젝트를 저장하지 못했습니다.');
@@ -45,7 +55,7 @@ function AddProjectForm({ onAdd, defaultType }) {
   }
 
   return (
-    <form className="project-add-form" onSubmit={handleSubmit}>
+    <form className="project-add-form project-add-form--stacked" onSubmit={handleSubmit}>
       <input
         type="text"
         className="todo-add-input"
@@ -57,16 +67,19 @@ function AddProjectForm({ onAdd, defaultType }) {
           if (saveError) setSaveError(null);
         }}
       />
-      <select value={type} disabled={saving} onChange={(e) => setType(e.target.value)}>
-        {PROJECT_TYPES.map((t) => (
-          <option key={t} value={t}>
-            {t}
-          </option>
-        ))}
-      </select>
-      <button type="submit" className="project-edit-save" disabled={saving}>
-        추가
-      </button>
+      <div className="project-edit-row">
+        <FieldToggleGroup
+          options={PROJECT_TYPE_OPTIONS}
+          value={type}
+          onChange={setType}
+          disabled={saving}
+          ariaLabel="프로젝트 유형"
+        />
+        <DueDatePicker value={dueDate} onChange={setDueDate} disabled={saving} />
+        <button type="submit" className="project-edit-save" disabled={saving}>
+          추가
+        </button>
+      </div>
       {saveError && <p className="data-issue-notice">{saveError}</p>}
     </form>
   );
@@ -117,16 +130,16 @@ export default function Projects() {
 
   // B2.1 "별도 팝업 없이 입력창에서 바로 타이핑해서 추가" — createTodo(todoFactory.js)가 B3.2
   // 스키마를 채운다. B4.3(완료 상태 프로젝트에 할일이 추가되면 자동으로 "진행중")도 함께 반영.
-  async function handleAddTodo(projectId, title) {
-    const nextTodos = [...data.todos, createTodo(projectId, title)];
+  async function handleAddTodo(projectId, title, dueDate) {
+    const nextTodos = [...data.todos, createTodo(projectId, title, dueDate)];
     const nextProjects = applyProjectStatusForTodos(data.projects, projectId, nextTodos);
     const newData = { ...data, todos: nextTodos, projects: nextProjects };
     await window.api.saveData(newData);
     setData(newData);
   }
 
-  async function handleAddProject(name, type) {
-    const nextProjects = [...data.projects, createProject(name, type)];
+  async function handleAddProject(name, type, dueDate) {
+    const nextProjects = [...data.projects, createProject(name, type, dueDate)];
     const newData = { ...data, projects: nextProjects };
     await window.api.saveData(newData);
     setData(newData);
@@ -174,7 +187,7 @@ export default function Projects() {
           memos={projectMemos}
           memoDroppedCount={memoDroppedCount}
           onBack={() => setSelectedProjectId(null)}
-          onAddTodo={(title) => handleAddTodo(selectedProjectId, title)}
+          onAddTodo={(title, dueDate) => handleAddTodo(selectedProjectId, title, dueDate)}
           onSaveProject={(updates) => handleSaveProject(selectedProjectId, updates)}
           onDeleteProject={() => handleDeleteProject(selectedProjectId)}
         />

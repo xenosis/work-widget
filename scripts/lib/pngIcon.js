@@ -1,6 +1,9 @@
-// P7.1이 만든 순수 Node(zlib) PNG 생성 로직 — P8.1에서 앱 아이콘(.ico)도 같은 디자인(청록 원 +
-// 흰 체크마크)으로 만들기 위해 scripts/gen-tray-icon.js에서 공유 모듈로 뽑았다. 트레이 아이콘과
-// 로직을 이원화하면 브랜드 색/모양이 서로 어긋날 수 있어 하나로 합쳤다.
+// P7.1이 만든 순수 Node(zlib) PNG 생성 로직 — P8.1에서 앱 아이콘(.ico)도 같은 디자인(남색 원 +
+// 흰 서류가방 실루엣)으로 만들기 위해 scripts/gen-tray-icon.js에서 공유 모듈로 뽑았다. 트레이
+// 아이콘과 로직을 이원화하면 브랜드 색/모양이 서로 어긋날 수 있어 하나로 합쳤다.
+// P13 결정(사람, 2026-09-25): "업무 위젯" 리브랜딩(Deskdock)의 일부로 기존 청록 원+체크마크
+// 디자인을 남색 원+서류가방(briefcase) 실루엣으로 교체 — "업무용 위젯"이라는 인상을 더 직접
+// 전달하고, 하늘색 계열이던 배경색도 더 전문적인 남색으로 바꿨다.
 'use strict';
 
 const zlib = require('zlib');
@@ -35,22 +38,34 @@ function chunk(type, data) {
   return Buffer.concat([lenBuf, typeBuf, data, crcBuf]);
 }
 
-// 이 앱의 accent 색(src/index.css의 --accent: oklch(75% 0.15 200), 다크 글래스 UI의 청록
-// 포인트 컬러)을 근사한 RGB — 정확한 oklch 변환 도구가 없어 시각적으로 비슷한 청록을 골랐다.
-const ACCENT = [56, 199, 201];
-const WHITE = [255, 255, 255];
+// P13 결정: "전문적인" 톤을 원해 기존 청록(하늘색 계열) 대신 깊은 남색을 골랐다 — 정확한 브랜드
+// 컬러 시스템은 없고, 시각적으로 "네이비/업무용" 인상을 주는 RGB를 직접 골랐다.
+const ACCENT = [37, 66, 112];
+const WHITE = [246, 248, 251];
 
-function distToSegment(px, py, ax, ay, bx, by) {
-  const abx = bx - ax;
-  const aby = by - ay;
-  const apx = px - ax;
-  const apy = py - ay;
-  const abLen2 = abx * abx + aby * aby;
-  let t = abLen2 === 0 ? 0 : (apx * abx + apy * aby) / abLen2;
-  t = Math.max(0, Math.min(1, t));
-  const cx2 = ax + abx * t;
-  const cy2 = ay + aby * t;
-  return Math.sqrt((px - cx2) * (px - cx2) + (py - cy2) * (py - cy2));
+// 점 (x,y)가 (x0,y0)-(x1,y1) 사각형(모서리 반지름 r)의 안쪽인지 — 서류가방 실루엣을 사각형
+// 조합으로 그리기 위한 헬퍼. 체크마크 때 쓰던 두 점 사이 거리 계산(distToSegment) 대신, 이번
+// 도형은 채워진 영역 판정이 더 간단해서 이 방식을 쓴다.
+function inRoundedRect(x, y, x0, y0, x1, y1, r) {
+  if (x < x0 || x > x1 || y < y0 || y > y1) return false;
+  const withinXCore = x >= x0 + r && x <= x1 - r;
+  const withinYCore = y >= y0 + r && y <= y1 - r;
+  if (withinXCore || withinYCore) return true; // 모서리 라운딩이 필요 없는 십자 영역
+  const cx = x < x0 + r ? x0 + r : x1 - r;
+  const cy = y < y0 + r ? y0 + r : y1 - r;
+  const dx = x - cx;
+  const dy = y - cy;
+  return dx * dx + dy * dy <= r * r;
+}
+
+// 서류가방(briefcase) 실루엣 — 업무용 위젯이라는 인상을 직접 전달하기 위한 심볼(P13 결정).
+// 32x32 가상 좌표 기준으로 정의하고, 실제 크기에 맞춰 scale로 나눠(virtual 좌표로 변환) 판정한다.
+function isBriefcase(xv, yv) {
+  const inBody = inRoundedRect(xv, yv, 5, 12, 27, 25, 2.5);
+  const inHandle = inRoundedRect(xv, yv, 11, 6, 21, 13, 1.5);
+  const handleHollow = xv >= 13 && xv <= 19 && yv >= 8 && yv <= 14;
+  const inSeam = inBody && yv >= 17.5 && yv <= 18.5; // 뚜껑이 갈라지는 선 — 배경색으로 뺀다
+  return (inBody || (inHandle && !handleHollow)) && !inSeam;
 }
 
 function pixelAt(size, x, y) {
@@ -68,18 +83,11 @@ function pixelAt(size, x, y) {
     alpha = Math.max(0, Math.round(255 * (r + 0.5 - dist)));
   }
 
-  // 체크마크 좌표는 32x32 기준으로 정하고 다른 크기는 비례 축소한다.
+  // 도형은 32x32 기준으로 정하고 다른 크기는 비례 축소한다(체크마크 때와 동일한 관례).
   const scale = size / 32;
-  const p1 = [9 * scale, 17 * scale];
-  const p2 = [14 * scale, 22 * scale];
-  const p3 = [23 * scale, 10 * scale];
-  const thickness = 2.6 * scale;
+  const onBriefcase = isBriefcase(x / scale, y / scale);
 
-  const onCheck =
-    distToSegment(x, y, p1[0], p1[1], p2[0], p2[1]) < thickness ||
-    distToSegment(x, y, p2[0], p2[1], p3[0], p3[1]) < thickness;
-
-  const [r255, g255, b255] = onCheck ? WHITE : ACCENT;
+  const [r255, g255, b255] = onBriefcase ? WHITE : ACCENT;
   return [r255, g255, b255, alpha];
 }
 

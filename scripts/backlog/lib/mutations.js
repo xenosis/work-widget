@@ -157,7 +157,13 @@ function setStatus(filePath, expectedVersion, id, newStatus, opts) {
     const now = nowIso();
     task.status = newStatus;
     task.updated_at = now;
-    if (newStatus === 'done') task.done_at = now.slice(0, 10);
+    // critical-reviewer 지적(P12.8 리뷰): done -> 다른 상태로 되돌릴 때 done_at이 안 지워져서,
+    // done_at만 보는 도구/사람이 "완료됐다가 되돌아간" task를 여전히 완료로 오판할 수 있었다.
+    if (newStatus === 'done') {
+      task.done_at = now.slice(0, 10);
+    } else {
+      task.done_at = null;
+    }
     task.log = Array.isArray(task.log) ? task.log : [];
     task.log.push({ at: now, owner: opts.owner ?? null, status: newStatus, note: opts.note ?? null });
   });

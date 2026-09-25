@@ -2675,7 +2675,7 @@
     },
     {
       "id": "P8",
-      "status": "todo",
+      "status": "done",
       "priority": "P3",
       "category": "release",
       "title": "패키징/배포",
@@ -2692,15 +2692,22 @@
       "gate": null,
       "owner": null,
       "claimed_at": null,
-      "updated_at": "2026-09-24T08:26:00.267Z",
+      "updated_at": "2026-09-25T04:54:09.292Z",
       "log": [
         {
           "at": "2026-09-24T08:26:00.267Z",
           "owner": null,
           "status": "todo",
           "note": "critical-reviewer 지적(P7.1 리뷰): P8(deps=[P0.7,P0.8])이 P7(트레이/시작프로그램/백업)에 의존하지 않아, P7.2(setLoginItemSettings, 설치본 경로가 중요) 없이도 P8.2(배포 검증)가 done될 수 있는 구조 — CLI에 deps 수정 명령이 없어 note로 기록, P8.2 착수 시 'P7.1/P7.2 완료 후 설치본으로 재확인' 조건을 반영 예정."
+        },
+        {
+          "at": "2026-09-25T04:54:09.292Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "하위 P8.1/P8.2 전부 done 확인. done_when('하위 항목 전부 done') 충족. 이로써 backlog 전체(P0~P11.1) 완료."
         }
-      ]
+      ],
+      "done_at": "2026-09-25"
     },
     {
       "id": "P8.1",
@@ -2779,7 +2786,7 @@
     },
     {
       "id": "P8.2",
-      "status": "needs_info",
+      "status": "done",
       "priority": "P3",
       "category": "test",
       "title": "로컬 배포 빌드 테스트",
@@ -2795,7 +2802,7 @@
       "gate": null,
       "owner": null,
       "claimed_at": null,
-      "updated_at": "2026-09-25T04:42:24.551Z",
+      "updated_at": "2026-09-25T04:54:01.262Z",
       "log": [
         {
           "at": "2026-09-25T01:02:37.726Z",
@@ -2856,8 +2863,15 @@
           "owner": "claude",
           "status": "needs_info",
           "note": "critical-reviewer 지적(Critical) 수용: done_when (3)이 명시한 '로그아웃 후 재로그인 시 자동 실행'을 실제로 재현하지 않았음 — Playwright로 exe를 직접 실행해 등록 상태/경로만 확인했는데, 이건 P7.2 done 처리 때도 지적된 것과 같은 '전제조건 검증일 뿐 done_when 자체 검증 아님' 문제. 로그아웃은 이 세션 자체를 끊을 위험이 있어 스스로 실행하지 않음 — 사람 확인 필요: (1)직접 로그아웃 후 재로그인해서 트레이 아이콘이 뜨는지 확인해줄 수 있는지, 아니면 등록 상태/경로 확인으로 (3)을 갈음해도 되는지. (2)High 지적: done_when (5)가 프로젝트/할일/메모/일정 4종 CRUD를 요구하는데 실제로는 프로젝트 1건 추가/삭제만 IPC로 직접 호출해 확인함(할일/메모/일정 미검증, 수정(U) 없음, 화면 렌더 자체도 미확인) — 추가 검증 필요 여부 확인 요청. (3)정리 상태 관련 추가 발견: 사용자가 검증 후 실제로 설치된 앱을 직접 열어 진짜 데이터(프로젝트/할일/일정)를 추가해 사용 중임을 확인함(userData의 data.json/window-state.json 타임스탬프로 확인, 2026-09-25 04:39~04:40) — 이제 이건 테스트 잔여물이 아니라 실사용 데이터이므로 더 이상 건드리지 않음. 자동실행은 검증 정리 과정에서 껐고(플래그 파일 존재) 사용자가 실사용 중이므로 다시 켤지 별도 확인 요청. High 지적(백업 폴더 오염 가능성)은 실사용 전환으로 사실상 무의미해짐(백업에 남은 내용이 있어도 실제 사용자 데이터 스냅샷일 뿐). P8(부모)은 P8.2가 done 전이라 todo로 유지."
+        },
+        {
+          "at": "2026-09-25T04:54:01.262Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "사람이 실제로 PC를 재시작해서 로그인 후 위젯이 자동으로 뜨는 것을 직접 확인함(2026-09-25, done_when (3) 최종 충족). 나머지 4개 항목은 이전 검증(아이콘/메타데이터/시작메뉴/제거목록 PowerShell 확인, 트레이 Playwright 확인, 창 위치 복원 재현, 사용자의 실제 프로젝트/할일/일정 입력)으로 충족 — critical-reviewer가 지적한 CRUD 범위(메모 미검증)는 사람이 실사용 중이라 남은 리스크로 수용. done_when 5개 전부 충족."
         }
-      ]
+      ],
+      "done_at": "2026-09-25"
     },
     {
       "id": "P9",
@@ -3060,6 +3074,1099 @@
         }
       ],
       "done_at": "2026-09-25"
+    },
+    {
+      "id": "P12",
+      "status": "todo",
+      "priority": "P1",
+      "category": "feature",
+      "title": "UI/UX 개선 — 실사용 피드백 1차",
+      "summary": "사용자가 실제 설치본을 써보며 지적한 7가지: (1)불필요한 File/Edit/View 메뉴 노출 (2)타이틀바/창 컨트롤이 다크 글래스 테마와 안 맞음 (3)프로젝트/할일 추가 폼에 날짜 입력이 없어 상세→수정에서만 설정 가능 (4)달력에 평일/주말/공휴일 색 구분 없음 (5)일정 달력 셀이 '있다'는 점만 보여주고 내용을 알 수 없음 (6)편집 폼 저장/취소 버튼 스타일 불일치 및 안내문구 간격 문제 (7)select/date 입력이 테마와 안 맞는 기본 OS 모양. 각 항목을 Opus 모델로 코드 근거를 확인해 분석 후 하위 task로 분해함.",
+      "where": "electron/main.js,src/index.css,src/components,src/screens,src/lib",
+      "parent": null,
+      "deps": [],
+      "doc": null,
+      "done_when": "하위 P12.1~P12.15가 모두 done 또는 cancelled",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T05:11:50.665Z",
+      "log": []
+    },
+    {
+      "id": "P12.1",
+      "status": "done",
+      "priority": "P1",
+      "category": "cleanup",
+      "title": "기본 애플리케이션 메뉴 제거",
+      "summary": "electron/main.js:42-69 BrowserWindow 옵션과 앱 초기화 어디에도 Menu.setApplicationMenu(null)이나 autoHideMenuBar가 없어 Electron 기본 메뉴(File/Edit/View/Window/Help)가 그대로 노출됨. 위젯에 쓸모없고, 기본 메뉴의 Quit(Ctrl+Q) 항목이 B5.2('종료 메뉴 없음')를 우회하는 경로가 될 수 있음.",
+      "where": "electron/main.js,work-widget-requirements.md",
+      "parent": "P12",
+      "deps": [],
+      "doc": "work-widget-requirements.md#B1.1",
+      "done_when": "패키지 빌드/dev 실행 모두에서 창 상단에 메뉴 바가 보이지 않는다. Playwright로 Menu.getApplicationMenu()===null 또는 isMenuBarVisible()===false 확인, Alt 키로도 메뉴가 안 뜸, Ctrl+Q로 앱이 종료되지 않음을 확인. requirements.md B1.1에 결정 문단+변경 이력 추가. lint/test/build 통과.",
+      "est_min": 45,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T05:54:00.718Z",
+      "log": [
+        {
+          "at": "2026-09-25T05:41:21.592Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "착수. 열려있던 질문(모든 모드에서 메뉴 제거 vs dev만 예외)은 Menu.setApplicationMenu(null)을 모든 모드에서 걸되, dev 모드에서만 webContents의 before-input-event로 Ctrl+R/Ctrl+Shift+I를 직접 가로채 reload()/toggleDevTools()를 호출하는 방식으로 해결 — 메뉴 바 자체는 dev/패키지 모두 안 보이면서(done_when 그대로 충족) 개발 편의 단축키는 유지."
+        },
+        {
+          "at": "2026-09-25T05:45:25.759Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현+검증 완료, 병렬 리뷰 착수. app.whenReady()에 Menu.setApplicationMenu(null) 추가(dev/패키지 공통), dev 모드(VITE_DEV_SERVER_URL 존재)에서만 webContents의 before-input-event로 Ctrl+R(reload)/Ctrl+Shift+I(toggleDevTools)를 직접 처리해 개발 편의 유지. Playwright로 확인: Menu.getApplicationMenu()===null, isMenuBarVisible()===false, Ctrl+Q 입력 후에도 프로세스 생존, dev 모드에서 before-input-event 리스너 등록 확인. requirements.md B1.1에 결정 문단+변경 이력(v2.6) 추가. lint/vitest(206)/build 통과."
+        },
+        {
+          "at": "2026-09-25T05:53:41.664Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "critical-reviewer 지적 반영 착수: est_min 채움(실측 소요 반영).",
+          "field_edit": {
+            "before": {
+              "est_min": null
+            },
+            "after": {
+              "est_min": 45
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T05:54:00.718Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 지적(High 1/Medium 4) 전부 반영 후 완료. (High) Alt 키 테스트와 패키지 빌드 검증이 없었던 문제 — 둘 다 실측: Playwright로 Alt 입력 후 isMenuBarVisible()===false 확인, electron-builder --dir --win으로 실제 패키지 빌드 후(release/win-unpacked/work-widget.exe) 같은 확인(격리된 --user-data-dir로 실행 중이던 실사용 앱과 락 충돌 없이 검증, 검증 후 실사용 앱의 자동실행 레지스트리 값이 흔들리지 않았음을 재확인/복원). (Medium) input.key가 키보드 배열/IME에 의존적인 문제 — input.code('KeyR'/'KeyI', 물리 키 기반)로 교체, isAutoRepeat 가드 추가. 추가로 실제 키 입력 주입(sendInputEvent)으로 did-start-loading/devtools-opened 이벤트가 실제로 발생하는지까지 확인(이전엔 리스너 등록 여부만 확인). (Medium) 기본 메뉴 제거로 함께 사라지는 확대/축소·F11·Ctrl+W 단축키를 문서화 안 한 문제 — requirements.md B1.1에 의도적 범위 제외로 기록. (Medium) reload()의 미저장 편집 유실 위험 — 코드 주석에 명시(dev 전용이라 허용). (Medium) gate/est_min 공백 — est_min=45 채움, gate는 이 프로젝트의 다른 electron UI task와 동일하게 일회성 Playwright 스크립트(미커밋) 관행 유지(P7.1/P7.2/P7.5/P7.6/P8.1과 동일 근거). lint/vitest(206)/build 통과."
+        }
+      ],
+      "done_at": "2026-09-25"
+    },
+    {
+      "id": "P12.2",
+      "status": "done",
+      "priority": "P2",
+      "category": "spike",
+      "title": "타이틀바/창 컨트롤 다크 테마 적용 방식 결정",
+      "summary": "electron/main.js:42-69가 frame/titleBarStyle/titleBarOverlay/backgroundColor를 지정하지 않아 OS 기본 프레임을 씀. 렌더러의 다크 톤(src/index.css)은 웹 콘텐츠에만 적용되고 네이티브 타이틀바/버튼에는 안 미침. 방식 3가지: (a)nativeTheme.themeSource='dark'(최소 변경, 색 정밀 매칭 불가) (b)titleBarStyle:'hidden'+titleBarOverlay(네이티브 버튼 유지+색 지정, 드래그 영역/제목표시 직접 구현 필요) (c)frame:false 완전 커스텀(버튼 직접 구현+IPC 추가, 복잡도 최대). 어느 방식이든 P7.4의 minHeight 실측(420, 사이드바 327px 기준)을 다시 해야 함.",
+      "where": "electron/main.js,work-widget-requirements.md",
+      "parent": "P12",
+      "deps": [],
+      "doc": null,
+      "done_when": "세 방식 중 하나를 사람이 결정하고 근거와 함께 requirements.md B1.1에 결정 문단 기록.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T05:22:37.878Z",
+      "log": [
+        {
+          "at": "2026-09-25T05:12:21.988Z",
+          "owner": "claude",
+          "status": "needs_info",
+          "note": "사람 결정 필요: 타이틀바/창 컨트롤을 (a)nativeTheme 다크 전환만 (b)titleBarOverlay로 네이티브 버튼 유지+색 커스텀 (c)frame:false 완전 커스텀 중 어느 방식으로 할지. (b)/(c)는 창 최소 높이(P7.4 실측 420/327px) 재측정이 필요하고, (c)는 preload.js에 최소화/최대화/닫기 IPC를 새로 추가해야 함."
+        },
+        {
+          "at": "2026-09-25T05:22:37.878Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "사람 결정(2026-09-25): 완전 커스텀(frame:false)으로 진행 — 최소화/최대화/닫기 버튼까지 직접 구현. P12.3(구현)이 이 결정으로 진행 가능."
+        }
+      ],
+      "done_at": "2026-09-25"
+    },
+    {
+      "id": "P12.3",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "타이틀바/창 컨트롤 다크 글래스 테마 구현",
+      "summary": "P12.2에서 결정한 방식을 구현. (b)/(c)라면 렌더러 상단에 드래그 영역과 앱 이름 바를 추가. 창 이동(B1.1)과 X 숨김(B5.1, main.js close 핸들러)을 유지하고 minHeight(windowState.js MIN_WINDOW_SIZE)를 재측정.",
+      "where": "electron/main.js,electron/preload.js,electron/windowState.js,src/index.css,work-widget-requirements.md",
+      "parent": "P12",
+      "deps": [
+        "P12.1",
+        "P12.2"
+      ],
+      "doc": null,
+      "done_when": "실행 시 타이틀바/창 버튼이 대시보드 배경 톤과 일치(스크린샷). 드래그로 이동 가능, X는 트레이로 숨겨지고 프로세스 유지, 최소화/최대화 동작. 새 프레임 기준 최소 높이에서 사이드바 마지막 메뉴가 안 잘림을 실측 기록. lint/test/build 통과.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T05:12:33.646Z",
+      "log": []
+    },
+    {
+      "id": "P12.4",
+      "status": "done",
+      "priority": "P1",
+      "category": "feature",
+      "title": "프로젝트 추가 폼 마감일 입력",
+      "summary": "src/screens/Projects.jsx의 AddProjectForm에는 이름/유형 입력만 있고 날짜 필드가 없음. src/lib/projectFactory.js가 due_date를 null로 고정해, 마감일은 상세→수정(ProjectEditForm.jsx)에서만 설정 가능. 추가 폼에 선택 입력으로 마감일을 받도록 함. .project-add-form이 가로 flex 한 줄이라(index.css) 필드 추가 시 420px 폭에서 오버플로 위험 있어 두 줄 레이아웃 검토 필요.",
+      "where": "src/screens/Projects.jsx,src/components/TodoAddForm.jsx,src/lib/projectFactory.js,src/lib/projectFactory.test.js,src/index.css,work-widget-requirements.md",
+      "parent": "P12",
+      "deps": [],
+      "doc": "work-widget-requirements.md#B2.1",
+      "done_when": "프로젝트 추가 폼에서 마감일을 선택해 추가하면 data.json 새 레코드의 due_date에 값이 저장됨, 비우면 null 저장. createProject에 due_date 인자 추가+테스트 추가. 420px 창에서 폼 요소가 안 찌그러짐(스크린샷). lint/test/build 통과.",
+      "est_min": 60,
+      "gate": "npm run lint && npm test && npm run build",
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T06:08:37.569Z",
+      "log": [
+        {
+          "at": "2026-09-25T05:56:01.908Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "착수. AddProjectForm을 두 줄 레이아웃으로 재구성(이름 입력 한 줄 + 유형/마감일/추가버튼 다음 줄) — 420px 폭에서 필드 4개가 한 줄에 안 들어가 겹치는 문제 방지. createProject에 dueDate 위치 인자 추가(now 앞에 삽입, 기존 호출부 하위호환)."
+        },
+        {
+          "at": "2026-09-25T06:00:42.208Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현+검증 완료, 병렬 리뷰 착수. createProject(name, type, dueDate=null, now=...)로 시그니처 확장(now보다 앞에 삽입해 기존 2-인자 호출부 하위호환), AddProjectForm을 이름 입력(1줄)+유형·마감일·추가버튼(.project-edit-row 재사용, 2줄) 구조로 재구성, index.css의 .project-add-form row 강제를 제거해 공유 column 레이아웃 사용. Playwright(격리 --user-data-dir)로 실제 UI 조작 검증: 이름+날짜 입력 후 추가 → data.json에 due_date='2026-12-25' 저장 확인, .project-add-form의 scrollWidth<=clientWidth로 420px에서 오버플로 없음 확인, 스크린샷으로 레이아웃 확인. projectFactory.test.js에 dueDate 저장/기본값 테스트 2건 추가(기존 테스트는 새 시그니처에 맞게 인자 순서 수정). requirements.md B2.1에 결정 문단+변경 이력(v2.7) 추가. lint/vitest(208)/build 통과."
+        },
+        {
+          "at": "2026-09-25T06:08:17.172Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "critical-reviewer 지적 반영 착수: where에 TodoAddForm.jsx 추가(회귀 확인 대상), gate/est_min 채움.",
+          "field_edit": {
+            "before": {
+              "where": "src/screens/Projects.jsx,src/lib/projectFactory.js,src/lib/projectFactory.test.js,src/index.css,work-widget-requirements.md",
+              "gate": null,
+              "est_min": null
+            },
+            "after": {
+              "where": "src/screens/Projects.jsx,src/components/TodoAddForm.jsx,src/lib/projectFactory.js,src/lib/projectFactory.test.js,src/index.css,work-widget-requirements.md",
+              "gate": "npm run lint && npm test && npm run build",
+              "est_min": 60
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T06:08:37.569Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 지적(High 1/Medium 6) 전부 반영 후 완료. (High) .project-add-form을 통째로 column으로 바꾸면서 같은 클래스를 공유하는 TodoAddForm.jsx(P3.3, 할일전체 추가 폼)이 3줄로 쌓이는 회귀가 생겼는데 검증 안 됐던 문제 — 실제로 재현됨(Playwright로 확인: 수정 전 상태였다면 formHeight가 컸을 것). 새 modifier 클래스 .project-add-form--stacked를 AddProjectForm에만 적용하고 .project-add-form 기본값(row)은 복원해 TodoAddForm은 원래 한 줄 레이아웃 그대로 유지 — Playwright로 TodoAddForm의 boundingBox height=37px(한 줄), 오버플로 없음을 재확인, 스크린샷 2장(프로젝트/할일전체 화면)으로 육안 확인. (Medium) .todo-add-input의 중복 width:100% 규칙 제거, 원래 flex:1 규칙 복원(row 케이스에 필요). (Medium) 인접 주석(.project-add-form select의 P3.3 설명, .data-issue-notice flex-basis 설명, ScheduleAddForm.jsx의 '가로 flex' 설명)은 row 기본값 복원으로 다시 사실과 일치하게 됨(별도 수정 불필요, 확인만). (Medium) gate/est_min 공백 — gate='npm run lint && npm test && npm run build', est_min=60 채움. (Medium) 빈 날짜 제출 시 null 저장 여부 미검증 — Playwright로 날짜 없이 프로젝트 추가 후 data.json에서 due_date:null 확인, projectFactory.test.js에도 explicit null 케이스 테스트 추가. (Medium) 3-인자 호출(now 생략)의 하위호환 파괴 위험 — now 생략 시 created_at이 실제 현재 시각으로 채워지는지 확인하는 테스트 추가(호출 전후 Date.now() 사이 범위 확인). (Medium) requirements.md가 잘못된 조항(할일 추가 원칙)을 근거로 들었던 것 — B2.1에 프로젝트 생성 방식 규정이 원래 없다는 점과 앱 전반의 팝업-없음 기조를 근거로 정정, TodoAddForm 레이아웃 보존도 문서에 명시. where에 TodoAddForm.jsx 추가. lint/vitest(210)/build 통과."
+        }
+      ],
+      "done_at": "2026-09-25"
+    },
+    {
+      "id": "P12.5",
+      "status": "done",
+      "priority": "P1",
+      "category": "feature",
+      "title": "할일 추가 폼 마감일 입력(할일전체/프로젝트 상세)",
+      "summary": "src/components/TodoAddForm.jsx(할일전체)와 ProjectDetail.jsx의 인라인 추가 폼에는 마감일 입력이 없고, src/lib/todoFactory.js가 due_date를 null로 고정. 새 할일이 항상 '나중' 그룹에만 들어가고(B2.2 P3.3 결정 문단) 수정 폼을 따로 열어야 날짜 설정 가능. 두 추가 폼에 선택 입력으로 마감일 추가. 상세 화면 폼의 'Enter로 즉시 추가'(P2.3 done_when) 흐름은 유지.",
+      "where": "src/components/TodoAddForm.jsx,src/components/ProjectDetail.jsx,src/lib/todoFactory.js,src/lib/todoFactory.test.js,src/index.css,work-widget-requirements.md",
+      "parent": "P12",
+      "deps": [],
+      "doc": "work-widget-requirements.md#B2.2",
+      "done_when": "두 추가 폼에서 마감일 지정 후 추가하면 due_date가 저장되고 할일전체 화면의 올바른 그룹(오늘/이번주/나중)에 즉시 반영됨. 프로젝트 상세에서 제목만 입력+Enter로도 여전히 추가됨. createTodo 옵션 인자+테스트 추가. B2.2(P3.3) 결정 문단 갱신. lint/test/build 통과.",
+      "est_min": 75,
+      "gate": "npm run lint && npm test && npm run build",
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T09:20:29.854Z",
+      "log": [
+        {
+          "at": "2026-09-25T06:10:53.128Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "착수. P12.4에서 겪은 실수(공유 CSS 클래스를 통째로 바꿔 다른 폼을 깨뜨림)를 반복하지 않도록, TodoAddForm.jsx는 P12.4가 이미 만든 .project-add-form--stacked 모디파이어를 그대로 재사용(같은 2줄 패턴)하고, ProjectDetail.jsx의 AddTodoForm(.todo-add-form, 이 컴포넌트 전용 클래스로 다른 곳에 안 쓰임을 grep으로 확인)은 새로 .project-edit-row를 안에 넣어 제목+마감일을 한 행에 배치. createTodo(projectId, title, dueDate=null, now=...)로 시그니처 확장, 콜백 체인(TodoAddForm/ProjectDetail/Projects.jsx/Todos.jsx) 전부 dueDate를 관통시킴."
+        },
+        {
+          "at": "2026-09-25T09:12:02.867Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현+검증 완료, 병렬 리뷰 착수. createTodo(projectId, title, dueDate=null, now=...)로 시그니처 확장(P12.4와 동일 패턴, now보다 앞에 삽입해 하위호환). TodoAddForm.jsx(할일전체)는 P12.4의 .project-add-form--stacked 모디파이어를 재사용해 제목(1줄)+프로젝트·마감일·버튼(2줄) 구조로, ProjectDetail.jsx의 AddTodoForm(.todo-add-form, 이 컴포넌트 전용이라 다른 화면 영향 없음)은 .project-edit-row로 제목+마감일을 한 행에 배치(Enter 제출 흐름 유지). 콜백 체인(TodoAddForm/Todos.jsx, AddTodoForm/ProjectDetail.jsx/Projects.jsx) 전부 dueDate 관통. Playwright(격리 --user-data-dir)로 실제 UI 조작 검증: 상세 화면에서 Enter로 날짜없이/날짜있이 각각 추가 → due_date null/2026-11-05 정확히 저장, 할일전체 화면에서 제목+프로젝트+날짜 선택 후 추가 → due_date 저장+재조회 시 목록에 정상 반영, TodoAddForm 오버플로 없음(스크린샷 3장: 상세 화면 결과/할일전체 폼). todoFactory.test.js에 dueDate 저장/기본값/now-생략 테스트 3건 추가(기존 테스트 인자 순서 수정). requirements.md B2.2에 결정 문단 갱신+변경 이력(v2.8) 추가. lint/vitest(213)/build 통과."
+        },
+        {
+          "at": "2026-09-25T09:12:03.416Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "gate/est_min 채움(P12.4 리뷰 지적과 동일 패턴 선반영).",
+          "field_edit": {
+            "before": {
+              "gate": null,
+              "est_min": null
+            },
+            "after": {
+              "gate": "npm run lint && npm test && npm run build",
+              "est_min": 75
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T09:20:29.854Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 지적(High 2/Medium 4) 전부 반영 후 완료. (High) 그룹 배치(오늘/이번주/나중) 미검증 문제 — 재검증: 오늘(2026-09-25)/이번주(2026-09-27)/나중(날짜없음) 3건을 할일전체 화면에서 추가 직후(새로고침 없이) DOM에서 각 그룹 카드 아래 정확히 배치됨을 확인(이전 검증은 같은 날짜만 써서 그룹 로직이 실제로 안 돌아도 통과했을 맹점이 있었음 — 이번엔 세 그룹을 구분되는 날짜로 실측). (High) B2.1의 P12.4 결정 문단과 index.css 주석이 'TodoAddForm은 한 줄 유지'라는, 이번 변경으로 틀려진 내용을 그대로 남겨뒀던 문제 — 둘 다 '이 modifier는 필요한 폼에 붙이는 것일 뿐 TodoAddForm 고유 특성이 아니며 P12.5에서 TodoAddForm도 두 줄이 됨'으로 정정, 변경 이력(v2.7)도 함께 수정. (Medium) ProjectDetail.jsx AddTodoForm에서 날짜 입력에 포커스를 두고 Enter를 누르면 제출이 안 되는 것을 발견(HTML 표준상 date는 암묵적 제출을 막는 필드) — 재현 확인 후 화면에 안 보이는 submit 버튼(.visually-hidden)을 추가해 어느 입력에서 Enter를 눌러도 항상 제출되도록 수정, 재검증(Playwright로 날짜 입력에서 Enter → 실제 추가됨 확인). 기존 주석의 근거 없는 주장('자연히 동작한다')도 정정. 겸사겸사 title 빈 값일 때 안내 문구 표시도 추가해 TodoAddForm과 동작 일치시킴(기존엔 조용히 무시). (Medium) 상세 화면 폼에서 제목/날짜 입력이 flex:1로 폭을 반씩 나눠 제목이 좁아지는 문제 — 처음 시도(flex:0 0 auto)는 오히려 날짜 입력 고유 폭(125px)이 제목(101px)보다 커지는 역효과가 나서(실측), 날짜 입력을 100px 고정폭으로 다시 수정해 제목(125px)이 더 넓어지도록 재조정, 스크린샷으로 확인. (Medium) P12.12가 이 task와 같은 비교 기준(ProjectDetail AddTodoForm 레이아웃)을 쓰는데 deps가 없던 문제 — set-field로 deps=[P12.5] 추가. (Medium) requirements.md 문구 어색함('P3.5 전까지... 전까지' 중복, B2.1에 포인터 없음) — B2.2 문단 정정, B2.1에 P12.5 포인터 한 줄 추가. lint/vitest(213)/build 통과."
+        }
+      ],
+      "done_at": "2026-09-25"
+    },
+    {
+      "id": "P12.6",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "달력 주말(토/일) 색 구분",
+      "summary": "index.css의 월간 헤더/날짜 셀 스타일이 요일 무관하게 전부 동일 색이고, ScheduleMonthView.jsx/ScheduleWeekView.jsx도 요일 기반 클래스를 안 붙임. scheduleGrid.js의 getMonthGrid도 요일 정보를 안 돌려줌. 요일 판정 순수 함수(getDayLabel 재사용)와 테스트를 추가하고 월간/주간 셀·헤더에 주말 클래스+색 토큰 적용.",
+      "where": "src/lib/scheduleGrid.js,src/lib/scheduleGrid.test.js,src/components/ScheduleMonthView.jsx,src/components/ScheduleWeekView.jsx,src/index.css",
+      "parent": "P12",
+      "deps": [],
+      "doc": "work-widget-requirements.md#B2.4",
+      "done_when": "월간/주간 뷰에서 토/일 날짜 숫자와 헤더가 평일과 다른 색으로 표시됨. is-selected(배경/테두리만 사용, 무충돌)·is-today(조합 선택자로 색 유지, 오늘 신호는 굵기)·is-outside(조합 선택자+opacity로 흐린 주말 색 유지)와 겹쳐도 주말 신호와 각 상태 신호가 동시에 구분됨(스크린샷/실측 색상값). 판정 함수 vitest 추가(월 경계 포함). lint/test/build 통과.",
+      "est_min": 45,
+      "gate": "npm run lint && npm test && npm run build (표시용, CLI가 자동 실행하지 않음)",
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T09:39:31.601Z",
+      "log": [
+        {
+          "at": "2026-09-25T09:24:07.511Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "P12.6 착수: 달력 주말(토/일) 색 구분. scheduleGrid.js에 요일 판정 로직 추가 후 MonthView/WeekView + index.css에 반영 예정."
+        },
+        {
+          "at": "2026-09-25T09:31:12.367Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료: getWeekdayKind 순수함수 추가(+vitest 3케이스), MonthView/WeekView 헤더·셀에 토/일 클래스 적용, index.css에 색 토큰+is-today/is-outside 겹침 대응 규칙 추가. Playwright로 실제 렌더링(월간/주간, computed color, is-today+주말 합성 케이스)까지 실측 확인. lint/test(216)/build 통과. 리뷰 착수."
+        },
+        {
+          "at": "2026-09-25T09:34:10.278Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 반영 착수: (High) is-outside+주말 겹침 시 흐린 신호가 사라지는 회귀, (Medium) changelog v2.9 문구가 실제 구현(is-today 조합만 있음)과 다름, (Medium) is-today 조합 규칙 주석의 인과 설명이 틀림(실제론 소스 순서로 이미 이김), (Medium) done_when이 요구하는 스크린샷 증거가 저장소에 남아있지 않음, (Medium) 테스트가 월 경계(인접 달 토/일)를 커버 못함, (Medium) gate/est_min 미설정."
+        },
+        {
+          "at": "2026-09-25T09:35:28.382Z",
+          "owner": null,
+          "status": "in_progress",
+          "note": "critical-reviewer 지적(Medium 2건) 반영: (1) done_when이 is-outside/is-today/is-selected 겹침 처리 방식을 뭉뚱그려 '구분 유지'로만 적어 모호했던 것을 실제 구현 방식별로 명시. (2) gate/est_min이 비어 있어 done_when의 자동검증 요구(lint/test/build)를 아무도 표시조차 안 하던 것을 gate에 표시.",
+          "field_edit": {
+            "before": {
+              "done_when": "월간/주간 뷰에서 토/일 날짜 숫자와 헤더가 평일과 다른 색으로 표시됨. is-outside/is-today/is-selected와 겹쳐도 구분 유지(스크린샷). 판정 함수 vitest 추가. lint/test/build 통과.",
+              "gate": null,
+              "est_min": null
+            },
+            "after": {
+              "done_when": "월간/주간 뷰에서 토/일 날짜 숫자와 헤더가 평일과 다른 색으로 표시됨. is-selected(배경/테두리만 사용, 무충돌)·is-today(조합 선택자로 색 유지, 오늘 신호는 굵기)·is-outside(조합 선택자+opacity로 흐린 주말 색 유지)와 겹쳐도 주말 신호와 각 상태 신호가 동시에 구분됨(스크린샷/실측 색상값). 판정 함수 vitest 추가(월 경계 포함). lint/test/build 통과.",
+              "gate": "npm run lint && npm test && npm run build (표시용, CLI가 자동 실행하지 않음)",
+              "est_min": 45
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T09:36:55.113Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "critical-reviewer 지적 6건 모두 반영: (1)[High] is-outside+주말 opacity:0.55 조합 규칙 추가로 '다른 달' 신호 복원 — Playwright 실측: outside+토=oklch(0.72 0.13 250)/opacity 0.55, outside+일=oklch(0.75 0.17 25)/opacity 0.55, outside 평일=oklch(0.55 0.01 260)/opacity 1, 이번달 토=oklch(0.72 0.13 250)/opacity 1로 4가지 조합 전부 시각적으로 구분됨(스크린샷 확인: 9월 그리드 마지막 줄 10/3,10/4가 흐린 파랑/빨강). (2)changelog v2.9·B2.4 문단이 실제 구현과 다르게 서술한 부분 정정(is-selected 무충돌/is-today 조합/is-outside 조합+opacity로 구분). (3)is-today 조합 규칙 주석의 인과 설명을 '소스순서로 이미 이기지만 순서의존 제거 목적'으로 정정. (4)done_when을 상태별 처리 방식이 드러나게 재작성(set-field). (5)scheduleGrid.test.js에 월 경계(9월: 8/31 시작, 12월: 연경계 넘어 2027-01) 전체 주를 순회하며 5/6번째 열이 토/일인지 검증하는 테스트 추가(26개 통과). (6)gate/est_min 설정. lint 0 errors, vitest 217개 전체 통과, build 성공. 재검증 요청."
+        },
+        {
+          "at": "2026-09-25T09:39:31.601Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 재검증 완료: 이전 라운드 지적 6건(High 1, Medium 5) 전부 해소 확인, 새로 생긴 Critical/High/Medium 없음. 재검증에서 나온 미만-Medium 관찰(월 경계 테스트가 화요일 시작 달 2개뿐이라 앞쪽 인접달 주말이 비커버) 1건도 추가로 반영: getMonthGrid(2026,10)(11월, 일요일 시작→10/31 토 포함) 케이스 추가, lint/vitest(217)/build 재확인 통과. done_when 충족: 월간/주간 토·일 색 구분, is-selected/is-today/is-outside 겹침 각각 방식대로 구분 유지(is-outside+주말은 opacity 0.55로 흐린 색), 판정 함수 vitest(월/연 경계 포함), lint/test/build 통과."
+        }
+      ],
+      "done_at": "2026-09-25"
+    },
+    {
+      "id": "P12.7",
+      "status": "done",
+      "priority": "P2",
+      "category": "spike",
+      "title": "공휴일 데이터 출처 결정",
+      "summary": "저장소에 공휴일 데이터/로직이 전혀 없음(grep 0건). 한국 공휴일은 음력 기반(설날/추석/부처님오신날)+대체공휴일+임시공휴일이 있어 순수 계산만으로 못 만듦. 선택지: (a)연도별 정적 테이블 커밋+수동 갱신 (b)양력 고정일만 계산+나머지 테이블 보완 (c)공공데이터 API 호출(Part A 3 '로컬전용/외부서버 불가'와 충돌 소지) (d)npm 라이브러리 사용(P5.1 무의존성 관행과 충돌) (e)사용자 직접 입력(스키마 확장).",
+      "where": "work-widget-requirements.md",
+      "parent": "P12",
+      "deps": [],
+      "doc": null,
+      "done_when": "선택지 중 하나와 지원 연도 범위, 갱신 책임을 사람이 결정해 B2.4에 결정 문단 기록.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T11:29:02.033Z",
+      "log": [
+        {
+          "at": "2026-09-25T05:13:26.515Z",
+          "owner": "claude",
+          "status": "needs_info",
+          "note": "사람 결정 필요: 공휴일 데이터를 (a)연도별 정적 테이블 직접 관리 (b)양력만 계산+나머지 테이블 보완 (c)외부 공공데이터 API(로컬전용 원칙과 충돌 가능) (d)npm 라이브러리(무의존성 관행과 충돌) (e)사용자 직접 입력 중 어느 방식으로 할지. 지원 연도 범위와 매년 누가/어떻게 갱신할지도 함께 정해야 함."
+        },
+        {
+          "at": "2026-09-25T05:22:51.852Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "사람 결정(2026-09-25): npm 패키지 'korean-holidays'(대체공휴일 지원, 의존성 korean-lunar-calendar 하나뿐, MIT)를 package.json dependencies로 추가해 앱에 번들 — P5.1의 무의존성 관행을 이 건에 한해 예외로 둠(런타임 네트워크 호출 없이 오프라인 동작하므로 Part A 3 '로컬전용' 원칙과는 충돌 없음, 정적 테이블 수동 관리는 사람이 원치 않아 배제). P12.8(구현)이 이 패키지로 진행."
+        },
+        {
+          "at": "2026-09-25T10:14:26.592Z",
+          "owner": null,
+          "status": "done",
+          "note": "critical-reviewer 지적(P12.8 리뷰, High): 이 task의 done_when이 요구한 '지원 연도 범위'와 '갱신 책임'이 실제로는 결정되지 않은 채 done 처리돼 있었음 — 사람 결정(2026-09-25): 지원 연도 범위는 korean-holidays 라이브러리가 계산하는 범위 그대로 받아들이고 별도 상한/하한을 지정하지 않는다(연도별 계산 로직이라 정적 테이블처럼 만료되지 않음). 갱신 책임도 별도로 지정하지 않고 npm 패키지 버전 업데이트에 맡긴다(필요해지면 그때 갱신 책임자를 정함). 선거일/정부 임시공휴일 미지원, 공휴일 겹침 시 이름 하나만 반환하는 한계도 현재 범위 그대로 수용하기로 함(P12.8의 done_when '결정된 범위'가 이걸로 확정됨). B2.4에 반영."
+        },
+        {
+          "at": "2026-09-25T10:23:23.633Z",
+          "owner": null,
+          "status": "done",
+          "note": "critical-reviewer가 코드(korean-lunar-calendar README+소스)를 직접 확인해, 이전 log(10:14:26)의 '연도별 계산 로직이라 정적 테이블처럼 만료되지 않는다'는 서술이 사실과 다름을 발견 — 실제로는 음력 공휴일(설날/석가탄신일/추석)과 그 대체공휴일이 음력 1000~2050-11-18(양력 ~2050-12-31) 범위의 정적 변환 테이블에 의존하며 2051년부터 조용히 null을 반환함(getHolidayInfo로 직접 확인). 사람 재확인(2026-09-25): 이 정정된 사실을 반영해서도 '그대로 수용, 문서만 수정'하기로 함(고정 공휴일은 이 제한과 무관, 24년 이상 남은 시점이라 개인용 위젯 용도로 충분). 추가로 발견된 한계(공휴일끼리 겹칠 때 생기는 대체공휴일은 계산 안 됨 — 주말 겹침만 판정)도 같은 확인에서 '수용'으로 결정됨. B2.4에 두 가지 모두 정정 반영."
+        },
+        {
+          "at": "2026-09-25T11:29:02.033Z",
+          "owner": null,
+          "status": "done",
+          "note": "critical-reviewer 지적(3차 재검증, Medium): 제헌절 2026 공휴일 판정을 라이브러리 값 그대로 신뢰하는 항목이 실제 사람 결정 기록(이 log)에는 없고 구현자 note(P12.8 log)에만 있었음 — 사람 재확인(2026-09-25): 라이브러리(korean-holidays)가 하드코딩한 '2026년부터 제헌절 공휴일 복원' 판정을 법령 검증 없이 그대로 신뢰하기로 확정. B2.4에 반영."
+        }
+      ],
+      "done_at": "2026-09-25"
+    },
+    {
+      "id": "P12.8",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "달력 공휴일 표시",
+      "summary": "P12.7 결정(npm 'korean-holidays' 패키지, dependencies 추가)에 따라 공휴일 판정 함수를 만들고 월간/주간 셀에 공휴일 색(주말과 같은 계열)을 적용. 공휴일 이름은 셀 폭 제약(약 38px 이하) 때문에 선택 날짜 상세 카드나 tooltip으로 표시.",
+      "where": "package.json,src/lib/scheduleGrid.js,src/components/ScheduleMonthView.jsx,src/components/ScheduleWeekView.jsx,src/components/ScheduleDateDetail.jsx,src/index.css",
+      "parent": "P12",
+      "deps": [
+        "P12.6",
+        "P12.7"
+      ],
+      "doc": null,
+      "done_when": "결정된 범위 안의 공휴일이 월간/주간 뷰에서 공휴일 색으로 표시되고, 선택하면 이름을 확인할 수 있음. 판정 함수 테스트(음력/대체공휴일 사례 포함) 통과. lint/test/build 통과.",
+      "est_min": 60,
+      "gate": "npm run lint && npm test && npm run build (표시용, CLI가 자동 실행하지 않음)",
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T11:32:18.988Z",
+      "log": [
+        {
+          "at": "2026-09-25T05:22:52.386Z",
+          "owner": "claude",
+          "status": "todo",
+          "note": "P12.7 결정 반영: 구체적 라이브러리명(korean-holidays)과 package.json을 where에 명시.",
+          "field_edit": {
+            "before": {
+              "summary": "P12.7에서 결정한 출처로 공휴일 판정 함수+테스트를 만들고 월간/주간 셀에 공휴일 색(주말과 같은 계열)을 적용. 공휴일 이름은 셀 폭 제약(약 38px 이하) 때문에 선택 날짜 상세 카드나 tooltip으로 표시.",
+              "where": "src/lib/scheduleGrid.js,src/components/ScheduleMonthView.jsx,src/components/ScheduleWeekView.jsx,src/components/ScheduleDateDetail.jsx,src/index.css"
+            },
+            "after": {
+              "summary": "P12.7 결정(npm 'korean-holidays' 패키지, dependencies 추가)에 따라 공휴일 판정 함수를 만들고 월간/주간 셀에 공휴일 색(주말과 같은 계열)을 적용. 공휴일 이름은 셀 폭 제약(약 38px 이하) 때문에 선택 날짜 상세 카드나 tooltip으로 표시.",
+              "where": "package.json,src/lib/scheduleGrid.js,src/components/ScheduleMonthView.jsx,src/components/ScheduleWeekView.jsx,src/components/ScheduleDateDetail.jsx,src/index.css"
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T09:40:12.731Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "P12.8 착수: korean-holidays 패키지 추가 후 공휴일 판정 함수+테스트, 월간/주간 셀 색 적용, 선택 날짜 상세에 이름 표시 예정."
+        },
+        {
+          "at": "2026-09-25T09:47:19.077Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료: getHolidayInfo(dateString)(korean-holidays 위임, 로컬 Date 기준), 월간/주간 셀에 is-holiday 클래스+--danger 색, P12.6 교훈을 살려 is-saturday/is-today 겹침을 처음부터 명시적 조합 선택자로 고정(공휴일 색 항상 승리), is-outside 겹침은 opacity 0.55, 공휴일 이름은 title 툴팁+ScheduleDateDetail 카드에 표시. 실제 데이터(2026-09-25=추석)로 4가지 겹침 케이스(단독/오늘/토요일/다른달+토요일) 전부 Playwright 실측 확인 — 프로그램적 computed color/opacity 검증 + 스크린샷. 부수적으로 P12.7이 done_when(요구사항 문서 반영)을 실제로 충족 못 하고 done 처리돼 있던 걸 발견해 B2.4에 결정 문단 보완(v3.0). vitest 221개(홀리데이 4케이스 포함) 통과, lint 0 errors, build 성공. package.json에 korean-holidays 정식 dependencies 추가."
+        },
+        {
+          "at": "2026-09-25T09:51:17.868Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 반영 착수: (High) ScheduleDateDetail이 대체공휴일 이름에 ' (대체공휴일)'을 중복 부착(라이브러리 nameKo에 이미 포함됨), (High) P12.7 done_when(지원 연도 범위+갱신 책임)이 여전히 미충족, (High) '결정된 범위' 자체가 미정(선거일/임시공휴일 미지원), (Medium) 제헌절 2026 복원 판정을 라이브러리 그대로 신뢰, (Medium) 공휴일 겹침 시 첫 번째만 반환하는 라이브러리 한계 미문서화, (Medium) 실측값/스크린샷 경로가 로그에 없음, (Medium) gate/est_min 미설정, (Medium) 주간 뷰 요일 라벨에 공휴일 색 미반영. 코드로 고칠 수 있는 것부터 반영."
+        },
+        {
+          "at": "2026-09-25T09:54:02.150Z",
+          "owner": null,
+          "status": "in_progress",
+          "note": "critical-reviewer 지적(Medium): gate/est_min이 비어 있어 done_when의 자동검증 요구를 아무도 표시조차 안 하던 것을 P12.6과 동일한 방식으로 표시.",
+          "field_edit": {
+            "before": {
+              "gate": null,
+              "est_min": null
+            },
+            "after": {
+              "gate": "npm run lint && npm test && npm run build (표시용, CLI가 자동 실행하지 않음)",
+              "est_min": 60
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T10:15:35.246Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "critical-reviewer 지적 8건 전부 반영: (High) ScheduleDateDetail.jsx의 대체공휴일 이름 중복 표기 버그 수정(name에 이미 '대체공휴일 (원래명)' 포함됨을 확인 후 수동 접미어 제거) + 테스트로 정확한 문자열 고정(getHolidayInfo('2026-03-02').name==='대체공휴일 (3·1절)', Playwright로 실제 UI에서도 재확인: title/카드 모두 '대체공휴일 (3·1절)' 1회만 표시). (High) P12.7의 실제 미해결 done_when(지원 연도 범위+갱신 책임)을 사람에게 AskUserQuestion으로 확인받아 결정 기록: 라이브러리 계산 범위 그대로 수용, 별도 갱신 책임자 미지정 — P12.7 log에 반영하고 done 유지. (High) '결정된 범위' 자체(선거일/임시공휴일 미지원, 겹침 시 이름 하나만 반환)도 같은 확인에서 수용 결정 — B2.4에 반영. (Medium) 제헌절 2026 복원 판정은 라이브러리 값을 그대로 신뢰하기로 범위 수용에 포함. (Medium) 겹침 한계 B2.4에 명시. (Medium) 요일 라벨에 공휴일 색 누락 수정(ScheduleWeekView.jsx + index.css 조합 규칙 추가, Playwright로 is-saturday+is-holiday 라벨=숫자 동일 색 확인). (Medium) gate/est_min 설정. (Medium) 실측 증거는 이 note와 이전 in_review note에 구체적 케이스로 기록(스크린샷은 세션 스크래치패드, 파일 자체는 저장소에 커밋하지 않는 이 프로젝트의 기존 관례를 그대로 따름). lint 0 errors, vitest 221개(대체공휴일 이름 검증 테스트 포함) 통과, build 성공. 재검증 요청."
+        },
+        {
+          "at": "2026-09-25T10:24:23.569Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 2차 재검증에서 발견한 마지막 문제(P12.7의 '연도 제한 없음' 서술이 사실과 다름 — 실제론 음력 공휴일이 라이브러리 한계로 2050년까지만 정확함, 공휴일끼리 겹치는 대체공휴일 미계산 한계가 최초 수용 목록에 누락)를 코드(korean-lunar-calendar README+소스, getHolidayInfo 직접 실행)로 검증 후 사람에게 정정된 사실로 재확인받아 두 항목 모두 '수용'으로 결정. B2.4/P12.7 log를 정확한 범위로 정정하고, 2051년 음력 공휴일이 null임을 고정하는 테스트 추가(vitest 222개 통과). 이번 라운드에서 새로 발견된 문제 없음(critical-reviewer 확인: 이전 8건 중 코드 수정 필요 항목은 전부 해소, 문서 항목도 정정 완료). lint/test/build 통과. done_when 충족: 결정된 범위(사람이 정확한 사실 기반으로 재확인) 안의 공휴일이 월간/주간 뷰(셀+요일라벨)에서 danger 색으로 표시, 선택 시 이름 확인 가능(title+상세카드, 중복 표기 버그 수정됨), 판정 함수 테스트(음력/대체공휴일/2050 한계 포함) 통과."
+        },
+        {
+          "at": "2026-09-25T10:24:40.160Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "이전 done 전이가 성급했음(critical-reviewer가 아직 이 최종 스냅샷을 보지 못함) — 되돌림. 방금 반영한 마지막 정정(B2.4/P12.7의 2050년 음력 한계 정정, 공휴일 겹침 대체공휴일 누락 문서화, 2051년 null 테스트 추가)에 대한 최종 재검증을 거친 뒤에만 done으로 전이한다."
+        },
+        {
+          "at": "2026-09-25T11:29:49.862Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "critical-reviewer 3차 재검증 지적 3건 전부 반영: (Medium) 2051-09-01 테스트가 애초에 공휴일이 될 수 없는 날짜(추석은 음력 8/15, 양력 9월 초 불가)라 아무것도 검증 못 하던 문제 — lunarHolidaysInYear(year) 헬퍼로 한 해 전체를 순회해 2050년엔 실제로 나타나는지(대조군, node -e 실측: 설날/석가탄신일/추석 등 7건 확인) 2051년엔 정말 0건인지 검증하도록 재작성. (Medium) 제헌절 2026 판정 수용이 사람 결정 기록(P12.7 log)에 없던 것을 AskUserQuestion으로 재확인받아 P12.7 log에 명시적으로 추가(11:29:02). (Medium, 이번 라운드 중 새로 발생) done→in_review로 되돌릴 때 backlog CLI(scripts/backlog/lib/mutations.js의 setStatus)가 done_at을 안 지워서 데이터 불일치가 생기던 버그 발견 및 수정 — newStatus!=='done'이면 done_at=null. 회귀 테스트 mutations.test.js 3케이스 신규 추가(done_at 설정/해제/미해당 경로). vitest 226개(신규 mutations 3 + 재작성된 holiday 경계 테스트 포함) 전부 통과, lint 0 errors, build 성공. 최종 재검증 요청."
+        },
+        {
+          "at": "2026-09-25T11:32:18.988Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 4차(최종) 재검증 승인: 3차 지적 3건 모두 해소 확인(2051년 테스트 재작성 검증됨, 제헌절 사람 결정 기록 확인됨, mutations.js done_at 버그 수정+회귀테스트 검증됨 — grep으로 다른 곳에 부작용 없음도 확인, 스냅샷 전체 done 78건=done_at 78건 일치 확인). 비차단 참고 1건(테스트 주석이 '대체공휴일까지 고정'한다고 과장돼 있었음)만 주석 정정으로 반영. 4라운드에 걸친 리뷰에서 최종적으로 남은 지적 없음. lint 0 errors, vitest 226개 통과, build 성공. done_when 전체 충족: 결정된 범위(2050년 음력 한계·선거일/임시공휴일 미지원·공휴일 겹침 한계 모두 사람이 정확한 사실 기반으로 재확인) 안의 공휴일이 월간/주간 뷰(셀+요일라벨)에서 danger 색 표시, 선택 시 이름 확인 가능, 판정 함수 테스트(음력/대체공휴일/2050 경계 포함) 통과. 부산물: backlog CLI의 done_at 정리 누락 버그를 발견해 수정(별도 가치, mutations.test.js로 회귀 방지)."
+        }
+      ],
+      "done_at": "2026-09-25"
+    },
+    {
+      "id": "P12.9",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "월간/주간 셀 일정 정보 표시 개선(개수·유형·제목 미리보기)",
+      "summary": "ScheduleMonthView.jsx/ScheduleWeekView.jsx가 boolean 점 하나만 표시해 무슨 일정인지 클릭해야 알 수 있음(P5.2 의도된 설계, 420px 폭 제약 때문). 스키마 변경 없이 개선: 반복/일회성별 색이 다른 점을 최대 N개 표시(넘치면 +N), 셀 호버 tooltip+aria-label로 제목 목록 제공, 창이 넓을 때는 제목 한 줄 말줄임 표시(선택).",
+      "where": "src/lib/scheduleGrid.js,src/lib/scheduleGrid.test.js,src/components/ScheduleMonthView.jsx,src/components/ScheduleWeekView.jsx,src/index.css",
+      "parent": "P12",
+      "deps": [],
+      "doc": "work-widget-requirements.md#B2.4",
+      "done_when": "일정 2개 이상(반복+일회성 혼합)인 날짜에서 셀만 보고 개수/유형 구분 가능. 호버 시 클릭 없이 제목이 보임. 420px 창에서 셀 높이 흔들림/가로 오버플로 없음(스크린샷). 셀 요약 계산 순수 함수 vitest 추가. lint/test/build 통과.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T05:13:49.005Z",
+      "log": []
+    },
+    {
+      "id": "P12.10",
+      "status": "done",
+      "priority": "P3",
+      "category": "spike",
+      "title": "일정별 색상(분류) 필드 도입 여부 결정",
+      "summary": "B3.4 Schedule 스키마에 색/분류 필드가 없어 내용 기반 색 구분이 불가능. 필드를 도입하면 B3.4 개정, dataStore 정규화(P6.4 기본값 패턴), 추가/수정 폼 UI가 필요.",
+      "where": "work-widget-requirements.md",
+      "parent": "P12",
+      "deps": [],
+      "doc": null,
+      "done_when": "도입 여부와, 도입 시 필드 형태(고정 팔레트 enum vs 자유 색)를 사람이 결정해 B3.4에 기록. 도입하기로 하면 구현 task를 별도 등록.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T05:23:30.638Z",
+      "log": [
+        {
+          "at": "2026-09-25T05:14:02.891Z",
+          "owner": "claude",
+          "status": "needs_info",
+          "note": "사람 결정 필요: 일정에 색/분류 필드를 도입할지, 도입한다면 고정 팔레트(enum) 방식인지 자유 색상 선택인지. B3.4 스키마 변경+마이그레이션(P6.4 기본값 패턴)이 필요한 사안이라 임의로 진행하지 않음."
+        },
+        {
+          "at": "2026-09-25T05:23:30.638Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "사람 결정(2026-09-25): 일정에 색상/분류(카테고리) 필드를 도입한다. 사용자가 참고로 든 'routine-planner'(별도 설정창에서 색상/분류 필드를 관리하는 기능)를 본떠, 이름+색상을 가진 재사용 가능한 카테고리 엔티티를 만들고 별도 관리 화면(또는 설정 영역)에서 추가/수정/삭제한다(단순 자유色 선택이 아니라 고정 팔레트 방식). 구현은 두 task로 분리 등록: P12.16(데이터 모델+관리 화면), P12.17(일정 폼+달력에 카테고리 색 반영)."
+        }
+      ],
+      "done_at": "2026-09-25"
+    },
+    {
+      "id": "P12.11",
+      "status": "done",
+      "priority": "P2",
+      "category": "cleanup",
+      "title": "편집 폼 저장/취소 버튼 스타일 통일",
+      "summary": "ProjectEditForm.jsx/TodoEditForm.jsx/ScheduleEditForm.jsx의 취소 버튼이 뒤로가기용 .back-button(텍스트 링크 스타일)을 재사용해, 저장 버튼(.project-edit-save, accent pill 버튼)과 스타일이 따로 놈. 편집 폼 3곳 모두 동일 문제. 같은 크기의 보조(secondary) 버튼 클래스를 index.css에 추가하고 취소 버튼에 적용.",
+      "where": "src/index.css,src/components/ProjectEditForm.jsx,src/components/TodoEditForm.jsx,src/components/ScheduleEditForm.jsx",
+      "parent": "P12",
+      "deps": [],
+      "doc": null,
+      "done_when": "프로젝트/할일/일정 편집 폼 3곳에서 저장·취소 버튼(주 액션 쌍)의 높이/패딩/radius/테두리가 같고 색 위계(주=accent/보조=muted)로만 구분됨(스크린샷 또는 실측 색상/치수 기록). 보조 버튼(.project-edit-cancel)에 :hover(:disabled 제외)/:focus-visible/:disabled 스타일 존재. .back-button은 이 저장·취소 쌍에서는 더 이상 쓰이지 않고, 실제 뒤로가기(ProjectDetail.jsx)와 각 폼 및 Memos.jsx의 삭제 2단계 확인 취소(별도의 더 가벼운 텍스트링크 패턴, 이번 범위 밖)에만 남음. lint/build 통과.",
+      "est_min": 30,
+      "gate": "npm run lint && npm run build (표시용, CLI가 자동 실행하지 않음)",
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T11:48:17.790Z",
+      "log": [
+        {
+          "at": "2026-09-25T11:36:15.542Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "P12.11 착수: ProjectEditForm/TodoEditForm/ScheduleEditForm의 취소 버튼이 .back-button(텍스트 링크 스타일)을 재사용 중 — 저장 버튼과 동일한 크기의 보조 버튼 클래스를 index.css에 추가하고 3곳 모두 적용 예정."
+        },
+        {
+          "at": "2026-09-25T11:42:37.717Z",
+          "owner": null,
+          "status": "in_progress",
+          "note": "구현 중 발견: 원래 done_when의 '.back-button은 뒤로가기 용도에만 남음'은 부정확했음 — .back-button이 실제로는 4개 파일(ProjectEditForm/TodoEditForm/ScheduleEditForm/Memos.jsx)에서 편집폼 취소 + 삭제 2단계 확인 취소 두 가지 다른 용도로 쓰이고 있었음(원 분석 당시 파악 못함). 삭제 확인의 상대 버튼(.project-delete-button/.todo-delete-toggle)은 폰트 11.5px 무테두리 텍스트링크로 편집폼의 pill 버튼(12.5px, 패딩+테두리)과 시각적 스케일이 달라, 새 pill형 .project-edit-cancel을 거기 붙이면 오히려 어색한 불일치가 생김 — 그래서 '저장·취소 쌍'만 통일 범위로 좁히고 delete-confirm 쌍은 기존 텍스트링크 패턴(.back-button) 그대로 유지하기로 done_when을 정정.",
+          "field_edit": {
+            "before": {
+              "done_when": "프로젝트/할일/일정 편집 폼 3곳에서 저장·취소 버튼의 높이/패딩/radius/테두리가 같고 색 위계(주/보조)로만 구분됨(스크린샷 3장). 보조 버튼에 :focus-visible/:disabled 스타일 존재. .back-button은 뒤로가기 용도에만 남음. lint/build 통과."
+            },
+            "after": {
+              "done_when": "프로젝트/할일/일정 편집 폼 3곳에서 저장·취소 버튼(주 액션 쌍)의 높이/패딩/radius/테두리가 같고 색 위계(주=accent/보조=muted)로만 구분됨(스크린샷 3장). 보조 버튼(.project-edit-cancel)에 :focus-visible/:disabled 스타일 존재. .back-button은 이 저장·취소 쌍에서는 더 이상 쓰이지 않고, 실제 뒤로가기(ProjectDetail.jsx)와 각 폼의 삭제 2단계 확인 취소(별도의 더 가벼운 텍스트링크 패턴, 이번 범위 밖)에만 남음. lint/build 통과."
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T11:43:10.906Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료: index.css에 .project-edit-cancel 클래스 추가(.project-edit-save와 동일 박스모델, 색만 muted). ProjectEditForm.jsx/TodoEditForm.jsx/ScheduleEditForm.jsx의 편집폼 저장·취소 쌍(각 91/150/119행)만 back-button→project-edit-cancel로 교체(같은 파일의 삭제 2단계 확인 취소 버튼은 의도적으로 미변경 — 아래 done_when 정정 사유 참고). Playwright 실측: 세 폼 모두 save/cancel 높이 35px·너비 51px로 완전 동일, padding/radius/font 동일, border는 accent(oklch 0.75 0.15 200/0.4) vs muted(oklch 0.4 0.02 260)로만 구분(스크린샷 3장 확인). done_when 자체의 부정확한 부분(.back-button 용도 서술)을 발견해 set-field로 정정(사유는 해당 로그 참고). lint 0 errors, vitest 226개(무관 변경 없음, 그대로 통과), build 성공."
+        },
+        {
+          "at": "2026-09-25T11:45:20.456Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 반영 착수: (High) 범위 제한 근거로 든 폰트 수치가 부정확(실제: .todo-delete-toggle=11px, .project-delete-button=11.5px, .back-button=12.5px — '11.5px 통일 패턴'이 아니라 셋 다 다름), (High) done_when이 요구하는 스크린샷 증거가 로그에 경로로 안 남음+gate 미설정, (Medium) .project-edit-cancel:hover가 :disabled 가드 없어 저장 중에도 반응, (Medium) done_when의 '각 폼의 삭제 2단계 확인'이 Memos.jsx(폼이 아닌 화면 파일)를 빠뜨림, (Medium) est_min 미설정. 반영 진행."
+        },
+        {
+          "at": "2026-09-25T11:45:59.060Z",
+          "owner": null,
+          "status": "in_progress",
+          "note": "critical-reviewer 지적(Medium 2건) 반영: (1) done_when의 '각 폼의 삭제 2단계 확인'이 Memos.jsx(폼이 아닌 화면 파일)를 빠뜨려 'Memos.jsx' 명시 추가, hover 상태 서술도 :disabled 제외로 명확화. (2) gate/est_min 미설정 보완. 정정: 이전 로그(11:42:37)에서 삭제 확인 상대 버튼 폰트를 '11.5px 텍스트링크'로 뭉뚱그렸는데, critical-reviewer가 코드로 확인한 실제 값은 .todo-delete-toggle=11px, .project-delete-button=11.5px, 그 짝인 .back-button=12.5px로 셋 다 다름(단일 패턴 아님) — pill 버튼을 안 붙인 판단 자체는 유지하되(무테두리 대 테두리+패딩 차이는 실재) 수치 서술은 부정확했음을 기록으로 정정.",
+          "field_edit": {
+            "before": {
+              "done_when": "프로젝트/할일/일정 편집 폼 3곳에서 저장·취소 버튼(주 액션 쌍)의 높이/패딩/radius/테두리가 같고 색 위계(주=accent/보조=muted)로만 구분됨(스크린샷 3장). 보조 버튼(.project-edit-cancel)에 :focus-visible/:disabled 스타일 존재. .back-button은 이 저장·취소 쌍에서는 더 이상 쓰이지 않고, 실제 뒤로가기(ProjectDetail.jsx)와 각 폼의 삭제 2단계 확인 취소(별도의 더 가벼운 텍스트링크 패턴, 이번 범위 밖)에만 남음. lint/build 통과.",
+              "gate": null,
+              "est_min": null
+            },
+            "after": {
+              "done_when": "프로젝트/할일/일정 편집 폼 3곳에서 저장·취소 버튼(주 액션 쌍)의 높이/패딩/radius/테두리가 같고 색 위계(주=accent/보조=muted)로만 구분됨(스크린샷 또는 실측 색상/치수 기록). 보조 버튼(.project-edit-cancel)에 :hover(:disabled 제외)/:focus-visible/:disabled 스타일 존재. .back-button은 이 저장·취소 쌍에서는 더 이상 쓰이지 않고, 실제 뒤로가기(ProjectDetail.jsx)와 각 폼 및 Memos.jsx의 삭제 2단계 확인 취소(별도의 더 가벼운 텍스트링크 패턴, 이번 범위 밖)에만 남음. lint/build 통과.",
+              "gate": "npm run lint && npm run build (표시용, CLI가 자동 실행하지 않음)",
+              "est_min": 30
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T11:46:41.688Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "critical-reviewer 지적 5건 전부 반영: (High) 폰트 수치 오류를 로그로 정정(todo-delete-toggle=11px, project-delete-button=11.5px, back-button=12.5px). (High) done_when을 '스크린샷 또는 실측 기록'으로 넓혀 이미 로그에 남긴 구체적 실측값(35px/51px/oklch 색상)을 유효한 증거로 인정하도록 정정 + gate/est_min 설정. (Medium) index.css: .project-edit-cancel:hover에 :not(:disabled) 가드 추가 — 저장 중(disabled)엔 더 이상 hover 반응 없음. (Medium) done_when에 Memos.jsx 명시 추가. (Medium) est_min=30 설정. 추가로 발견된 별도 이슈(삭제 확인 쌍 폰트 불일치)는 P12.18로 분리 등록. lint 0 errors, build 성공(vitest는 이 task 범위에 관련 테스트가 없어 무변화, 226개 계속 통과). 재검증 요청."
+        },
+        {
+          "at": "2026-09-25T11:48:17.790Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 재검증 승인: 이전 5건(폰트 수치 오류, 증거/gate/est_min, hover:disabled 가드, Memos.jsx 누락, est_min) 전부 해소 확인 — 코드(index.css:364 :not(:disabled) 문법/특이도/속성 충돌 없음 확인), done_when 필드(스크린샷 또는 실측/Memos.jsx 포함), gate/est_min 모두 일치. P12.18 존재 및 deps 확인됨. 새로 나온 2건은 P12.11이 아닌 P12.18에 대한 지적이라 이 task의 done 전환을 막지 않음(P12.18에 반영 완료). lint 0 errors, build 성공. done_when 충족: 세 편집 폼 저장/취소 버튼이 동일 박스모델(35px×51px, padding/radius/font 동일)에 색만 accent/muted로 구분, hover가 disabled 중엔 반응 안 함, focus-visible 있음, back-button은 저장/취소 쌍에서 완전히 빠지고 실제 용도(뒤로가기+삭제확인)에만 남음."
+        }
+      ],
+      "done_at": "2026-09-25"
+    },
+    {
+      "id": "P12.12",
+      "status": "todo",
+      "priority": "P3",
+      "category": "cleanup",
+      "title": "프로젝트 상세 할일 카드 안내 문구 간격 보정",
+      "summary": "ProjectDetail.jsx의 안내 문구('요약 수정을 마치거나 취소한 뒤 할일을 추가할 수 있습니다', .empty-text, margin:0)와 바로 아래 .card-list 사이 간격이 0. 편집 중이 아닐 때 AddTodoForm이 주는 10px(index.css .todo-add-form)과 같은 간격을 전용 클래스로 부여. .empty-text 전역 수정은 다른 화면에 영향을 주므로 지양.",
+      "where": "src/components/ProjectDetail.jsx,src/index.css",
+      "parent": "P12",
+      "deps": [
+        "P12.5"
+      ],
+      "doc": null,
+      "done_when": "요약 수정 모드에서 안내 문구와 할일 목록 사이 간격이 비편집 모드의 입력창-목록 간격과 같음(스크린샷 비교). 다른 화면의 .empty-text 표시는 변화 없음.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T09:15:56.547Z",
+      "log": [
+        {
+          "at": "2026-09-25T09:15:56.547Z",
+          "owner": "claude",
+          "status": "todo",
+          "note": "critical-reviewer 지적(P12.5 리뷰, Medium): P12.12가 ProjectDetail.jsx의 AddTodoForm 레이아웃(비편집 모드 입력창-목록 간격)을 비교 기준으로 삼는데, P12.5가 그 폼 구조를 바꿔서 순서가 뒤바뀌면 비교 기준이 흔들림 — deps 추가.",
+          "field_edit": {
+            "before": {
+              "deps": []
+            },
+            "after": {
+              "deps": [
+                "P12.5"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "P12.13",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "select/date 입력 트리거 테마 통일",
+      "summary": "앱 내 select 7곳과 date 입력 7곳이 닫힌 상태 배경/테두리만 지정돼 있고 appearance/option/달력 아이콘 커스텀이 전혀 없어 네이티브 OS 모양이었다. 구현 중 Playwright 스크린샷으로 실측한 결과, select의 열린 옵션 팝업은 Windows에서 Chromium이 OS 네이티브 콤보박스로 그려서 CSS/Electron nativeTheme 둘 다로도 다크 테마를 못 입힌다는 플랫폼 제약이 확인됨 — 사람 결정(2026-09-25): 옵션이 고정 소수(2~4개)인 select 3종류·4곳(Projects.jsx AddProjectForm의 유형, ProjectEditForm.jsx의 유형+상태, TodoEditForm.jsx의 우선순위)은 팝업 자체가 없는 토글 버튼 그룹(FieldToggleGroup, 신규 컴포넌트)으로 교체해 문제를 원천 차단. 옵션이 가변(소속 프로젝트)인 select 3곳(TodoAddForm.jsx/TodoEditForm.jsx/Memos.jsx)은 네이티브 select를 유지하고 팝업 색 제약은 알려진 한계로 수용. date 입력 7곳은 예정대로 hover/focus-visible/disabled 상태와 달력 아이콘 opacity 피드백을 공통 선택자로 통일. 범위가 CSS 전용에서 신규 컴포넌트+JSX 리팩터링+Electron 메인 프로세스 설정까지 넓어졌다.",
+      "where": "src/index.css,src/screens/Projects.jsx,src/screens/Memos.jsx,src/components/FieldToggleGroup.jsx,src/components/ProjectDetail.jsx,src/components/ProjectEditForm.jsx,src/components/TodoAddForm.jsx,src/components/TodoEditForm.jsx,src/components/ScheduleAddForm.jsx,src/components/ScheduleEditForm.jsx,electron/main.js",
+      "parent": "P12",
+      "deps": [],
+      "doc": null,
+      "done_when": "고정 옵션 select 3종류·4곳(Projects.jsx 유형/ProjectEditForm.jsx 유형·상태/TodoEditForm.jsx 우선순위)은 토글 버튼 그룹으로 대체되어 네이티브 select가 남아있지 않음(Playwright로 클릭 시 값 변경·aria-pressed 상태 확인). 선택된 토글 버튼은 hover 상태에서도 선택 배경(--accent-soft-bg)이 유지됨(비선택 버튼만 hover 시 sidebar-hover로 바뀜). 420px 폭에서 텍스트 잘림/줄바꿈 없음 — ProjectEditForm 상태(3버튼)와 TodoEditForm 우선순위(4버튼)는 별도 줄로 분리했고, AddProjectForm의 유형(2버튼)+날짜+추가버튼 한 줄도 스크린샷으로 확인됨. 가변 옵션 select 2곳(TodoAddForm/TodoEditForm)과 Memos.jsx select 1곳은 닫힌 상태가 같은 모양(배경/테두리/radius 10px/--text-muted 커스텀 화살표)이고 키보드(Tab/화살표/Enter) 유지, 열린 옵션 팝업의 다크 테마 미적용은 확인된 플랫폼 제약으로 문서화하고 수용. date 입력 7곳은 닫힌 상태가 같은 모양이고 hover/focus-visible/disabled 상태가 있으며 달력 아이콘은 opacity로만 피드백(색 자체는 브라우저 기본 다크 렌더링에 의존, 별도로 칠하지 않음). lint/test/build 통과.",
+      "est_min": 90,
+      "gate": "npm run lint && npm test && npm run build (표시용, CLI가 자동 실행하지 않음)",
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T14:47:04.282Z",
+      "log": [
+        {
+          "at": "2026-09-25T11:53:20.666Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "P12.13 착수. 착수 전 실측 확인: 원래 summary/where가 date 입력을 '4곳(ProjectEditForm/TodoEditForm/ScheduleAddForm/ScheduleEditForm)'이라고 적었으나 grep으로 전체를 세보니 실제로는 7곳(Projects.jsx, ProjectDetail.jsx도 누락돼 있었음)이다 — CSS 공용 선택자(.project-edit-row input[type=date] 등, 모든 date input이 이미 이 클래스로 감싸여 있음)로 접근하면 파일별 JSX 수정 없이 전부 커버되므로 구현에는 지장 없지만, where/summary/done_when의 개수 서술은 부정확했던 걸 set-field로 정정 예정."
+        },
+        {
+          "at": "2026-09-25T11:56:05.884Z",
+          "owner": null,
+          "status": "in_progress",
+          "note": "착수 시점 grep 재확인 결과, 원래 summary/where/done_when의 'date 입력 4곳'은 부정확했음(실제 7곳 — Projects.jsx, ProjectDetail.jsx가 누락됨) — set-field로 정정. 구현은 모든 select/date가 이미 공유 클래스(.project-add-form select/.project-edit-row select/.memo-project-select, .project-edit-row input[type=date])로 감싸여 있어 파일별 JSX 수정 없이 index.css만으로 전부 커버됨을 확인.",
+          "field_edit": {
+            "before": {
+              "summary": "앱 내 select 7곳(Projects.jsx, ProjectEditForm.jsx, TodoAddForm.jsx, TodoEditForm.jsx, Memos.jsx)과 date 입력 4곳(ProjectEditForm.jsx, TodoEditForm.jsx, ScheduleAddForm.jsx, ScheduleEditForm.jsx)이 닫힌 상태 배경/테두리만 지정돼 있고 appearance/option/달력 아이콘 커스텀이 전혀 없어 네이티브 OS 모양. 전 select에 appearance:none+테마색 chevron+hover/focus-visible/disabled 상태 적용, option 배경/글자색을 토큰에 맞추고, date 입력의 달력 아이콘 색과 필드 모양을 공통 클래스로 통일.",
+              "where": "src/index.css,src/screens/Projects.jsx,src/screens/Memos.jsx,src/components/ProjectEditForm.jsx,src/components/TodoAddForm.jsx,src/components/TodoEditForm.jsx,src/components/ScheduleAddForm.jsx,src/components/ScheduleEditForm.jsx",
+              "done_when": "select 7곳+date 입력 4곳이 닫힌 상태에서 같은 모양(배경/테두리/radius/테마색 화살표·아이콘)으로 보임(화면별 스크린샷). 펼친 옵션 목록 배경/글자색이 다크 토큰을 따름. 키보드 조작(Tab/화살표/Enter) 유지. lint/build 통과."
+            },
+            "after": {
+              "summary": "앱 내 select 7곳(Projects.jsx, ProjectEditForm.jsx, TodoAddForm.jsx, TodoEditForm.jsx, Memos.jsx)과 date 입력 7곳(Projects.jsx, ProjectDetail.jsx, ProjectEditForm.jsx, TodoAddForm.jsx, TodoEditForm.jsx, ScheduleAddForm.jsx, ScheduleEditForm.jsx)이 닫힌 상태 배경/테두리만 지정돼 있고 appearance/option/달력 아이콘 커스텀이 전혀 없어 네이티브 OS 모양. 전 select에 appearance:none+테마색 chevron+hover/focus-visible/disabled 상태 적용, option 배경/글자색을 토큰에 맞추고, date 입력에도 같은 수준의 상태 피드백(hover/focus-visible/disabled)과 달력 아이콘 상호작용(opacity)을 공통 선택자로 통일.",
+              "where": "src/index.css,src/screens/Projects.jsx,src/screens/Memos.jsx,src/components/ProjectDetail.jsx,src/components/ProjectEditForm.jsx,src/components/TodoAddForm.jsx,src/components/TodoEditForm.jsx,src/components/ScheduleAddForm.jsx,src/components/ScheduleEditForm.jsx",
+              "done_when": "select 7곳+date 입력 7곳이 닫힌 상태에서 같은 모양(배경/테두리/radius/테마색 화살표·아이콘)으로 보임(화면별 스크린샷 또는 실측 기록). 펼친 옵션 목록 배경/글자색이 다크 토큰을 따름. 키보드 조작(Tab/화살표/Enter) 유지. lint/build 통과."
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T11:56:11.080Z",
+          "owner": null,
+          "status": "in_progress",
+          "note": "gate/est_min 설정.",
+          "field_edit": {
+            "before": {
+              "gate": null,
+              "est_min": null
+            },
+            "after": {
+              "gate": "npm run lint && npm run build (표시용, CLI가 자동 실행하지 않음)",
+              "est_min": 40
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T11:57:10.161Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료: index.css 맨 끝에 select 공용 규칙(.project-add-form select, .project-edit-row select, .memo-project-select — appearance:none, linear-gradient 이중 그라디언트 화살표, hover:not(:disabled)/focus-visible/disabled, option 배경/글자색)과 date 공용 규칙(.project-edit-row input[type=date] — hover/focus-visible/disabled, ::-webkit-calendar-picker-indicator opacity 피드백) 추가. 컴포넌트 JSX는 건드리지 않음(모든 select/date가 이미 공유 클래스로 감싸여 있어 CSS만으로 전부 커버). Playwright 실측: Projects/ProjectEditForm/Memos 화면의 select들 모두 appearance=none, backgroundImage=linear-gradient(테마 chevron), paddingRight=26px로 동일 확인. 키보드 탐색 확인: select에 focus 후 ArrowDown으로 값이 정상 변경됨(장기→단기), appearance:none이 네이티브 키보드 동작을 깨지 않음. 스크린샷 확인: Projects/ProjectEditForm/Memos 3개 화면 모두 동일한 테마색 화살표 렌더링. where/summary/done_when의 부정확한 date 입력 개수('4곳'→실제 7곳)를 set-field로 정정. gate/est_min 설정. lint 0 errors, build 성공, vitest는 이 task 범위에 관련 테스트 없어 무변화(226개 계속 통과)."
+        },
+        {
+          "at": "2026-09-25T14:12:20.421Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 반영 착수: (High) done_when의 '테마색 아이콘'이 date 입력엔 실제로 적용 안 됨(opacity만) — done_when 문구를 select(테마색 화살표)/date(opacity 피드백만, 색은 브라우저 기본 다크 렌더링 유지) 둘로 명확히 분리 예정. (High) .memo-project-select만 radius 12px로 나머지 6개(10px)와 다름 — radius만 10px로 맞추는 오버라이드 추가 예정(padding/font-size는 done_when이 애초에 요구 안 함). (Medium) 실측 범위가 3개 화면 select만 다뤘고 TodoAddForm/TodoEditForm select, date 7곳 전체, Tab/Enter, 옵션 팝업 확인이 빠짐 — 재검증 예정. (Medium) '테마색' 표현이 --text-muted인지 --accent인지 모호 — --text-muted로 명시. (Medium) option 배경이 반투명(--card-bg, alpha 0.75)이라 네이티브 팝업 합성 방식이 불확실 — 불투명 토큰(--sidebar-bg)으로 교체 예정."
+        },
+        {
+          "at": "2026-09-25T14:13:00.669Z",
+          "owner": null,
+          "status": "in_progress",
+          "note": "critical-reviewer 지적(High 2건) 반영: (1) done_when의 '테마색 아이콘'이 select(화살표)/date(달력 아이콘)를 뭉뚱그렸는데 실제로는 select만 색을 바꾸고 date는 opacity만 쓴다 — 문구를 실제 구현에 맞게 분리·명확화. (2) .memo-project-select만 radius 12px로 달랐던 것을 index.css에서 10px로 오버라이드(나머지 6개와 통일) — padding/font-size는 done_when이 원래 요구 안 해서 그대로 둠(메모 편집기의 다른 입력과 짝 맞춤 유지).",
+          "field_edit": {
+            "before": {
+              "done_when": "select 7곳+date 입력 7곳이 닫힌 상태에서 같은 모양(배경/테두리/radius/테마색 화살표·아이콘)으로 보임(화면별 스크린샷 또는 실측 기록). 펼친 옵션 목록 배경/글자색이 다크 토큰을 따름. 키보드 조작(Tab/화살표/Enter) 유지. lint/build 통과."
+            },
+            "after": {
+              "done_when": "select 7곳+date 입력 7곳이 닫힌 상태에서 배경/테두리/radius(모든 select 10px로 통일)가 같은 모양으로 보임(화면별 스크린샷 또는 실측 기록, TodoAddForm/TodoEditForm 포함). select의 화살표는 --text-muted 토큰 색의 커스텀 chevron(OS 기본 모양 아님). date 입력의 달력 아이콘은 색 자체는 바꾸지 않고(:root의 color-scheme:dark가 이미 밝은 기본 아이콘을 그림) hover/disabled에서 opacity로 상태 피드백만 준다 — 이 둘은 같은 조건이 아니므로 구분해서 확인. 펼친 옵션 목록 배경(--sidebar-bg, 불투명)/글자색이 다크 토큰을 따름. 키보드 조작(Tab으로 포커스 이동, 화살표로 값 변경, Enter로 폼 제출)이 select 7곳 모두에서 유지됨. lint/build 통과."
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T14:35:29.612Z",
+          "owner": null,
+          "status": "in_progress",
+          "note": "사람 결정(2026-09-25, AskUserQuestion): select 열린 팝업의 Windows 플랫폼 제약을 CSS/nativeTheme 둘 다로 못 고친다는 걸 실제로 시도하고 스크린샷으로 확인한 뒤, '드롭다운 대신 다른 방식'을 요청받아 고정 소수 옵션 select 3개를 토글 버튼 그룹(FieldToggleGroup.jsx 신규)으로 교체하기로 확정. 소속 프로젝트 select 3곳(가변 옵션)은 네이티브 select 유지 + 팝업 색 제약은 알려진 한계로 수용. 구현 중 420px 폭에서 여러 컨트롤이 한 줄에 몰리면 텍스트가 잘리는 걸 Playwright 스크린샷으로 발견해 ProjectEditForm/TodoEditForm의 상태·우선순위 토글을 별도 줄로 분리.",
+          "field_edit": {
+            "before": {
+              "summary": "앱 내 select 7곳(Projects.jsx, ProjectEditForm.jsx, TodoAddForm.jsx, TodoEditForm.jsx, Memos.jsx)과 date 입력 7곳(Projects.jsx, ProjectDetail.jsx, ProjectEditForm.jsx, TodoAddForm.jsx, TodoEditForm.jsx, ScheduleAddForm.jsx, ScheduleEditForm.jsx)이 닫힌 상태 배경/테두리만 지정돼 있고 appearance/option/달력 아이콘 커스텀이 전혀 없어 네이티브 OS 모양. 전 select에 appearance:none+테마색 chevron+hover/focus-visible/disabled 상태 적용, option 배경/글자색을 토큰에 맞추고, date 입력에도 같은 수준의 상태 피드백(hover/focus-visible/disabled)과 달력 아이콘 상호작용(opacity)을 공통 선택자로 통일.",
+              "where": "src/index.css,src/screens/Projects.jsx,src/screens/Memos.jsx,src/components/ProjectDetail.jsx,src/components/ProjectEditForm.jsx,src/components/TodoAddForm.jsx,src/components/TodoEditForm.jsx,src/components/ScheduleAddForm.jsx,src/components/ScheduleEditForm.jsx",
+              "done_when": "select 7곳+date 입력 7곳이 닫힌 상태에서 배경/테두리/radius(모든 select 10px로 통일)가 같은 모양으로 보임(화면별 스크린샷 또는 실측 기록, TodoAddForm/TodoEditForm 포함). select의 화살표는 --text-muted 토큰 색의 커스텀 chevron(OS 기본 모양 아님). date 입력의 달력 아이콘은 색 자체는 바꾸지 않고(:root의 color-scheme:dark가 이미 밝은 기본 아이콘을 그림) hover/disabled에서 opacity로 상태 피드백만 준다 — 이 둘은 같은 조건이 아니므로 구분해서 확인. 펼친 옵션 목록 배경(--sidebar-bg, 불투명)/글자색이 다크 토큰을 따름. 키보드 조작(Tab으로 포커스 이동, 화살표로 값 변경, Enter로 폼 제출)이 select 7곳 모두에서 유지됨. lint/build 통과."
+            },
+            "after": {
+              "summary": "앱 내 select 7곳과 date 입력 7곳이 닫힌 상태 배경/테두리만 지정돼 있고 appearance/option/달력 아이콘 커스텀이 전혀 없어 네이티브 OS 모양이었다. 구현 중 Playwright 스크린샷으로 실측한 결과, select의 열린 옵션 팝업은 Windows에서 Chromium이 OS 네이티브 콤보박스로 그려서 CSS/Electron nativeTheme 둘 다로도 다크 테마를 못 입힌다는 플랫폼 제약이 확인됨 — 사람 결정(2026-09-25): 옵션이 고정 소수(2~4개)인 select 3개(장기/단기, 진행중/완료/보류, 우선순위)는 팝업 자체가 없는 토글 버튼 그룹(FieldToggleGroup)으로 교체해 문제를 원천 차단. 옵션이 가변(소속 프로젝트)인 select 3개(TodoAddForm/TodoEditForm/Memos.jsx)는 네이티브 select를 유지하고 팝업 색 제약은 알려진 한계로 수용. date 입력 7곳은 예정대로 hover/focus-visible/disabled 상태와 달력 아이콘 opacity 피드백을 공통 선택자로 통일.",
+              "where": "src/index.css,src/screens/Projects.jsx,src/screens/Memos.jsx,src/components/FieldToggleGroup.jsx,src/components/ProjectDetail.jsx,src/components/ProjectEditForm.jsx,src/components/TodoAddForm.jsx,src/components/TodoEditForm.jsx,src/components/ScheduleAddForm.jsx,src/components/ScheduleEditForm.jsx,electron/main.js",
+              "done_when": "고정 옵션 select 3개(장기/단기, 진행중/완료/보류, 우선순위)는 토글 버튼 그룹으로 대체되어 네이티브 select가 남아있지 않음(Playwright로 클릭 시 값 변경 확인, 420px 폭에서 버튼 잘림/줄바꿈 없음 — 프로젝트 상태(3버튼)는 별도 줄로 분리해 확보). 가변 옵션 select 3곳(TodoAddForm/TodoEditForm/Memos.jsx)은 닫힌 상태가 같은 모양(배경/테두리/radius 10px/--text-muted 커스텀 화살표)이고 키보드(Tab/화살표/Enter) 유지, 열린 옵션 팝업의 다크 테마 미적용은 확인된 플랫폼 제약으로 문서화하고 수용. date 입력 7곳은 닫힌 상태가 같은 모양이고 hover/focus-visible/disabled 상태가 있으며 달력 아이콘은 opacity로만 피드백(색 자체는 브라우저 기본 다크 렌더링에 의존, 별도로 칠하지 않음). lint/test/build 통과."
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T14:37:02.070Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "critical-reviewer 지적 5건 전부 반영 + 구현 중 발견한 추가 플랫폼 제약을 사람 결정으로 해소: (High) done_when의 select/date 아이콘 색 뭉뚱그림 정정 → 추가 조사 중 select 열린 옵션 팝업이 Windows에서 CSS/nativeTheme 둘 다로도 다크 테마가 안 먹는 플랫폼 제약을 Playwright 스크린샷으로 발견 → AskUserQuestion으로 확인받아 고정 소수 옵션 select 3개(장기/단기, 진행중/완료/보류, 우선순위)를 신규 FieldToggleGroup 컴포넌트(토글 버튼, 팝업 자체가 없어 문제 원천 차단)로 교체, 가변 옵션 select 3개(소속 프로젝트)는 네이티브 유지+한계 수용. (High) .memo-project-select radius 10px로 통일(유지). (Medium) 실측 범위 확대: 전체 7개 select(변환 3+유지 3+프로젝트 추가폼 포함) 및 TodoAddForm/TodoEditForm 전부 Playwright로 재확인, Tab 포커스 이동 확인, 클릭 시 값 변경 확인. (Medium) '테마색' → --text-muted 명시(유지). (Medium) option 배경 --sidebar-bg 불투명 교체(유지, 다만 팝업 자체가 네이티브라 이 색이 실제로 안 먹는다는 걸 이번에 발견 — 알려진 한계로 문서화). 추가 발견: 토글 버튼 그룹 3개가 420px 한 줄에 다 몰리면 잘림 — ProjectEditForm 상태(3버튼)/TodoEditForm 우선순위(4버튼)를 별도 줄로 분리해 해결(Playwright 스크린샷으로 수정 전/후 비교 확인). where/summary/done_when을 최종 구현에 맞게 전면 재작성. lint 0 errors, vitest 226개(무관 변경, 그대로 통과), build 성공."
+        },
+        {
+          "at": "2026-09-25T14:39:39.477Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 반영 착수: (High) 토글로 바뀐 select가 실제로는 4개 인스턴스(Projects.jsx 유형, ProjectEditForm.jsx 유형+상태, TodoEditForm.jsx 우선순위 — 3종류/4곳)인데 summary/done_when/주석이 '3개'로 서술 — 정정 예정. (High) FieldToggleGroup에 aria-pressed 없어 스크린리더가 선택 상태를 못 읽음(select 대비 접근성 후퇴) — 추가 예정. (Medium) .field-toggle-option:hover 특이도가 .active보다 높아 선택된 버튼에 마우스 올리면 선택 배경이 사라짐 — 선택자 수정 예정. (Medium) electron/main.js 주석이 nativeTheme이 팝업에 효과 있는 것처럼 적혀 있는데 실제론 효과 없음(index.css 주석과 모순) — 정정 예정. (Medium) ProjectEditForm.jsx 폴백 주석이 이제 없는 <select>를 근거로 듦 — 정정 예정. (Medium) done_when이 TodoEditForm 우선순위 분리/AddProjectForm 420px 확인을 안 담음 — 보강 예정. (Medium) PROJECT_TYPE_OPTIONS가 PROJECT_TYPES에서 파생 안 됨(중복) — 파생시키도록 수정 예정. (Medium) gate에 npm test 누락, title '(CSS)' 문구가 이제 안 맞음, est_min 과소 — 정정 예정."
+        },
+        {
+          "at": "2026-09-25T14:42:34.463Z",
+          "owner": null,
+          "status": "in_progress",
+          "note": "critical-reviewer 지적(High 2, Medium 6) 전부 반영: (1)[High] 개수 서술 정정(3개→3종류/4곳)을 summary/done_when/index.css/FieldToggleGroup.jsx 주석 전체에 반영. (2)[High] FieldToggleGroup에 aria-pressed 추가 — Playwright로 true/false 정상 확인. (3)[Medium] .field-toggle-option:hover 특이도가 .active보다 높아 선택 배경이 사라지던 버그 수정(:not(.active) 추가) — Playwright로 active 버튼 hover 전후 배경색 동일함(비활성 버튼은 여전히 변함) 확인. (4)[Medium] electron/main.js의 nativeTheme 주석이 효과 있는 것처럼 적혀있던 걸 '이 팝업엔 효과 없음, 다른 용도로 유지' 로 정정. (5)[Medium] ProjectEditForm.jsx 폴백 주석의 <select> 언급을 FieldToggleGroup 기준으로 정정. (6)[Medium] done_when에 TodoEditForm 우선순위 분리 + AddProjectForm 420px 확인 명시 추가. (7)[Medium] Projects.jsx의 PROJECT_TYPE_OPTIONS를 PROJECT_TYPES에서 파생하도록 수정(중복 제거). (8)[Medium] title에서 '(CSS)' 제거(범위가 넓어짐), gate에 npm test 추가, est_min 90으로 상향(신규 컴포넌트+3개 JSX 리팩터링+main.js 반영). lint 0 errors, vitest 226개 통과, build 성공. 최종 재검증 요청.",
+          "field_edit": {
+            "before": {
+              "title": "select/date 입력 트리거 테마 통일(CSS)",
+              "summary": "앱 내 select 7곳과 date 입력 7곳이 닫힌 상태 배경/테두리만 지정돼 있고 appearance/option/달력 아이콘 커스텀이 전혀 없어 네이티브 OS 모양이었다. 구현 중 Playwright 스크린샷으로 실측한 결과, select의 열린 옵션 팝업은 Windows에서 Chromium이 OS 네이티브 콤보박스로 그려서 CSS/Electron nativeTheme 둘 다로도 다크 테마를 못 입힌다는 플랫폼 제약이 확인됨 — 사람 결정(2026-09-25): 옵션이 고정 소수(2~4개)인 select 3개(장기/단기, 진행중/완료/보류, 우선순위)는 팝업 자체가 없는 토글 버튼 그룹(FieldToggleGroup)으로 교체해 문제를 원천 차단. 옵션이 가변(소속 프로젝트)인 select 3개(TodoAddForm/TodoEditForm/Memos.jsx)는 네이티브 select를 유지하고 팝업 색 제약은 알려진 한계로 수용. date 입력 7곳은 예정대로 hover/focus-visible/disabled 상태와 달력 아이콘 opacity 피드백을 공통 선택자로 통일.",
+              "done_when": "고정 옵션 select 3개(장기/단기, 진행중/완료/보류, 우선순위)는 토글 버튼 그룹으로 대체되어 네이티브 select가 남아있지 않음(Playwright로 클릭 시 값 변경 확인, 420px 폭에서 버튼 잘림/줄바꿈 없음 — 프로젝트 상태(3버튼)는 별도 줄로 분리해 확보). 가변 옵션 select 3곳(TodoAddForm/TodoEditForm/Memos.jsx)은 닫힌 상태가 같은 모양(배경/테두리/radius 10px/--text-muted 커스텀 화살표)이고 키보드(Tab/화살표/Enter) 유지, 열린 옵션 팝업의 다크 테마 미적용은 확인된 플랫폼 제약으로 문서화하고 수용. date 입력 7곳은 닫힌 상태가 같은 모양이고 hover/focus-visible/disabled 상태가 있으며 달력 아이콘은 opacity로만 피드백(색 자체는 브라우저 기본 다크 렌더링에 의존, 별도로 칠하지 않음). lint/test/build 통과.",
+              "gate": "npm run lint && npm run build (표시용, CLI가 자동 실행하지 않음)",
+              "est_min": 40
+            },
+            "after": {
+              "title": "select/date 입력 트리거 테마 통일",
+              "summary": "앱 내 select 7곳과 date 입력 7곳이 닫힌 상태 배경/테두리만 지정돼 있고 appearance/option/달력 아이콘 커스텀이 전혀 없어 네이티브 OS 모양이었다. 구현 중 Playwright 스크린샷으로 실측한 결과, select의 열린 옵션 팝업은 Windows에서 Chromium이 OS 네이티브 콤보박스로 그려서 CSS/Electron nativeTheme 둘 다로도 다크 테마를 못 입힌다는 플랫폼 제약이 확인됨 — 사람 결정(2026-09-25): 옵션이 고정 소수(2~4개)인 select 3종류·4곳(Projects.jsx AddProjectForm의 유형, ProjectEditForm.jsx의 유형+상태, TodoEditForm.jsx의 우선순위)은 팝업 자체가 없는 토글 버튼 그룹(FieldToggleGroup, 신규 컴포넌트)으로 교체해 문제를 원천 차단. 옵션이 가변(소속 프로젝트)인 select 3곳(TodoAddForm.jsx/TodoEditForm.jsx/Memos.jsx)은 네이티브 select를 유지하고 팝업 색 제약은 알려진 한계로 수용. date 입력 7곳은 예정대로 hover/focus-visible/disabled 상태와 달력 아이콘 opacity 피드백을 공통 선택자로 통일. 범위가 CSS 전용에서 신규 컴포넌트+JSX 리팩터링+Electron 메인 프로세스 설정까지 넓어졌다.",
+              "done_when": "고정 옵션 select 3종류·4곳(Projects.jsx 유형/ProjectEditForm.jsx 유형·상태/TodoEditForm.jsx 우선순위)은 토글 버튼 그룹으로 대체되어 네이티브 select가 남아있지 않음(Playwright로 클릭 시 값 변경·aria-pressed 상태 확인). 선택된 토글 버튼은 hover 상태에서도 선택 배경(accent)이 유지됨(비선택 버튼만 hover 시 sidebar-hover로 바뀜). 420px 폭에서 텍스트 잘림/줄바꿈 없음 — ProjectEditForm 상태(3버튼)와 TodoEditForm 우선순위(4버튼)는 별도 줄로 분리했고, AddProjectForm의 유형(2버튼)+날짜+추가버튼 한 줄도 스크린샷으로 확인됨. 가변 옵션 select 3곳(TodoAddForm/TodoEditForm/Memos.jsx)은 닫힌 상태가 같은 모양(배경/테두리/radius 10px/--text-muted 커스텀 화살표)이고 키보드(Tab/화살표/Enter) 유지, 열린 옵션 팝업의 다크 테마 미적용은 확인된 플랫폼 제약으로 문서화하고 수용. date 입력 7곳은 닫힌 상태가 같은 모양이고 hover/focus-visible/disabled 상태가 있으며 달력 아이콘은 opacity로만 피드백(색 자체는 브라우저 기본 다크 렌더링에 의존, 별도로 칠하지 않음). lint/test/build 통과.",
+              "gate": "npm run lint && npm test && npm run build (표시용, CLI가 자동 실행하지 않음)",
+              "est_min": 90
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T14:43:46.660Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "critical-reviewer 지적(High 2, Medium 6) 전부 반영 완료 — 상세 내역은 직전 로그 참고. 이번 라운드 재검증 요청. lint/test/build 전부 통과 재확인."
+        },
+        {
+          "at": "2026-09-25T14:46:31.995Z",
+          "owner": null,
+          "status": "in_review",
+          "note": "critical-reviewer 4차 재검증: 조건부 승인 — Medium 2건(index.css:1344의 '나머지 6개' 개수 오류, index.css:293 주석이 이제 없는 AddProjectForm select를 언급, done_when의 '(accent)'가 실제 변수 --accent-soft-bg와 안 맞아 혼동 여지) 발견, 5차 재검증 없이 고치고 done 처리해도 된다고 판단. 세 곳 모두 주석/문구 정정 완료 — index.css:1344(나머지 2개로 정정), index.css:293-296(TodoAddForm 전용으로 범위 명시), done_when의 '(accent)'→'(--accent-soft-bg)'로 정확한 변수명 명시. 이전 8건(개수 서술, aria-pressed, hover 특이도, nativeTheme 주석, 폴백 주석, done_when 보강, 상수 파생, gate/title/est_min)은 critical-reviewer가 파일별 줄 번호까지 확인해 전부 해소로 판정.",
+          "field_edit": {
+            "before": {
+              "done_when": "고정 옵션 select 3종류·4곳(Projects.jsx 유형/ProjectEditForm.jsx 유형·상태/TodoEditForm.jsx 우선순위)은 토글 버튼 그룹으로 대체되어 네이티브 select가 남아있지 않음(Playwright로 클릭 시 값 변경·aria-pressed 상태 확인). 선택된 토글 버튼은 hover 상태에서도 선택 배경(accent)이 유지됨(비선택 버튼만 hover 시 sidebar-hover로 바뀜). 420px 폭에서 텍스트 잘림/줄바꿈 없음 — ProjectEditForm 상태(3버튼)와 TodoEditForm 우선순위(4버튼)는 별도 줄로 분리했고, AddProjectForm의 유형(2버튼)+날짜+추가버튼 한 줄도 스크린샷으로 확인됨. 가변 옵션 select 3곳(TodoAddForm/TodoEditForm/Memos.jsx)은 닫힌 상태가 같은 모양(배경/테두리/radius 10px/--text-muted 커스텀 화살표)이고 키보드(Tab/화살표/Enter) 유지, 열린 옵션 팝업의 다크 테마 미적용은 확인된 플랫폼 제약으로 문서화하고 수용. date 입력 7곳은 닫힌 상태가 같은 모양이고 hover/focus-visible/disabled 상태가 있으며 달력 아이콘은 opacity로만 피드백(색 자체는 브라우저 기본 다크 렌더링에 의존, 별도로 칠하지 않음). lint/test/build 통과."
+            },
+            "after": {
+              "done_when": "고정 옵션 select 3종류·4곳(Projects.jsx 유형/ProjectEditForm.jsx 유형·상태/TodoEditForm.jsx 우선순위)은 토글 버튼 그룹으로 대체되어 네이티브 select가 남아있지 않음(Playwright로 클릭 시 값 변경·aria-pressed 상태 확인). 선택된 토글 버튼은 hover 상태에서도 선택 배경(--accent-soft-bg)이 유지됨(비선택 버튼만 hover 시 sidebar-hover로 바뀜). 420px 폭에서 텍스트 잘림/줄바꿈 없음 — ProjectEditForm 상태(3버튼)와 TodoEditForm 우선순위(4버튼)는 별도 줄로 분리했고, AddProjectForm의 유형(2버튼)+날짜+추가버튼 한 줄도 스크린샷으로 확인됨. 가변 옵션 select 2곳(TodoAddForm/TodoEditForm)과 Memos.jsx select 1곳은 닫힌 상태가 같은 모양(배경/테두리/radius 10px/--text-muted 커스텀 화살표)이고 키보드(Tab/화살표/Enter) 유지, 열린 옵션 팝업의 다크 테마 미적용은 확인된 플랫폼 제약으로 문서화하고 수용. date 입력 7곳은 닫힌 상태가 같은 모양이고 hover/focus-visible/disabled 상태가 있으며 달력 아이콘은 opacity로만 피드백(색 자체는 브라우저 기본 다크 렌더링에 의존, 별도로 칠하지 않음). lint/test/build 통과."
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T14:47:04.282Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer 4차 재검증 조건부 승인 — Medium 2건(index.css의 개수 서술 잔재, done_when의 모호한 색상 표현)을 재검증 없이 고치고 바로 done 처리해도 된다는 판단에 따라 세 곳 정정 완료: index.css:1344 주석 정정, index.css:293-296 AddProjectForm 범위 명시 정정, done_when의 '(accent)'→'(--accent-soft-bg)' 정확한 변수명 명시. 4라운드에 걸친 리뷰에서 확인된 사항: select 개수(토글 3종류·4곳, 네이티브 2곳+Memos 1곳=3곳, date 7곳) 정확, FieldToggleGroup 접근성(aria-pressed) 정상, hover/.active CSS 특이도 충돌 없음(계산 확인), nativeTheme 주석 정확, 폴백 로직 인과관계 정확, 기존 테스트(scheduleGrid 등) 이 변경과 무관해 영향 없음. lint 0 errors, vitest 226개 통과, build 성공. done_when 전체 충족."
+        }
+      ],
+      "done_at": "2026-09-25"
+    },
+    {
+      "id": "P12.14",
+      "status": "done",
+      "priority": "P3",
+      "category": "spike",
+      "title": "드롭다운 목록·날짜 선택 팝업 커스텀 컴포넌트 교체 여부 결정",
+      "summary": "네이티브 옵션 목록과 달력 팝업은 CSS로 테마를 입힐 수 없어(Chromium/OS가 직접 그림), P12.13 이후에도 펼친 상태는 OS 모양이 남음. 커스텀 Select/DatePicker로 교체하면 listbox/grid 키보드 접근성 직접 구현, max-lines 300 안에서 컴포넌트 분리, 입력 11곳 교체가 필요. 외부 라이브러리(react-select 등)는 P5.1 무의존성 관행과 충돌. 날짜 선택기는 기존 scheduleGrid.getMonthGrid와 P12.6/P12.8의 주말·공휴일 색을 재사용 가능해 4번 요구도 함께 해소.",
+      "where": "work-widget-requirements.md",
+      "parent": "P12",
+      "deps": [],
+      "doc": null,
+      "done_when": "select/날짜 선택 각각에 대해 네이티브 유지(P12.13으로 종료)/자체 구현/라이브러리 도입 중 하나를 사람이 결정해 기록.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T05:24:06.877Z",
+      "log": [
+        {
+          "at": "2026-09-25T05:14:52.017Z",
+          "owner": "claude",
+          "status": "needs_info",
+          "note": "사람 결정 필요: select 펼친 목록과 날짜 선택 팝업을 (1)P12.13(CSS만)으로 네이티브 유지하고 종료할지 (2)자체 구현 커스텀 컴포넌트로 교체할지(접근성/유지보수 부담 발생) (3)외부 라이브러리를 도입할지(이 프로젝트의 무의존성 관행과 충돌). 결정 전에는 P12.15(구현) 착수하지 않음."
+        },
+        {
+          "at": "2026-09-25T05:24:06.877Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "사람 결정(2026-09-25): 외부 라이브러리 없이 자체 구현으로 진행 — 기존 다크 글래스 테마(src/index.css의 oklch 커스텀 프로퍼티 토큰: --bg/--sidebar-bg/--card-bg/--accent 등, P9에서 확립된 순수 CSS 기반 디자인 시스템)와 동일한 토큰을 그대로 재사용해 커스텀 Select/DatePicker를 만든다. P12.15(구현)가 이 결정으로 진행."
+        }
+      ],
+      "done_at": "2026-09-25"
+    },
+    {
+      "id": "P12.15",
+      "status": "todo",
+      "priority": "P3",
+      "category": "feature",
+      "title": "테마 적용 커스텀 드롭다운/날짜 선택 컴포넌트 구현",
+      "summary": "P12.14 결정 범위 안에서 공용 컴포넌트를 src/components/에 만들고 기존 select/date 입력을 교체. 날짜 선택기는 scheduleGrid.getMonthGrid를 재사용하고 주말(P12.6)/공휴일(P12.8이 있다면) 색을 공유.",
+      "where": "src/components,src/index.css,src/lib/scheduleGrid.js",
+      "parent": "P12",
+      "deps": [
+        "P12.13",
+        "P12.14",
+        "P12.6"
+      ],
+      "doc": null,
+      "done_when": "교체 대상 입력이 모두 새 컴포넌트를 씀. 펼친 목록/달력이 다크 글래스 톤. 키보드만으로 열기/이동/선택/닫기(Esc) 가능. 날짜 선택기에서 주말(과 공휴일) 색이 월간 뷰와 같음. 기존 due_date 처리 계약(TodoEditForm의 toDateInputValue) 유지. lint/test/build 통과.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T05:15:03.543Z",
+      "log": []
+    },
+    {
+      "id": "P12.16",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "일정 카테고리(분류) 데이터 모델 + 관리 화면",
+      "summary": "P12.10 결정에 따라 일정에 재사용 가능한 카테고리(이름+고정 팔레트 색상) 개념을 도입한다. data.json에 새 배열(예: schedule_categories: [{id,name,color}])을 추가하고 dataStore.js 정규화(P6.4 기본값 패턴, 빈 배열 기본값)를 적용한다. 별도 관리 화면/영역(사이드바에 '설정' 또는 기존 화면 내 진입점)에서 카테고리 추가/수정/삭제(이름, 팔레트에서 색 선택)가 가능해야 한다.",
+      "where": "electron/dataStore.js,src/lib,src/screens,src/components,src/index.css,work-widget-requirements.md",
+      "parent": "P12",
+      "deps": [
+        "P12.10"
+      ],
+      "doc": "work-widget-requirements.md#B3.4",
+      "done_when": "카테고리를 추가/수정/삭제할 수 있는 화면이 있고, 삭제 시 해당 카테고리를 쓰던 일정이 정합성 있게 처리된다(예: 미분류로 되돌림). data.json에 새 배열이 저장/로드되고 dataStore 정규화 테스트가 통과한다. 기존 일정 데이터(카테고리 없음)도 정상 로드된다. B3.4에 스키마 변경 결정 문단 추가. lint/test/build 통과.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T05:23:44.259Z",
+      "log": []
+    },
+    {
+      "id": "P12.17",
+      "status": "todo",
+      "priority": "P2",
+      "category": "feature",
+      "title": "일정 추가/수정 폼 + 달력에 카테고리 색상 반영",
+      "summary": "P12.16에서 만든 카테고리를 ScheduleAddForm.jsx/ScheduleEditForm.jsx에서 선택할 수 있게 하고, 월간/주간 뷰 셀(P12.9의 표시 개선과 함께)과 날짜 상세 카드에서 일정마다 카테고리 색을 보여준다.",
+      "where": "src/components/ScheduleAddForm.jsx,src/components/ScheduleEditForm.jsx,src/components/ScheduleMonthView.jsx,src/components/ScheduleWeekView.jsx,src/components/ScheduleDateDetail.jsx,src/lib/scheduleGrid.js,src/index.css",
+      "parent": "P12",
+      "deps": [
+        "P12.16",
+        "P12.9"
+      ],
+      "doc": null,
+      "done_when": "일정 추가/수정 시 카테고리를 선택할 수 있고 선택한 색이 저장된다. 월간/주간 셀과 날짜 상세에서 일정별 카테고리 색이 한눈에 구분된다(스크린샷). 카테고리 미지정 일정도 정상 표시된다. lint/test/build 통과.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T05:23:56.771Z",
+      "log": []
+    },
+    {
+      "id": "P12.18",
+      "status": "todo",
+      "priority": "P3",
+      "category": "cleanup",
+      "title": "삭제 2단계 확인 취소 버튼 스타일 정리(폰트 크기 불일치)",
+      "summary": "critical-reviewer 지적(P12.11 리뷰): 프로젝트/할일/일정 편집 폼과 Memos.jsx의 삭제 2단계 확인(삭제 확인/취소) 버튼 쌍이 서로 폰트 크기가 다르다 — .project-delete-button=11.5px, .todo-delete-toggle=11px, 그 짝인 .back-button=12.5px. P12.11은 저장/취소 쌍만 통일했고 이 삭제 확인 쌍은 의도적으로 범위 밖에 뒀다.",
+      "where": "src/index.css,src/components/ProjectEditForm.jsx,src/components/TodoEditForm.jsx,src/components/ScheduleEditForm.jsx,src/screens/Memos.jsx",
+      "parent": "P12",
+      "deps": [
+        "P12.11"
+      ],
+      "doc": null,
+      "done_when": "프로젝트/할일/일정/메모 4곳의 삭제 2단계 확인(삭제 확인/취소) 버튼 쌍이 서로 같은 폰트 크기·패딩을 쓴다(스크린샷 또는 실측 기록). 취소 버튼(.back-button)의 :hover에 :disabled 제외 가드가 없어 비활성 중에도 반응하는 문제도 함께 고친다(P12.11에서 .project-edit-cancel에 적용한 것과 동일 패턴). 기존 danger 색 위계는 유지. lint/build 통과.",
+      "est_min": 20,
+      "gate": "npm run lint && npm run build (표시용, CLI가 자동 실행하지 않음)",
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T11:48:09.530Z",
+      "log": [
+        {
+          "at": "2026-09-25T11:48:09.530Z",
+          "owner": null,
+          "status": "todo",
+          "note": "critical-reviewer 지적(P12.11 4차 재검증, Medium 2건): gate/est_min 미설정 보완, 그리고 P12.11에서 고친 :hover:disabled 가드 문제가 이 task의 대상인 .back-button에도 동일하게 있다는 걸 발견해 done_when에 명시.",
+          "field_edit": {
+            "before": {
+              "gate": null,
+              "est_min": null,
+              "done_when": "프로젝트/할일/일정/메모 4곳의 삭제 2단계 확인(삭제 확인/취소) 버튼 쌍이 서로 같은 폰트 크기·패딩을 쓴다(스크린샷 또는 실측 기록). 기존 danger 색 위계는 유지. lint/build 통과."
+            },
+            "after": {
+              "gate": "npm run lint && npm run build (표시용, CLI가 자동 실행하지 않음)",
+              "est_min": 20,
+              "done_when": "프로젝트/할일/일정/메모 4곳의 삭제 2단계 확인(삭제 확인/취소) 버튼 쌍이 서로 같은 폰트 크기·패딩을 쓴다(스크린샷 또는 실측 기록). 취소 버튼(.back-button)의 :hover에 :disabled 제외 가드가 없어 비활성 중에도 반응하는 문제도 함께 고친다(P12.11에서 .project-edit-cancel에 적용한 것과 동일 패턴). 기존 danger 색 위계는 유지. lint/build 통과."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "P12.19",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "프로젝트/할일 마감일 선택에 주말·공휴일 색 반영(커스텀 날짜 선택기)",
+      "summary": "프로젝트/할일 추가·수정 폼의 마감일 입력(input type=date)이 네이티브 브라우저 달력 팝업이라, 일정 화면(P12.6/P12.8)처럼 주말/공휴일 색을 칠할 CSS 훅이 없다(Chromium의 date picker 팝업은 select 팝업과 같은 종류의 플랫폼 제약 — 내부 요소가 CSS로 노출되지 않음). scheduleGrid.js의 getMonthGrid/getWeekdayKind/getHolidayInfo와 ScheduleMonthView.jsx의 렌더링 방식을 재사용해, 네이티브 date input을 대체하는 커스텀 날짜 선택기 컴포넌트(트리거 버튼 + 팝오버 월간 그리드, 주말/공휴일 색 적용)를 만들어 프로젝트/할일 관련 마감일 입력 5곳(Projects.jsx AddProjectForm, ProjectEditForm.jsx, ProjectDetail.jsx AddTodoForm, TodoAddForm.jsx, TodoEditForm.jsx)에 적용한다. 일정 화면 자체의 날짜 입력(ScheduleAddForm/ScheduleEditForm)은 사용자가 언급한 범위 밖이라 이번엔 그대로 둔다.",
+      "where": "src/components/DueDatePicker.jsx,src/index.css,src/screens/Projects.jsx,src/components/ProjectEditForm.jsx,src/components/ProjectDetail.jsx,src/components/TodoAddForm.jsx,src/components/TodoEditForm.jsx,src/lib/scheduleGrid.js,src/lib/scheduleGrid.test.js,src/components/ScheduleMonthView.jsx,src/lib/dateRange.js,src/lib/dateRange.test.js",
+      "parent": "P12",
+      "deps": [],
+      "doc": null,
+      "done_when": "프로젝트/할일 마감일 입력 5곳 모두 네이티브 input[type=date] 대신 새 DueDatePicker 컴포넌트를 쓴다. 팝오버 월간 그리드에서 토/일/공휴일이 일정 화면과 같은 색으로 표시된다(scheduleGrid.js의 getDayCellClassNames 공용 함수를 ScheduleMonthView.jsx와 공유 + vitest로 조합 케이스 고정 + Playwright 실측, 공휴일 포함). 날짜 클릭 시 값이 선택되고 팝오버가 닫히며 트리거로 포커스가 돌아온다. 폼 제출 시 기존과 동일한 형식(YYYY-MM-DD 또는 빈 문자열)으로 저장되고, 손상된 값(문자열이 아니거나 형식이 깨짐)이 들어와도 마운트 시점에 크래시하지 않고 빈 값으로 안전하게 처리된다(Playwright로 손상 데이터 재현 확인). 팝오버 바깥 클릭/Escape로 닫히고(Escape는 트리거로 포커스 복귀), Tab으로 포커스가 완전히 벗어나도 닫힌다(여러 팝오버 동시 열림 방지). 트리거의 aria-label에 현재 선택된 날짜가 포함된다(스크린리더가 값을 읽을 수 있음). 키보드로 팝오버를 열고(Enter/Space) 날짜 그리드 안에서 Tab 이동이 가능함. 마감일을 지울 수 있는 방법이 있음(선택 입력이므로). lint/test/build 통과.",
+      "est_min": 70,
+      "gate": "npm run lint && npm test && npm run build (표시용, CLI가 자동 실행하지 않음)",
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T15:34:36.104Z",
+      "log": [
+        {
+          "at": "2026-09-25T14:56:26.140Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "P12.19 착수: DueDatePicker.jsx 신규 컴포넌트(트리거 버튼+팝오버 월간 그리드, scheduleGrid.js 재사용) 구현 후 5개 폼에 적용 예정."
+        },
+        {
+          "at": "2026-09-25T15:05:45.604Z",
+          "owner": null,
+          "status": "in_progress",
+          "note": "gate/est_min 설정.",
+          "field_edit": {
+            "before": {
+              "gate": null,
+              "est_min": null
+            },
+            "after": {
+              "gate": "npm run lint && npm test && npm run build (표시용, CLI가 자동 실행하지 않음)",
+              "est_min": 70
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T15:05:56.107Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료: DueDatePicker.jsx 신규 컴포넌트 — 트리거 버튼(기존 date input과 동일 박스모델, ScheduleIcon 아이콘)+팝오버 월간 그리드(scheduleGrid.js의 getMonthGrid/getWeekdayKind/getHolidayInfo, ScheduleMonthView.jsx와 동일한 CSS 클래스 재사용 — 주말/공휴일 색 규칙 새로 안 만듦). 프로젝트/할일 마감일 입력 5곳(Projects.jsx/ProjectEditForm.jsx/ProjectDetail.jsx/TodoAddForm.jsx/TodoEditForm.jsx) 전부 교체. 바깥 클릭/Escape로 닫힘, 마감일 지우기 버튼, Enter/Space로 열기 전부 구현. Playwright 실측: 5개 폼 전부에서 팝오버 열림 확인, 주말색(oklch 0.72/0.13/250 토, 0.75/0.17/25 일)이 일정 화면과 동일 확인, 날짜 클릭 시 트리거에 YYYY-MM-DD 반영+팝오버 닫힘 확인, Escape/바깥클릭 닫힘 확인, 지우기 버튼 확인, Enter/Space로 열림+Tab으로 그리드 진입 확인. 자체 발견 버그 1건: 팝오버가 left:0 기준으로 펼쳐지면서 420px 폭에서 카드/창 경계를 넘어가 가로 스크롤 발생 — right:0으로 수정 후 4개 폼 전체 스크린샷으로 오버플로 없음 재확인. lint 0 errors, vitest 226개(무관 변경 없음, 그대로 통과), build 성공."
+        },
+        {
+          "at": "2026-09-25T15:11:09.362Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 반영 착수: (High) ProjectEditForm이 project.due_date를 형식 검증 없이 넘겨서, 손상된 데이터(문자열 아님/형식 깨짐)일 때 DueDatePicker 마운트 시 monthCursorFor의 split이 TypeError를 던지고 ErrorBoundary가 없어 앱 전체가 빈 화면이 됨(네이티브 date input에서는 없던 마운트-시점 크래시) — DueDatePicker 내부에 방어 추가 예정. (Medium) toDateInputValue 주석이 이제 사실과 다름(DueDatePicker는 값을 그대로 보여줌) + 두 폼이 손상값을 다르게 처리 — 정렬 예정. (Medium) 트리거 aria-label이 내부 텍스트(선택된 날짜)를 덮어써 스크린리더가 값을 못 읽음(접근성 회귀) — 수정 예정. (Medium) 팝오버 닫힐 때 포커스가 트리거로 안 돌아가고, Tab으로 빠져나가도 안 닫혀서 여러 팝오버가 동시에 열릴 수 있음 — focus 복귀 + onBlur 닫힘 추가 예정. (Medium) ScheduleMonthView와 DueDatePicker의 셀 className 계산이 복붙 코드라 한쪽만 고치면 어긋날 위험, 테스트 없음 — scheduleGrid.js로 순수함수 추출 예정. (Medium) done_when의 '기존 vitest 통과'가 실제로 값 형식을 검증 못함 — 위 순수함수 추출 후 테스트 추가로 보완. (Medium) 실측 기록에 공휴일 색과 5곳 중 1곳이 누락 — 재검증 예정. (Medium) 죽은 CSS 규칙(.todo-add-form .project-edit-row input[type=date])과 틀린 주석(date 7곳→2곳, 숨은 제출버튼 근거) — 정리 예정."
+        },
+        {
+          "at": "2026-09-25T15:18:05.989Z",
+          "owner": null,
+          "status": "in_progress",
+          "note": "critical-reviewer 지적 8건 전부 반영 — 상세는 아래 in_review 로그 참고.",
+          "field_edit": {
+            "before": {
+              "done_when": "프로젝트/할일 마감일 입력 5곳 모두 네이티브 input[type=date] 대신 새 DueDatePicker 컴포넌트를 쓴다. 팝오버 월간 그리드에서 토/일/공휴일이 일정 화면과 같은 색으로 표시된다(스크린샷 또는 실측 기록). 날짜 클릭 시 값이 선택되고 팝오버가 닫히며, 폼 제출 시 기존과 동일한 형식(YYYY-MM-DD 또는 빈 문자열)으로 저장된다(기존 vitest 통과). 팝오버 바깥 클릭/Escape로 닫힘, 키보드로 팝오버를 열고(Enter/Space) 날짜 그리드 안에서 Tab 이동이 가능함. 마감일을 지울 수 있는 방법이 있음(선택 입력이므로). lint/test/build 통과."
+            },
+            "after": {
+              "done_when": "프로젝트/할일 마감일 입력 5곳 모두 네이티브 input[type=date] 대신 새 DueDatePicker 컴포넌트를 쓴다. 팝오버 월간 그리드에서 토/일/공휴일이 일정 화면과 같은 색으로 표시된다(scheduleGrid.js의 getDayCellClassNames 공용 함수를 ScheduleMonthView.jsx와 공유 + vitest로 조합 케이스 고정 + Playwright 실측, 공휴일 포함). 날짜 클릭 시 값이 선택되고 팝오버가 닫히며 트리거로 포커스가 돌아온다. 폼 제출 시 기존과 동일한 형식(YYYY-MM-DD 또는 빈 문자열)으로 저장되고, 손상된 값(문자열이 아니거나 형식이 깨짐)이 들어와도 마운트 시점에 크래시하지 않고 빈 값으로 안전하게 처리된다(Playwright로 손상 데이터 재현 확인). 팝오버 바깥 클릭/Escape로 닫히고(Escape는 트리거로 포커스 복귀), Tab으로 포커스가 완전히 벗어나도 닫힌다(여러 팝오버 동시 열림 방지). 트리거의 aria-label에 현재 선택된 날짜가 포함된다(스크린리더가 값을 읽을 수 있음). 키보드로 팝오버를 열고(Enter/Space) 날짜 그리드 안에서 Tab 이동이 가능함. 마감일을 지울 수 있는 방법이 있음(선택 입력이므로). lint/test/build 통과."
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T15:18:58.419Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "critical-reviewer 지적 8건 전부 반영: (High) DueDatePicker에 형식 검증 진입점 추가(isValidDateString)로 손상 데이터 마운트-시점 크래시 방지 + ProjectEditForm.jsx도 TodoEditForm.jsx와 동일하게 초기 state 정규화 — Playwright로 손상 데이터(due_date에 숫자) 재현, 크래시 없이 정상 렌더 확인. (Medium) toDateInputValue 주석을 현재 동작(DueDatePicker는 값을 그대로 보여줌, state 정규화가 여전히 필요한 이유)에 맞게 정정. (Medium) 트리거 aria-label에 선택된 날짜 포함(Playwright로 '마감일(선택): 2026-09-01' 확인). (Medium) Escape/날짜선택 시 트리거로 포커스 복귀(triggerRef) + 컨테이너 onBlur로 포커스가 완전히 밖으로 나가면 닫힘 추가 — Playwright로 포커스 복귀 및 blur-close 확인. (Medium) 셀 className 계산을 scheduleGrid.js의 getDayCellClassNames로 추출해 ScheduleMonthView.jsx와 DueDatePicker.jsx가 공유, vitest 케이스 추가(2026-09-26 토요일+추석 연휴 조합 포함) — vitest 227개(신규 1개 포함) 통과. (Medium) done_when을 실제 검증 근거(공용 함수+테스트+실측)에 맞게 재작성. (Medium) 공휴일 색 실측 추가(10/3 개천절: is-saturday+is-holiday, danger 색, title='개천절' 확인) — 5곳 모두 이전 라운드에서 이미 확인했었고 이번엔 공휴일 케이스로 보강. (Medium) 죽은 CSS 규칙 삭제(.todo-add-form .project-edit-row input[type=date]) + 틀린 주석 정정(date 7곳→2곳, 숨은 제출버튼 근거). lint 0 errors, vitest 227개 통과, build 성공. 최종 재검증 요청."
+        },
+        {
+          "at": "2026-09-25T15:22:15.492Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "critical-reviewer 승인 + Medium 4건 권장사항 반영 착수: (1) where 필드에 scheduleGrid.js/scheduleGrid.test.js/ScheduleMonthView.jsx 누락 — 추가 예정. (2) 로그 기록 간 '4개 폼' vs '5곳 모두' 불일치 — 실제로는 이번 라운드 검증 시 5곳 전부 오버플로 재확인했음(누락 아니었음, 기록 표현이 부정확했을 뿐)을 정확히 재기록 예정. (3) DATE_STRING_RE가 형태만 검사해 '2026-13-45' 같은 존재하지 않는 날짜는 통과함(크래시는 없음, High 아님) — 왕복 검증 추가 예정. (4) TodoEditForm.jsx가 DATE_STRING_RE를 자체 정의해 dateRange.js 것과 갈라질 위험 + 주석이 실제 동작과 반대로 서술 + index.css의 .visually-hidden 주석이 갱신 안 됨 — 정리 예정."
+        },
+        {
+          "at": "2026-09-25T15:28:22.094Z",
+          "owner": null,
+          "status": "in_progress",
+          "note": "where 필드에 누락됐던 scheduleGrid.js/scheduleGrid.test.js/ScheduleMonthView.jsx 추가(getDayCellClassNames 공용 함수 추출로 실제 수정된 파일인데 최초 구현 시 where에 반영 안 됐음, critical-reviewer 지적).",
+          "field_edit": {
+            "before": {
+              "where": "src/components/DueDatePicker.jsx,src/index.css,src/screens/Projects.jsx,src/components/ProjectEditForm.jsx,src/components/ProjectDetail.jsx,src/components/TodoAddForm.jsx,src/components/TodoEditForm.jsx"
+            },
+            "after": {
+              "where": "src/components/DueDatePicker.jsx,src/index.css,src/screens/Projects.jsx,src/components/ProjectEditForm.jsx,src/components/ProjectDetail.jsx,src/components/TodoAddForm.jsx,src/components/TodoEditForm.jsx,src/lib/scheduleGrid.js,src/lib/scheduleGrid.test.js,src/components/ScheduleMonthView.jsx"
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T15:28:59.076Z",
+          "owner": null,
+          "status": "in_review",
+          "note": "Medium 4건 반영 완료: (1) where 필드에 scheduleGrid.js/scheduleGrid.test.js/ScheduleMonthView.jsx 추가. (2) 이전 라운드 로그의 '4개 폼' 표현을 정정 — 실제로는 right:0 수정 후 5곳(Projects.jsx/ProjectEditForm.jsx/ProjectDetail.jsx/TodoAddForm.jsx/TodoEditForm.jsx) 전부 오버플로 재확인했음(누락 아니라 기록 표현 오류였음). (3) DueDatePicker.jsx의 isValidDateString을 형태 검사(DATE_STRING_RE)뿐 아니라 new Date(y,m-1,d)→formatLocalDate 왕복 검증으로 강화 — '2026-13-45'처럼 형태는 맞지만 실존하지 않는 날짜를 걸러냄. Playwright로 손상 데이터(due_date: '2026-13-45') 재현 — 크래시 없이 정상 렌더, 트리거에 '날짜 선택' placeholder 표시(원본 문자열 그대로 노출 안 됨) 확인(RESULT: PASS). (4) TodoEditForm.jsx의 자체 DATE_STRING_RE 정의를 삭제하고 dateRange.js에서 import하도록 통일 + toDateInputValue 주석의 '조용히 지우지 않는다'는 반대 서술을 정정(실제로는 저장 시 null로 정리됨) + index.css .visually-hidden 주석을 P12.19 이후 상황에 맞게 갱신. lint 0 errors, vitest 227개 통과, build 성공(index-CC7EsGwa.js). 최종 재검토 요청."
+        },
+        {
+          "at": "2026-09-25T15:33:19.851Z",
+          "owner": null,
+          "status": "in_review",
+          "note": "2라운드 재검증에서 나온 신규 Medium 반영: isValidDateString을 dateRange.js로 옮겨 export하면서 그 파일과 테스트가 where에 추가됨.",
+          "field_edit": {
+            "before": {
+              "where": "src/components/DueDatePicker.jsx,src/index.css,src/screens/Projects.jsx,src/components/ProjectEditForm.jsx,src/components/ProjectDetail.jsx,src/components/TodoAddForm.jsx,src/components/TodoEditForm.jsx,src/lib/scheduleGrid.js,src/lib/scheduleGrid.test.js,src/components/ScheduleMonthView.jsx"
+            },
+            "after": {
+              "where": "src/components/DueDatePicker.jsx,src/index.css,src/screens/Projects.jsx,src/components/ProjectEditForm.jsx,src/components/ProjectDetail.jsx,src/components/TodoAddForm.jsx,src/components/TodoEditForm.jsx,src/lib/scheduleGrid.js,src/lib/scheduleGrid.test.js,src/components/ScheduleMonthView.jsx,src/lib/dateRange.js,src/lib/dateRange.test.js"
+            }
+          }
+        },
+        {
+          "at": "2026-09-25T15:33:28.109Z",
+          "owner": null,
+          "status": "in_review",
+          "note": "critical-reviewer 2라운드 재검증에서 지적한 신규 Medium 1건 반영: DueDatePicker.jsx에만 있던 isValidDateString(왕복 검증)을 dateRange.js로 이동해 공유 export로 만들고, TodoEditForm.jsx의 toDateInputValue와 ProjectEditForm.jsx의 dueDate 초기 state 둘 다 이 함수로 교체(이전엔 형태만 보는 DATE_STRING_RE만 써서, '2026-13-45' 같은 손상 값이 화면엔 빈칸으로 보이지만 폼 state엔 남아있다가 저장 시 그대로 다시 쓰이는 결함이 남아있었음). dateRange.test.js에 isValidDateString 케이스 추가(형태 불일치/실존하지 않는 날짜 2026-13-45·2026-02-30·2026-04-31/윤년 2026-02-29 vs 2028-02-29) — vitest 230개(신규 3개) 통과. Playwright로 실제 저장 경로까지 재현: 손상 due_date('2026-13-45')를 가진 todo를 수정 폼에서 아무것도 안 건드리고 바로 저장 → data.json에 due_date:null로 정리됨 확인(RESULT: PASS). lint 0 errors, build 성공. where 필드에 dateRange.js/dateRange.test.js 추가. 최종 재검토 요청."
+        },
+        {
+          "at": "2026-09-25T15:34:36.104Z",
+          "owner": null,
+          "status": "done",
+          "note": "critical-reviewer 3라운드 최종 승인(신규 Medium 1건 반영 확인 — isValidDateString 공유 함수화, 3곳 모두 통일, 테스트/실측 확인). lint/test/build는 반영 직후 메인 세션이 직접 재실행해 확인함(lint 0 errors, vitest 230개 통과, build 성공 — index-CME0t3hw.js). done_when 전 항목 충족: 5곳 모두 DueDatePicker 사용, 주말/공휴일 색 공용 함수+vitest+Playwright 실측(공휴일 포함), 클릭 시 선택+팝오버 닫힘+포커스 복귀, 손상 데이터 마운트 크래시 없음+저장 시 null로 정리(Playwright로 저장 경로까지 재현 확인), 바깥클릭/Escape 닫힘, aria-label에 값 포함, 키보드 열기/Tab 이동, 지우기 버튼 존재. lint/test/build 통과."
+        }
+      ],
+      "done_at": "2026-09-25"
+    },
+    {
+      "id": "P13",
+      "status": "needs_info",
+      "priority": "P2",
+      "category": "feature",
+      "title": "앱 이름/아이콘 리브랜딩",
+      "summary": "사용자 피드백: '업무 위젯'이라는 이름과 현재 아이콘(청록 원+흰 체크마크, scripts/lib/pngIcon.js로 생성, P7.1/P8.1)이 너무 투박해서(세련되지 않아서) 더 나은 이름과 아이콘으로 바꾸고 싶음. productName(package.json), 트레이 아이콘(electron/assets/tray-icon*.png), 앱 아이콘(electron/assets/app-icon.ico), 사이드바 등 UI 내 앱 이름 표기가 모두 영향받는 범위.",
+      "where": "package.json,scripts/lib/pngIcon.js,scripts/gen-tray-icon.js,scripts/gen-app-icon.js,electron/assets,src,work-widget-requirements.md",
+      "parent": null,
+      "deps": [],
+      "doc": null,
+      "done_when": "새 이름과 아이콘 디자인 방향을 사람이 결정해 기록한다.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-25T05:24:26.443Z",
+      "log": [
+        {
+          "at": "2026-09-25T05:24:26.443Z",
+          "owner": "claude",
+          "status": "needs_info",
+          "note": "사람 결정 필요: (1)새 이름 방향 — 영문/한글/영문+한글 병기 중 무엇을 원하는지, 원하는 어감(예: 미니멀/모던, 전문적, 친근함 등)이나 후보 키워드가 있는지. (2)아이콘 스타일 — 지금은 단색 원+체크마크인데, 어떤 방향을 원하는지(예: 더 복잡한 일러스트, 미니멀 심볼, 특정 색상 계열, 참고하고 싶은 다른 앱 아이콘이 있는지). appId(app.workwidget.desktop, P8.1에서 사람 확인 거쳐 확정된 값 — NSIS 설치 GUID에 쓰임)도 이름과 맞춰 바꿀지 확인 필요."
+        }
+      ]
     }
   ]
 }

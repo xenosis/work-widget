@@ -5,21 +5,38 @@
 import { useState } from 'react';
 import TodoRow from './TodoRow.jsx';
 import { EditProjectForm, DeleteProjectButton } from './ProjectEditForm.jsx';
+import DueDatePicker from './DueDatePicker.jsx';
 
 function AddTodoForm({ onAdd }) {
   const [title, setTitle] = useState('');
+  // P12.5: 마감일을 바로 선택할 수 있게 함(선택 입력, 비워도 됨) — 제목 입력 후 Enter로 즉시
+  // 추가되는 기존 흐름(P2.3 done_when)은 그대로 유지한다. critical-reviewer 지적(재검증):
+  // 날짜 입력(type=date)은 HTML 표준상 암묵적 제출(submit 버튼 없이 Enter만으로 제출되는
+  // 동작)을 막는 필드라, 제목+날짜 두 입력만 있는 이 폼에서 날짜 입력에 포커스를 두고
+  // Enter를 누르면 실제로 제출되지 않았다(Playwright로 재현 확인) — 화면에는 안 보이는 submit
+  // 버튼을 둬 어느 입력에 포커스가 있어도 Enter로 항상 제출되게 한다. P12.19(critical-reviewer
+  // 지적으로 근거 정정): 날짜 입력이 DueDatePicker(버튼 트리거)로 바뀌면서, 암묵적 제출을
+  // 막는 필드는 이제 제목(text) 하나뿐이다 — HTML 표준상 그 경우엔 이 숨은 버튼이 없어도
+  // 제목 필드에서 Enter 제출이 원래 된다. 다만 이 버튼을 없애도 얻는 게 없고(있어도 무해),
+  // 트리거에 포커스가 있을 때 Enter가 팝오버를 여는 것과 별개로 방어적으로 남겨 둔다.
+  const [dueDate, setDueDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
   async function handleSubmit(e) {
     e.preventDefault();
     const trimmed = title.trim();
-    if (!trimmed || saving) return;
+    if (saving) return;
+    if (!trimmed) {
+      setSaveError('할일 제목을 입력하세요.');
+      return;
+    }
     setSaving(true);
     setSaveError(null);
     try {
-      await onAdd(trimmed);
+      await onAdd(trimmed, dueDate || null);
       setTitle('');
+      setDueDate('');
     } catch (err) {
       // 내부 예외 메시지(파일 경로 등)를 화면에 그대로 노출하지 않는다 — 콘솔에는 남긴다.
       console.error('할일 저장 실패:', err);
@@ -31,17 +48,23 @@ function AddTodoForm({ onAdd }) {
 
   return (
     <form className="todo-add-form" onSubmit={handleSubmit}>
-      <input
-        type="text"
-        className="todo-add-input"
-        placeholder="새 할일 입력 후 Enter"
-        value={title}
-        readOnly={saving}
-        onChange={(e) => {
-          setTitle(e.target.value);
-          if (saveError) setSaveError(null);
-        }}
-      />
+      <div className="project-edit-row">
+        <input
+          type="text"
+          className="todo-add-input"
+          placeholder="새 할일 입력 후 Enter"
+          value={title}
+          readOnly={saving}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            if (saveError) setSaveError(null);
+          }}
+        />
+        <DueDatePicker value={dueDate} onChange={setDueDate} disabled={saving} />
+      </div>
+      <button type="submit" className="visually-hidden" disabled={saving}>
+        추가
+      </button>
       {saveError && <p className="data-issue-notice">{saveError}</p>}
     </form>
   );

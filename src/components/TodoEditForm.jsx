@@ -2,9 +2,19 @@
 // ProjectEditForm.jsx와 같은 구조(보기/수정 두 모드, 삭제는 2단계 확인)를 그대로 따른다.
 import { useState } from 'react';
 import { getUsableProjects } from '../lib/projectLookup.js';
+import FieldToggleGroup from './FieldToggleGroup.jsx';
+import DueDatePicker from './DueDatePicker.jsx';
+// critical-reviewer 지적(P12.19 재검증, Medium): 이 파일이 정규식을 따로 정의하면 dateRange.js
+// 것과 한쪽만 고쳐져 갈라질 수 있다(예: ProjectEditForm.jsx는 이미 dateRange.js에서 가져다 씀)
+// — 같은 출처를 쓰게 통일한다. critical-reviewer 지적(재검증 2라운드, Medium): 형태 검사
+// (DATE_STRING_RE)만으로는 "2026-13-45"처럼 형태는 맞지만 실제로 없는 날짜를 걸러내지 못해서,
+// DueDatePicker는 빈칸("날짜 선택")으로 보이는데 이 state엔 원래 깨진 값이 그대로 남아 저장 시
+// 그대로 다시 쓰이는 결함이 있었다 — DueDatePicker와 동일한 왕복 검증 함수(isValidDateString)로
+// 교체해 화면 표시와 저장 정리가 같은 기준을 쓰게 한다.
+import { isValidDateString } from '../lib/dateRange.js';
 
 const PRIORITIES = ['상', '중', '하'];
-const DATE_STRING_RE = /^\d{4}-\d{2}-\d{2}$/;
+const PRIORITY_OPTIONS = [{ value: '', label: '없음' }, ...PRIORITIES.map((p) => ({ value: p, label: p }))];
 
 function tagsToText(tags) {
   return Array.isArray(tags) ? tags.join(', ') : '';
@@ -24,12 +34,19 @@ function textToTags(text) {
   return result;
 }
 
-// <input type="date">는 형식이 깨진 값(예: '2026-9-5')을 조용히 빈칸으로 보여주면서 내부 state는
-// 그대로 들고 있어, 사용자가 "빈칸이니 마감일 없음"으로 착각한 채 저장하면 깨진 값이 그대로
-// 다시 쓰이는 결함이 있다(critical-reviewer 지적) — 형식이 안 맞으면 처음부터 빈 문자열로
-// 시작해 그 값을 조용히 지우지 않되 "빈칸=없음"이라는 화면 표시와 실제 저장 결과를 일치시킨다.
+// P12.19 이전에는 <input type="date">가 형식이 깨진 값(예: '2026-9-5')을 조용히 빈칸으로
+// 보여주면서 내부 state는 그대로 들고 있어, 사용자가 "빈칸이니 마감일 없음"으로 착각한 채
+// 저장하면 깨진 값이 그대로 다시 쓰이는 결함이 있었다(critical-reviewer 지적) — 형식이 안
+// 맞으면 처음부터 빈 문자열로 state를 시작해서, 화면 표시(빈칸)와 실제 저장 결과(handleSubmit의
+// `dueDate.trim() || null` → null)를 일치시킨다. 즉 손상된 원본 값은 사용자가 아무것도 건드리지
+// 않고 저장만 해도 null로 "조용히" 정리된다 — critical-reviewer 지적(재검증): 이전 주석이
+// "조용히 지우지 않는다"고 반대로 적혀 있었음, 정정. P12.19 이후에도 이 정규화는 여전히
+// 필요하다 — DueDatePicker 자체의 방어는 마운트 크래시만 막을 뿐, state 자체를 정리하진
+// 않는다(ProjectEditForm.jsx도 같은 방식으로 맞춰 두 폼이 손상 데이터를 동일하게 처리한다).
+// 형태만 보는 DATE_STRING_RE 대신 isValidDateString(왕복 검증 포함)을 써서 "2026-13-45"처럼
+// 형태는 맞지만 실제로 없는 날짜도 여기서 걸러낸다(critical-reviewer 지적 재검증 2라운드).
 function toDateInputValue(dueDate) {
-  return typeof dueDate === 'string' && DATE_STRING_RE.test(dueDate) ? dueDate : '';
+  return isValidDateString(dueDate) ? dueDate : '';
 }
 
 // B3.2가 project_id를 필수로 규정하므로 소속 프로젝트 select도 P3.3과 동일하게 명시적 선택을
@@ -96,6 +113,9 @@ export function TodoEditForm({ todo, projects, onSave, onCancel, disabled = fals
           onChange={(e) => setTitle(e.target.value)}
           placeholder="할일 제목"
         />
+        {/* critical-reviewer 지적(Playwright 스크린샷으로 실측): 소속 프로젝트 select + 우선순위
+            토글(옵션 4개) + 날짜를 한 줄에 다 넣으니 420px 폭에서 우선순위 버튼 절반이 잘리고
+            날짜도 잘렸다 — 우선순위 토글만 별도 줄로 빼서 네 버튼 모두 온전히 보이게 한다. */}
         <div className="project-edit-row">
           {hasUsableProjects ? (
             <select
@@ -119,21 +139,15 @@ export function TodoEditForm({ todo, projects, onSave, onCancel, disabled = fals
           ) : (
             <span className="todo-no-projects-notice">선택할 프로젝트가 없어 소속은 그대로 유지됩니다.</span>
           )}
-          <select value={priority} disabled={busy} onChange={(e) => setPriority(e.target.value)}>
-            <option value="">우선순위 없음</option>
-            {PRIORITIES.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-          <input
-            type="date"
-            value={dueDate}
-            disabled={busy}
-            onChange={(e) => setDueDate(e.target.value)}
-          />
+          <DueDatePicker value={dueDate} onChange={setDueDate} disabled={busy} />
         </div>
+        <FieldToggleGroup
+          options={PRIORITY_OPTIONS}
+          value={priority}
+          onChange={setPriority}
+          disabled={busy}
+          ariaLabel="우선순위"
+        />
         <input
           type="text"
           className="todo-add-input"
@@ -147,7 +161,7 @@ export function TodoEditForm({ todo, projects, onSave, onCancel, disabled = fals
           <button type="submit" className="project-edit-save" disabled={busy}>
             저장
           </button>
-          <button type="button" className="back-button" disabled={busy} onClick={onCancel}>
+          <button type="button" className="project-edit-cancel" disabled={busy} onClick={onCancel}>
             취소
           </button>
         </div>

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, nativeTheme } = require('electron');
 const path = require('path');
 const { loadData, saveData } = require('./dataStore');
 const { loadWindowState, saveWindowState, MIN_WINDOW_SIZE } = require('./windowState');
@@ -70,6 +70,26 @@ function createWindow() {
 
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+    // P12.1: 기본 애플리케이션 메뉴를 완전히 없애면(아래 app.whenReady 참고) Electron이 메뉴에
+    // 묶어 제공하던 새로고침(Ctrl+R)/DevTools(Ctrl+Shift+I) 단축키도 같이 사라진다. dev 모드
+    // 한정으로 직접 가로채 개발 편의를 유지한다 — 메뉴 바 자체는 dev/패키지 모두 안 보이는
+    // 상태를 유지한다(done_when). critical-reviewer 지적: input.key(KeyboardEvent.key)는
+    // 키보드 배열/IME 상태에 따라 달라질 수 있어(예: 한글 입력 모드) input.code(물리적 키,
+    // 배열 무관)를 쓴다. isAutoRepeat 가드는 키를 누르고 있을 때 reload/DevTools 토글이
+    // 반복 발동하는 것을 막는다. reload()는 대기 중인 메모 디바운스 자동저장(P4.2)을 날릴 수
+    // 있지만 dev 전용 편의 기능이라 허용한다.
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      if (input.type !== 'keyDown' || input.isAutoRepeat) return;
+      const ctrlOrCmd = input.control || input.meta;
+      if (!ctrlOrCmd) return;
+      if (input.code === 'KeyR') {
+        mainWindow.webContents.reload();
+        event.preventDefault();
+      } else if (input.shift && input.code === 'KeyI') {
+        mainWindow.webContents.toggleDevTools();
+        event.preventDefault();
+      }
+    });
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
@@ -186,6 +206,21 @@ function configureAutoLaunch() {
 }
 
 app.whenReady().then(() => {
+  // P12.13: 렌더러 CSS의 :root { color-scheme: dark }만으로는 Windows에서 <select> 드롭다운
+  // 팝업이 여전히 밝은 색으로 뜬다(Windows에서는 Chromium이 그 팝업을 OS 네이티브 콤보박스
+  // 컨트롤로 그리기 때문에, 페이지 CSS의 color-scheme이 거기까지 안 미친다 — Playwright
+  // 스크린샷으로 실측 확인). nativeTheme.themeSource='dark'로 그 팝업도 고쳐보려 시도했지만
+  // critical-reviewer 재검증(Playwright 재실측)에서 이 특정 팝업에는 효과가 없는 것으로
+  // 확인됐다 — select 팝업 문제의 해결책은 아니다(P12.13이 그 select 3종류를 네이티브
+  // <select> 대신 토글 버튼 그룹으로 바꾼 진짜 이유, index.css 참고). 그래도 이 앱은 라이트
+  // 테마를 제공하지 않으므로(다크 글래스 단일 테마) 트레이 컨텍스트 메뉴 등 이 설정이 실제로
+  // 영향을 주는 다른 OS 네이티브 UI를 위해 'system'이 아닌 'dark'로 고정해 둔다.
+  nativeTheme.themeSource = 'dark';
+  // P12.1 결정(2026-09-25): 트레이 상주 위젯에는 쓸모없는 Electron 기본 메뉴(File/Edit/
+  // View/Window/Help)를 완전히 없앤다 — dev/패키지 모두 동일하게 적용한다(dev 편의 단축키는
+  // createWindow의 before-input-event로 별도 유지). 기본 메뉴의 Quit(Ctrl+Q) 항목이 B5.2
+  // ("종료 메뉴 없음")를 우회하는 경로였는데, 메뉴 자체가 없으니 이 우회로도 함께 없어진다.
+  Menu.setApplicationMenu(null);
   createWindow();
   createTray();
   configureAutoLaunch();

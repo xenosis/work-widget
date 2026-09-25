@@ -116,7 +116,7 @@ export function ScheduleEditForm({ schedule, onSave, onCancel, disabled = false 
         <button type="submit" className="project-edit-save" disabled={busy}>
           저장
         </button>
-        <button type="button" className="back-button" disabled={busy} onClick={onCancel}>
+        <button type="button" className="project-edit-cancel" disabled={busy} onClick={onCancel}>
           취소
         </button>
       </div>

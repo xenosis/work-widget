@@ -13,11 +13,15 @@
 // — 그래서 기본값을 강제로 비워 최대한 처음부터 막는다).
 import { useState } from 'react';
 import { getUsableProjects } from '../lib/projectLookup.js';
+import DueDatePicker from './DueDatePicker.jsx';
 
 export default function TodoAddForm({ projects, onAdd, disabled }) {
   const usableProjects = getUsableProjects(projects);
   const [title, setTitle] = useState('');
   const [projectId, setProjectId] = useState('');
+  // P12.5: 마감일을 추가 시점에 바로 선택할 수 있게 함 — 이전엔 없어서 새 할일이 항상 '나중'
+  // 그룹에만 들어갔다(B2.2 P3.3 결정 문단). 선택 입력이라 비워도 된다.
+  const [dueDate, setDueDate] = useState('');
   const [saveError, setSaveError] = useState(null);
   const hasProjects = usableProjects.length > 0;
 
@@ -31,9 +35,10 @@ export default function TodoAddForm({ projects, onAdd, disabled }) {
     }
     setSaveError(null);
     try {
-      await onAdd(trimmed, projectId);
+      await onAdd(trimmed, projectId, dueDate || null);
       setTitle('');
       setProjectId('');
+      setDueDate('');
     } catch (err) {
       console.error('할일 저장 실패:', err);
       setSaveError('할일을 저장하지 못했습니다.');
@@ -47,7 +52,12 @@ export default function TodoAddForm({ projects, onAdd, disabled }) {
   }
 
   return (
-    <form className="project-add-form" onSubmit={handleSubmit}>
+    // P12.5: AddProjectForm(P12.4)과 같은 .project-add-form--stacked 모디파이어를 그대로
+    // 재사용한다 — 이 화면도 필드가 4개(제목/프로젝트/마감일/버튼)로 늘어 같은 이유(420px 폭
+    // 오버플로 방지)로 두 줄 구조가 필요했다. .project-add-form 기본값(row)은 건드리지 않아
+    // 다른 화면 영향 없음(P12.4 critical-reviewer 지적 반영 — 공유 클래스는 절대 통째로
+    // 바꾸지 않고 모디파이어로만 범위를 좁힌다).
+    <form className="project-add-form project-add-form--stacked" onSubmit={handleSubmit}>
       <input
         type="text"
         className="todo-add-input"
@@ -59,27 +69,30 @@ export default function TodoAddForm({ projects, onAdd, disabled }) {
           if (saveError) setSaveError(null);
         }}
       />
-      <select
-        aria-label="소속 프로젝트"
-        value={projectId}
-        disabled={disabled}
-        onChange={(e) => {
-          setProjectId(e.target.value);
-          if (saveError) setSaveError(null);
-        }}
-      >
-        <option value="" disabled>
-          프로젝트 선택
-        </option>
-        {usableProjects.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
+      <div className="project-edit-row">
+        <select
+          aria-label="소속 프로젝트"
+          value={projectId}
+          disabled={disabled}
+          onChange={(e) => {
+            setProjectId(e.target.value);
+            if (saveError) setSaveError(null);
+          }}
+        >
+          <option value="" disabled>
+            프로젝트 선택
           </option>
-        ))}
-      </select>
-      <button type="submit" className="project-edit-save" disabled={disabled}>
-        추가
-      </button>
+          {usableProjects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        <DueDatePicker value={dueDate} onChange={setDueDate} disabled={disabled} />
+        <button type="submit" className="project-edit-save" disabled={disabled}>
+          추가
+        </button>
+      </div>
       {saveError && <p className="data-issue-notice">{saveError}</p>}
     </form>
   );

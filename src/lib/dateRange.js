@@ -32,6 +32,18 @@ export function getThisWeekRange() {
 // 사전순 문자열 비교를 틀어지게 하는 문제를 두 곳에서 각자 막지 않기 위함.
 export const DATE_STRING_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+// critical-reviewer 지적(P12.19 재검증 2라운드): DATE_STRING_RE는 형태(\d{4}-\d{2}-\d{2})만 보므로
+// "2026-13-45"처럼 형태는 맞지만 실제로 없는 날짜도 통과시킨다. DueDatePicker.jsx만 왕복 검증을
+// 쓰고 TodoEditForm.jsx/ProjectEditForm.jsx의 초기 state 정리는 여전히 DATE_STRING_RE만 썼더니,
+// 그런 날짜가 폼 state엔 그대로 남은 채 DueDatePicker 화면엔 "날짜 선택"(빈 값)으로만 보여서
+// "화면은 빈칸인데 저장은 깨진 값 그대로" 결함이 재발했다 — 화면 표시와 저장 정리 로직이 같은
+// 판정 함수를 써야 어긋나지 않으므로 한 곳(dateRange.js)에 모은다.
+export function isValidDateString(v) {
+  if (typeof v !== 'string' || !DATE_STRING_RE.test(v)) return false;
+  const [y, m, d] = v.split('-').map(Number);
+  return formatLocalDate(new Date(y, m - 1, d)) === v;
+}
+
 // "이번주(월~일) 범위이면서 오늘은 아닌" 날짜인지. Dashboard.jsx(오늘/이번주 마감 목록)와
 // src/lib/todoGrouping.js(오늘/이번주/나중 그룹) 둘 다 이 판정을 쓴다 — 각자 조건식을 따로 들고
 // 있으면 한쪽만 고쳤을 때 두 화면의 "이번주"가 조용히 갈라지기 때문에 여기 한 곳으로 모았다.
