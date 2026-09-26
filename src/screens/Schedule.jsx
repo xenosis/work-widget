@@ -1,8 +1,7 @@
-// B2.4: 월간/주간 탭 전환, 반복 일정(루틴) 표시
-// P5.2/P5.3: 월간·주간 그리드는 src/components/ScheduleMonthView.jsx·ScheduleWeekView.jsx로
-// 분리(eslint max-lines 여유 확보, ProjectDetail/ProjectEditForm 분리와 같은 이유)하고, 이
-// 화면은 탭 전환 + 두 뷰가 공유하는 selectedDate 상태만 관리한다.
-import { useState } from 'react';
+// B2.4: 월간/주간 탭 전환, 반복 일정(루틴) 표시. 월간·주간 그리드는 ScheduleMonthView.jsx·
+// ScheduleWeekView.jsx로 분리(eslint max-lines 여유 확보)하고, 이 화면은 탭 전환 + 두 뷰가
+// 공유하는 selectedDate 상태만 관리한다.
+import { useState, useRef, useEffect } from 'react';
 import { useAppData } from '../lib/useAppData.js';
 import { getTodayDateString } from '../lib/dateRange.js';
 import { shiftMonth, shiftDate, getWeekDates, todayResetCursors } from '../lib/scheduleGrid.js';
@@ -11,16 +10,18 @@ import ScheduleMonthView from '../components/ScheduleMonthView.jsx';
 import ScheduleWeekView from '../components/ScheduleWeekView.jsx';
 import ScheduleDateDetail from '../components/ScheduleDateDetail.jsx';
 import ScheduleAddForm from '../components/ScheduleAddForm.jsx';
-import ScheduleCategoryManager from '../components/ScheduleCategoryManager.jsx';
-import { getUsableCategories } from '../lib/scheduleCategoryMutations.js';
 import { createSchedule } from '../lib/scheduleFactory.js';
 import { applyScheduleUpdate, removeSchedule } from '../lib/scheduleMutations.js';
-import { createScheduleCategoryActions } from '../lib/scheduleCategoryActions.js';
 
 export default function Schedule() {
   const { apiAvailable, data, error, setData } = useAppData();
   const today = getTodayDateString();
   const [view, setView] = useState('month');
+  // P21 결정(사람, 2026-09-27, P16 결정 번복): "새 일정 추가" 폼이 항상 펼쳐져 있어 공간을
+  // 너무 차지한다는 재요청 — 다른 화면들의 "팝업 없이 항상 보이는 입력창" 원칙을 이 화면만
+  // 깨는 트레이드오프를 감수하고 접이식으로 바꾼다(사람이 그 트레이드오프를 알고도 다시
+  // 요청함, work-widget-requirements.md B2.4 참고). 기본은 접힘.
+  const [showAddForm, setShowAddForm] = useState(false);
   const [monthCursor, setMonthCursor] = useState(() => {
     const [y, m] = today.split('-').map(Number);
     return { year: y, month: m - 1 };
@@ -30,13 +31,28 @@ export default function Schedule() {
   // P5.7 결정(사람, 2026-09-25): 트레이 재표시/자정 경과로 "오늘"이 실제로 바뀐 경우에만
   // 그리드·선택 날짜를 오늘로 리셋하고, 안 바뀌었으면 사용자가 보던 위치를 그대로 둔다.
   const [knownToday, setKnownToday] = useState(today);
-  // critical-reviewer 지적(P5.4 리뷰): 추가/수정/삭제가 각자 로컬 saving만 가지면 IPC 저장이
-  // 진행 중인 사이 다른 저장이 겹쳐 들어가 옛 data로 나중 저장을 덮어써 방금 만든/지운 일정이
-  // 조용히 사라질 수 있다 — Todos.jsx와 동일하게 화면 전체 saving 가드를 둔다.
+  // critical-reviewer 지적(P5.4 리뷰): 겹친 저장이 옛 data로 덮어써 항목이 사라질 수 있어
+  // 화면 전체 saving 가드를 둔다. state는 갱신이 다음 렌더에야 반영돼 "같은 렌더"에서 여러
+  // 호출이 함께 가드를 통과할 수 있었다 — 즉시 갱신되는 savingRef로 바꿈(saving state는 폼
+  // 비활성화 표시 전용). mutex로 "동시 실행"은 막아도 대기하던 호출이 나중에 통과할 때 자기
+  // 생성 시점의 data 클로저를 쓰는 문제는 남는다(P17에서 Playwright로 재현) — dataRef를 두고
+  // 각 핸들러가 setData 직후 dataRef.current도 바로 갱신해(useEffect만으로는 다음 커밋까지
+  // 지연돼 부족했음) 모든 핸들러가 닫힌 매개변수 data 대신 dataRef.current 기준으로 계산하게
+  // 한다.
   const [saving, setSaving] = useState(false);
-  // P12.16: 관리 패널을 접어둔 채로 시작 — 자주 쓰는 기능이 아니라 기본은 숨겨서 화면을
-  // 차지하지 않게 한다.
-  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const savingRef = useRef(false);
+  function beginSaving() {
+    savingRef.current = true;
+    setSaving(true);
+  }
+  function endSaving() {
+    savingRef.current = false;
+    setSaving(false);
+  }
+  const dataRef = useRef(data);
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
 
   if (!apiAvailable) {
     return (
@@ -123,55 +139,49 @@ export default function Schedule() {
   }
 
   async function handleAddSchedule({ title, date, isRecurring, recurrenceDays, categoryId }) {
-    if (saving) throw new Error('저장이 진행 중입니다. 잠시 후 다시 시도하세요.');
-    setSaving(true);
+    if (savingRef.current) throw new Error('저장이 진행 중입니다. 잠시 후 다시 시도하세요.');
+    beginSaving();
     try {
       const nextSchedules = [
-        ...data.schedules,
+        ...dataRef.current.schedules,
         createSchedule({ title, date, isRecurring, recurrenceDays, categoryId }),
       ];
-      const newData = { ...data, schedules: nextSchedules };
+      const newData = { ...dataRef.current, schedules: nextSchedules };
       await window.api.saveData(newData);
+      dataRef.current = newData;
       setData(newData);
     } finally {
-      setSaving(false);
+      endSaving();
     }
   }
 
   async function handleEditSchedule(scheduleId, updates) {
-    if (saving) throw new Error('저장이 진행 중입니다. 잠시 후 다시 시도하세요.');
-    setSaving(true);
+    if (savingRef.current) throw new Error('저장이 진행 중입니다. 잠시 후 다시 시도하세요.');
+    beginSaving();
     try {
-      const nextSchedules = applyScheduleUpdate(data.schedules, scheduleId, updates);
-      const newData = { ...data, schedules: nextSchedules };
+      const nextSchedules = applyScheduleUpdate(dataRef.current.schedules, scheduleId, updates);
+      const newData = { ...dataRef.current, schedules: nextSchedules };
       await window.api.saveData(newData);
+      dataRef.current = newData;
       setData(newData);
     } finally {
-      setSaving(false);
+      endSaving();
     }
   }
 
   async function handleDeleteSchedule(scheduleId) {
-    if (saving) throw new Error('저장이 진행 중입니다. 잠시 후 다시 시도하세요.');
-    setSaving(true);
+    if (savingRef.current) throw new Error('저장이 진행 중입니다. 잠시 후 다시 시도하세요.');
+    beginSaving();
     try {
-      const nextSchedules = removeSchedule(data.schedules, scheduleId);
-      const newData = { ...data, schedules: nextSchedules };
+      const nextSchedules = removeSchedule(dataRef.current.schedules, scheduleId);
+      const newData = { ...dataRef.current, schedules: nextSchedules };
       await window.api.saveData(newData);
+      dataRef.current = newData;
       setData(newData);
     } finally {
-      setSaving(false);
+      endSaving();
     }
   }
-
-  // P12.16: 카테고리 CRUD 핸들러는 scheduleCategoryActions.js로 뺐다(이 파일이 max-lines
-  // 한도에 근접해서 — ProjectDetail/ProjectEditForm 분리와 같은 이유).
-  const { handleAddCategory, handleEditCategory, handleDeleteCategory } = createScheduleCategoryActions({
-    data,
-    setData,
-    saving,
-    setSaving,
-  });
 
   return (
     <>
@@ -196,33 +206,6 @@ export default function Schedule() {
           주간
         </button>
       </div>
-      <button
-        type="button"
-        className="schedule-category-manager-toggle"
-        onClick={() => setShowCategoryManager((v) => !v)}
-        aria-expanded={showCategoryManager}
-      >
-        {showCategoryManager ? '카테고리 관리 닫기 ▲' : '카테고리 관리 ▼'}
-      </button>
-      {showCategoryManager && (
-        <div className="card">
-          <div className="card-header">
-            <h2 className="card-title">일정 카테고리</h2>
-            {/* critical-reviewer 지적(재검증 2라운드, Medium): 배지가 필터 전 길이를 쓰고
-                ScheduleCategoryManager는 id 없는 레코드를 걸러낸 뒤 그려서, 손상 데이터가
-                섞이면 배지 숫자와 실제 행 수가 달랐다 — getUsableCategories로 같은 필터를
-                공유한다. */}
-            <span className="card-count-badge">{getUsableCategories(data.schedule_categories).length}</span>
-          </div>
-          <ScheduleCategoryManager
-            categories={data.schedule_categories}
-            onAdd={handleAddCategory}
-            onEdit={handleEditCategory}
-            onDelete={handleDeleteCategory}
-            disabled={saving}
-          />
-        </div>
-      )}
       {view === 'month' ? (
         <ScheduleMonthView
           monthCursor={monthCursor}
@@ -252,11 +235,11 @@ export default function Schedule() {
           별개로 표시하지 않음 — critical-reviewer 지적, 출처 오기 정정: scheduleGrid.js/
           index.css/work-widget-requirements.md는 이미 정정, 여기 남아있던 것도 정정).
           색 하나하나의 이름(카테고리 이름)까지 여기 다 나열하면 카테고리가 많을 때 줄이 너무
-          길어지므로, 이름은 아래 '카테고리 관리' 패널에서 확인하도록 하고 여기는 "점=카테고리,
+          길어지므로, 이름은 '설정' 탭(P15로 이동)에서 확인하도록 하고 여기는 "점=카테고리,
           테두리=반복, 빈 점=미분류"라는 규칙만 짧게 안내한다. */}
       <p className="schedule-dot-legend">
         <span className="schedule-dot-legend-item">
-          <span className="schedule-day-dot is-blue" /> 점 색 = 카테고리(아래 카테고리 관리 참고)
+          <span className="schedule-day-dot is-blue" /> 점 색 = 카테고리(설정 탭 참고)
         </span>
         <span className="schedule-dot-legend-item">
           <span className="schedule-day-dot is-blue is-recurring-ring" /> 테두리 = 반복 일정
@@ -267,17 +250,7 @@ export default function Schedule() {
           <span className="schedule-day-dot is-none" /> 빈 점 = 미분류
         </span>
       </p>
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">새 일정 추가</h2>
-        </div>
-        <ScheduleAddForm
-          defaultDate={selectedDate}
-          onAdd={handleAddSchedule}
-          categories={data.schedule_categories}
-          disabled={saving}
-        />
-      </div>
+      {/* P16: 날짜 상세 목록을 캘린더 바로 다음에 둔다(가독성 피드백). */}
       <ScheduleDateDetail
         date={selectedDate}
         schedules={data.schedules}
@@ -286,6 +259,33 @@ export default function Schedule() {
         onDelete={handleDeleteSchedule}
         disabled={saving}
       />
+      {/* P21: "새 일정 추가" 폼을 기본 접힘 + 버튼 클릭 시 펼침으로(공간 절약 요청).
+          critical-reviewer 지적(Medium): 저장 중(saving)에 이 버튼으로 폼을 접으면
+          ScheduleAddForm이 언마운트되어 저장 실패 시 에러 문구를 보여줄 곳이 없어진다 —
+          저장 중에는 접지 못하게 막는다(폼 안의 다른 입력/버튼도 disabled={saving}으로
+          이미 막혀 있어 저장 중 조작 자체가 원래 불가능했던 것과 일관됨). */}
+      <button
+        type="button"
+        className="schedule-category-manager-toggle"
+        onClick={() => setShowAddForm((v) => !v)}
+        aria-expanded={showAddForm}
+        disabled={saving}
+      >
+        {showAddForm ? '새 일정 추가 닫기 ▲' : '+ 새 일정 추가 ▼'}
+      </button>
+      {showAddForm && (
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">새 일정 추가</h2>
+          </div>
+          <ScheduleAddForm
+            defaultDate={selectedDate}
+            onAdd={handleAddSchedule}
+            categories={data.schedule_categories}
+            disabled={saving}
+          />
+        </div>
+      )}
     </>
   );
 }

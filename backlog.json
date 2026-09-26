@@ -4770,7 +4770,7 @@
     },
     {
       "id": "P13",
-      "status": "needs_info",
+      "status": "done",
       "priority": "P2",
       "category": "feature",
       "title": "앱 이름/아이콘 리브랜딩",
@@ -4784,19 +4784,50 @@
       "gate": null,
       "owner": "claude",
       "claimed_at": null,
-      "updated_at": "2026-09-25T05:24:26.443Z",
+      "updated_at": "2026-09-26T15:43:21.850Z",
       "log": [
         {
           "at": "2026-09-25T05:24:26.443Z",
           "owner": "claude",
           "status": "needs_info",
           "note": "사람 결정 필요: (1)새 이름 방향 — 영문/한글/영문+한글 병기 중 무엇을 원하는지, 원하는 어감(예: 미니멀/모던, 전문적, 친근함 등)이나 후보 키워드가 있는지. (2)아이콘 스타일 — 지금은 단색 원+체크마크인데, 어떤 방향을 원하는지(예: 더 복잡한 일러스트, 미니멀 심볼, 특정 색상 계열, 참고하고 싶은 다른 앱 아이콘이 있는지). appId(app.workwidget.desktop, P8.1에서 사람 확인 거쳐 확정된 값 — NSIS 설치 GUID에 쓰임)도 이름과 맞춰 바꿀지 확인 필요."
+        },
+        {
+          "at": "2026-09-26T14:43:27.946Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "사람 결정 수신: 이름=TaskDock, 아이콘=사람이 GPT 아이콘 생성기로 만든 원본을 electron/assets/app-icon.ico 자리에 직접 교체(실제로는 PNG였음), appId/경로도 이름에 맞춰 바꿔도 좋다고 승인."
+        },
+        {
+          "at": "2026-09-26T14:43:38.910Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료. package.json(name/productName/appId/executableName), electron/main.js(트레이 툴팁), src/components/TitleBar.jsx, index.html의 표시 이름을 TaskDock으로 교체. 사람이 electron/assets/app-icon.ico 자리에 직접 넣은 원본(실제로는 1254x1254 PNG, 알파 없음)을 scripts/assets/icon-source.png로 옮기고, scripts/lib/resizePng.js(신규, pngjs 기반 리사이즈)로 gen-app-icon.js/gen-tray-icon.js를 다시 써서 그 원본에서 app-icon.ico(16/32/48/256, PNG-in-ICO)와 tray-icon.png/tray-icon@2x.png(16/32)를 생성 — 기존 절차 생성(circle+checkmark, scripts/lib/pngIcon.js)은 삭제. lint/test/build 통과, ICO 구조를 직접 파싱해 4개 엔트리가 모두 올바른 크기의 PNG인지 확인."
+        },
+        {
+          "at": "2026-09-26T15:17:36.386Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "done_when 충족(이름=TaskDock, 아이콘=사람 결정 반영) 확인. critical-reviewer 지적 전부 반영: [Critical] userData 마이그레이션(migrateLegacyUserData) 추가+Playwright 확인, [Medium] 아이콘 리사이즈를 알파 예비곱 박스 필터로 교체+vitest(resizePng.test.js) 7건 추가. lint/vitest(323개)/build 전부 통과. work-widget-requirements.md에 결정+리뷰반영 문단 기록(B1.3 근처)."
+        },
+        {
+          "at": "2026-09-26T15:28:25.876Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "사용자가 실사용 중 발견: 마이그레이션이 실제로 옛 데이터를 못 찾음. 원인 확인 — Electron의 userData 폴더명은 productName이 아니라 package.json의 name 필드를 따르는데(app.name 기본값), 옛 name은 'work-widget'이었다(옛 productName '업무 위젯'이 아님) — migrateLegacyUserData()가 잘못된 폴더명('업무 위젯')을 찾아 조용히 아무 일도 안 하고 지나갔다. 실제 %APPDATA% 확인으로 확증(work-widget 폴더에 실 데이터 36KB, taskdock 폴더는 빈 기본값)."
+        },
+        {
+          "at": "2026-09-26T15:43:21.850Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "실사용 중 발견된 마이그레이션 버그 수정 완료. electron/dataStore.js의 LEGACY_USER_DATA_DIR_NAME을 실제 원인('work-widget', 옛 package.json name 필드)에 맞게 수정(업무 위젯도 방어적으로 함께 확인). 이 PC의 실제 %APPDATA%\\work-widget → %APPDATA%\\taskdock 데이터를 직접 확인 후 수동 이전 완료(data.json/backups/window-state.json/auto-launch flag). release 재빌드(npm run dist) 완료 — 빌드 중 사용자가 이전 빌드(수정 전)를 포터블로 이미 실행해 둔 상태라 exe 파일 잠금으로 빌드가 지연됐으나, 사용자가 종료 후 정상 완료. 재빌드 후 data.json 내용이 마이그레이션한 실 데이터와 동일함을 재확인. lint/vitest(323개)/build 통과."
         }
-      ]
+      ],
+      "done_at": "2026-09-26"
     },
     {
       "id": "P14",
-      "status": "todo",
+      "status": "done",
       "priority": "P2",
       "category": "feature",
       "title": "외부 프로젝트 backlog(.json) 현황판",
@@ -4810,7 +4841,7 @@
       "gate": null,
       "owner": null,
       "claimed_at": null,
-      "updated_at": "2026-09-26T02:03:00.913Z",
+      "updated_at": "2026-09-26T03:17:42.343Z",
       "log": [
         {
           "at": "2026-09-26T02:02:46.889Z",
@@ -4847,12 +4878,19 @@
               "gate": null
             }
           }
+        },
+        {
+          "at": "2026-09-26T03:17:42.343Z",
+          "owner": null,
+          "status": "done",
+          "note": "하위 P14.1(외부 backlog(.json) 소스 등록+읽기전용 IPC)/P14.2(상태별 현황 패널) 모두 done 확인. 각각 critical-reviewer 리뷰(P14.1: High 0+Medium 8+Low 3, P14.2: High 2+Medium 4) 전부 반영 후 done 처리됨."
         }
-      ]
+      ],
+      "done_at": "2026-09-26"
     },
     {
       "id": "P14.1",
-      "status": "todo",
+      "status": "done",
       "priority": "P2",
       "category": "feature",
       "title": "외부 backlog(.json) 소스 등록(추가/삭제) + 읽기 전용 IPC",
@@ -4861,17 +4899,51 @@
       "parent": "P14",
       "deps": [],
       "doc": null,
-      "done_when": "관리 UI에서 파일 선택 다이얼로그로 경로를 등록할 수 있고, 등록된 소스 목록에서 삭제도 가능하다. 등록된 경로가 존재하지 않거나(이동/삭제됨) JSON 파싱에 실패해도 위젯이 죽지 않고 그 소스만 오류로 표시한다. data.json의 backlog_sources 배열이 저장/로드되고 dataStore 정규화 테스트가 통과한다. 위젯 코드 어디에도 그 경로에 쓰기(fs.writeFileSync 등)를 시도하는 코드가 없음을 확인(읽기 전용 보장). lint/test/build 통과.",
+      "done_when": "관리 UI에서 파일 선택 다이얼로그로 경로를 등록할 수 있고, 등록된 소스 목록에서 삭제도 가능하다. 등록된 경로가 존재하지 않거나(이동/삭제됨) JSON 파싱에 실패해도(BOM 포함 처리) 위젯이 죽지 않고 그 소스만 오류로 표시하며, 인식 가능한 task 배열 형식을 못 찾은 경우도 별도 문구로 구분된다. 등록되지 않은(파일 선택 다이얼로그를 거치지 않은) 경로로는 읽기 IPC가 거부된다. data.json의 backlog_sources 배열이 저장/로드되고 dataStore 정규화 테스트가 통과한다. electron/backlogSourceReader.js·electron/backlogSources.js 두 파일에서 fs 쓰기 계열 API 사용을 금지하는 eslint 규칙(no-restricted-properties)이 통과한다(단순 grep이 아니라 자동 검증). lint/test/build 통과.",
       "est_min": null,
       "gate": null,
       "owner": null,
       "claimed_at": null,
-      "updated_at": "2026-09-26T02:03:16.586Z",
-      "log": []
+      "updated_at": "2026-09-26T03:04:15.886Z",
+      "log": [
+        {
+          "at": "2026-09-26T02:43:03.206Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "착수. electron 메인 프로세스에 파일 선택 다이얼로그+읽기 전용 IPC 2종, data.json에 backlog_sources 배열, 관리 UI(등록/삭제+소스별 읽기 상태 미리보기)로 구현 시작. 다른 프로젝트 backlog(.json) 스키마가 이 프로젝트와 다를 수 있어 관대한 파서(electron/backlogSourceReader.js)를 별도 순수 함수로 분리해 vitest로 검증할 계획."
+        },
+        {
+          "at": "2026-09-26T02:53:05.170Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료: backlog_sources 데이터모델+정규화, electron/backlogSourceReader.js(관대한 파서)+electron/backlogSources.js(파일선택+읽기전용 IPC, fs 쓰기 없음 확인), src/lib 3개 파일(factory/mutations/actions), BacklogSourceManager.jsx+BacklogSourcesSection.jsx UI. lint/vitest(292)/build 통과, Playwright로 정상/존재하지않는경로/깨진JSON 3가지 동시 등록 시 소스별 독립 오류 표시+위젯 생존+삭제 격리 확인. requirements.md B3.5/B2.4/changelog, CLAUDE.md storage 문구 갱신. 리뷰 착수."
+        },
+        {
+          "at": "2026-09-26T03:03:17.358Z",
+          "owner": null,
+          "status": "in_review",
+          "note": "critical-reviewer 리뷰 지적 반영: (1) 읽기 전용 보장을 grep/눈으로만 확인하던 것을 eslint no-restricted-properties 규칙(자동 검증)으로 강제하도록 done_when 갱신. (2) 등록되지 않은 경로 읽기 거부, BOM 처리, 인식 불가 형식 구분 표시를 새 요구사항으로 명시(구현에 맞춰 done_when 구체화).",
+          "field_edit": {
+            "before": {
+              "done_when": "관리 UI에서 파일 선택 다이얼로그로 경로를 등록할 수 있고, 등록된 소스 목록에서 삭제도 가능하다. 등록된 경로가 존재하지 않거나(이동/삭제됨) JSON 파싱에 실패해도 위젯이 죽지 않고 그 소스만 오류로 표시한다. data.json의 backlog_sources 배열이 저장/로드되고 dataStore 정규화 테스트가 통과한다. 위젯 코드 어디에도 그 경로에 쓰기(fs.writeFileSync 등)를 시도하는 코드가 없음을 확인(읽기 전용 보장). lint/test/build 통과."
+            },
+            "after": {
+              "done_when": "관리 UI에서 파일 선택 다이얼로그로 경로를 등록할 수 있고, 등록된 소스 목록에서 삭제도 가능하다. 등록된 경로가 존재하지 않거나(이동/삭제됨) JSON 파싱에 실패해도(BOM 포함 처리) 위젯이 죽지 않고 그 소스만 오류로 표시하며, 인식 가능한 task 배열 형식을 못 찾은 경우도 별도 문구로 구분된다. 등록되지 않은(파일 선택 다이얼로그를 거치지 않은) 경로로는 읽기 IPC가 거부된다. data.json의 backlog_sources 배열이 저장/로드되고 dataStore 정규화 테스트가 통과한다. electron/backlogSourceReader.js·electron/backlogSources.js 두 파일에서 fs 쓰기 계열 API 사용을 금지하는 eslint 규칙(no-restricted-properties)이 통과한다(단순 grep이 아니라 자동 검증). lint/test/build 통과."
+            }
+          }
+        },
+        {
+          "at": "2026-09-26T03:04:15.886Z",
+          "owner": null,
+          "status": "done",
+          "note": "critical-reviewer 지적([Medium] 8건+[Low] 3건, High 없음) 전부 반영·재검증: fs.promises+5MB 크기상한(메인프로세스 블로킹 방지), BOM 처리, recognized/skippedCount로 인식불가/걸러짐/빈목록 구분표시, eslint no-restricted-properties로 쓰기금지 자동검증, read-tasks IPC 등록경로 검증 추가, Schedule.jsx 276줄로 리팩터(ScheduleCategorySection.jsx 분리), 다이얼로그 오픈중 버튼 비활성화, 주석 오기 정정 3건. lint(clean)/vitest(297/297)/build 통과. Playwright로 BOM 파싱/인식불가 구분/미등록경로 거부 재실측 확인. work-widget-requirements.md v3.26 기록."
+        }
+      ],
+      "done_at": "2026-09-26"
     },
     {
       "id": "P14.2",
-      "status": "todo",
+      "status": "done",
       "priority": "P2",
       "category": "feature",
       "title": "일정 화면에 외부 backlog(.json) 현황 패널 추가",
@@ -4882,13 +4954,373 @@
         "P14.1"
       ],
       "doc": null,
-      "done_when": "일정 화면에 새 접이식 패널(예: '외부 백로그 현황')이 있고, 펼치면 등록된 각 소스의 task가 상태/담당자 기준으로 나열된다. 소스가 0개면 안내 문구, 특정 소스 읽기 실패 시 그 소스만 오류 문구(다른 소스는 정상 표시). 위젯 자체 category 관리 화면과 시각적 스타일이 일관됨. lint/test/build 통과.",
+      "done_when": "일정 화면에 접이식 패널(\"외부 백로그 현황\")이 있고, 펼치면 등록된 각 소스의 task가 상태별로 그룹지어 나열되며 각 그룹 안에서는 담당자 기준으로 정렬된다(담당자 없는 task는 뒤로). 소스가 0개면 안내 문구, 특정 소스 읽기 실패/인식 불가 형식/전부 걸러짐 각각이 서로 다른 문구로 구분 표시되고 다른 소스에는 영향이 없다. 카테고리 관리 카드와 같은 리스트 스타일(불릿 없음)·카드 헤더 배지를 공유해 시각적으로 일관된다. lint/test/build 통과.",
       "est_min": null,
       "gate": null,
       "owner": null,
       "claimed_at": null,
-      "updated_at": "2026-09-26T02:03:29.171Z",
-      "log": []
+      "updated_at": "2026-09-26T03:17:35.925Z",
+      "log": [
+        {
+          "at": "2026-09-26T03:04:33.704Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "착수. P14.1의 read-tasks IPC를 재사용해 등록된 각 소스의 task를 상태/담당자 기준으로 나열하는 접이식 패널을 Schedule.jsx에 추가할 계획. BacklogSourceManager.jsx의 소스별 상태 한 줄 표시(SourceStatus)와 겹치지 않도록, 이 패널은 Schedule.jsx 최상위의 별도 진입점으로 두고 실제 task 목록 렌더링 로직은 새 컴포넌트로 분리(Schedule.jsx 줄 수 한도 고려)."
+        },
+        {
+          "at": "2026-09-26T03:10:02.134Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료: BacklogStatusSection.jsx+BacklogStatusPanel.jsx(소스별 상태별 task 그룹+담당자 표시), backlogTaskGrouping.js(순수함수, vitest 5건), useBacklogSourceRead.js 훅으로 P14.1의 BacklogSourceManager.jsx와 로딩/오류 처리 공유(중복 제거 겸 리팩터). lint/vitest(302)/build 통과, Playwright로 상태3종+담당자혼합 목록 표시/소스별 오류 격리/빈 소스 안내문구 확인. requirements.md B2.4/changelog 갱신. 리뷰 착수."
+        },
+        {
+          "at": "2026-09-26T03:17:26.877Z",
+          "owner": null,
+          "status": "in_review",
+          "note": "critical-reviewer 지적 반영: \"상태/담당자 기준\"이 정렬(그룹 내 담당자순)로 실제 구현됐음을 done_when에 명시. 리스트 스타일 일관성(불릿 제거)도 명시적 기준으로 추가.",
+          "field_edit": {
+            "before": {
+              "done_when": "일정 화면에 새 접이식 패널(예: '외부 백로그 현황')이 있고, 펼치면 등록된 각 소스의 task가 상태/담당자 기준으로 나열된다. 소스가 0개면 안내 문구, 특정 소스 읽기 실패 시 그 소스만 오류 문구(다른 소스는 정상 표시). 위젯 자체 category 관리 화면과 시각적 스타일이 일관됨. lint/test/build 통과."
+            },
+            "after": {
+              "done_when": "일정 화면에 접이식 패널(\"외부 백로그 현황\")이 있고, 펼치면 등록된 각 소스의 task가 상태별로 그룹지어 나열되며 각 그룹 안에서는 담당자 기준으로 정렬된다(담당자 없는 task는 뒤로). 소스가 0개면 안내 문구, 특정 소스 읽기 실패/인식 불가 형식/전부 걸러짐 각각이 서로 다른 문구로 구분 표시되고 다른 소스에는 영향이 없다. 카테고리 관리 카드와 같은 리스트 스타일(불릿 없음)·카드 헤더 배지를 공유해 시각적으로 일관된다. lint/test/build 통과."
+            }
+          }
+        },
+        {
+          "at": "2026-09-26T03:17:35.925Z",
+          "owner": null,
+          "status": "done",
+          "note": "critical-reviewer 지적([High] 2건+[Medium] 4건) 전부 반영·재검증: .backlog-status-groups 리스트 리셋(불릿/들여쓰기 제거), groupTasksByStatus가 그룹 내 담당자 안정정렬하도록 수정(needs_info 대신 정렬로 상태/담당자 두 축 모두 구조에 반영), skippedCount 반영해 걸러짐/빈목록 구분, key 충돌 방지(id+index), 오류 표시 클래스 통일, 카드 헤더 배지 추가, 그룹당 표시 상한(50개). lint(clean)/vitest(304/304)/build 통과. Playwright로 리스트 리셋·담당자 정렬·걸러짐 안내·배지 재실측 확인. work-widget-requirements.md v3.28 기록."
+        }
+      ],
+      "done_at": "2026-09-26"
+    },
+    {
+      "id": "P15",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "설정 탭 신설: 카테고리/백로그 소스 관리 이동 + 일정 화면 캘린더 우선 배치",
+      "summary": "사용자 피드백(2026-09-26): 일정 화면 위쪽에 카테고리 관리 토글과 외부 backlog(.json) 소스 관리 토글이 있어 캘린더가 화면 맨 위에 바로 안 보여서 불편함. 두 관리 UI(일정 카테고리 관리 ScheduleCategorySection, 외부 backlog 소스 등록/삭제 BacklogSourcesSection)를 새 사이드바 탭 \"설정\"으로 옮기고, 일정 화면은 월간/주간 탭 다음 바로 캘린더가 나오게 한다. 외부 backlog(.json) 현황 패널(BacklogStatusSection, 상태별 task 목록 표시)은 관리 액션이 아니라 조회이므로 설정 탭이 아니라 일정 화면에 남기되, 위치를 캘린더/날짜 상세 카드 아래로 옮겨 캘린더가 먼저 보이게 한다(사람이 아직 이 패널의 최종 형태를 재검토 중이라 이번 범위에서는 위치만 조정, 구조는 그대로 유지).",
+      "where": "src/App.jsx,src/components/Sidebar.jsx,src/components/icons.jsx,src/screens/Settings.jsx,src/screens/Schedule.jsx,src/components/ScheduleCategorySection.jsx,src/components/BacklogSourcesSection.jsx,work-widget-requirements.md",
+      "parent": null,
+      "deps": [],
+      "doc": null,
+      "done_when": "사이드바에 \"설정\" 메뉴가 추가되고 그 화면에서 일정 카테고리 관리(추가/수정/삭제)와 외부 backlog(.json) 소스 관리(등록/삭제)가 그대로 동작한다(접이식 토글 없이 항상 보임). 일정 화면을 열면 카테고리/백로그 소스 관리 UI 없이 월간/주간 탭 바로 다음에 캘린더가 나온다. 외부 백로그 현황(상태별 task 목록) 패널은 일정 화면 맨 아래(날짜 상세 카드 다음)로 이동하되 기존처럼 접이식으로 남는다. 최소 창 크기(420x420, MIN_WINDOW_SIZE)에서 사이드바 6개 메뉴 전부 한 줄로 표시되고 스크롤 없이 마지막 메뉴가 창 안에 들어옴을 Playwright로 실측 확인한다(메뉴 개수가 바뀔 때마다 이 실측을 다시 한다). requirements.md의 사이드바 구성(B1.3, 기존 \"고정 5개\") 문단을 6개로 갱신. lint/test/build 통과.",
+      "est_min": null,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-26T09:37:29.900Z",
+      "log": [
+        {
+          "at": "2026-09-26T09:18:23.597Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "착수. Sidebar.jsx/icons.jsx/App.jsx에 설정 탭 추가, Settings.jsx 신설(카테고리+백로그소스 관리를 접이식 없이 항상 표시), Schedule.jsx에서 두 관리 섹션 제거하고 BacklogStatusSection을 화면 맨 아래로 이동."
+        },
+        {
+          "at": "2026-09-26T09:24:33.237Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료: SettingsIcon 추가, Sidebar.jsx/App.jsx에 설정 탭 배선, Settings.jsx 신설(카테고리+백로그소스 관리, 접이식 토글 제거하고 항상 표시), Schedule.jsx에서 두 관리 섹션 제거+BacklogStatusSection을 화면 맨 아래로 이동. lint/vitest(304)/build 통과, Playwright로 사이드바 6개/일정 화면 캘린더 우선/설정 화면 두 패널 항상 표시 확인. requirements.md B1.3/B2.4/B3.4/changelog 갱신. 리뷰 착수."
+        },
+        {
+          "at": "2026-09-26T09:36:37.440Z",
+          "owner": null,
+          "status": "in_review",
+          "note": "critical-reviewer 지적 반영: done_when에 최소 창 크기 실측 기준이 없어 사이드바 잘림(High)이 통과된 채 남을 뻔했음 — 명시적 검증 항목으로 추가.",
+          "field_edit": {
+            "before": {
+              "done_when": "사이드바에 \"설정\" 메뉴가 추가되고 그 화면에서 일정 카테고리 관리(추가/수정/삭제)와 외부 backlog(.json) 소스 관리(등록/삭제)가 그대로 동작한다(접이식 토글 없이 항상 보임). 일정 화면을 열면 카테고리/백로그 소스 관리 UI 없이 월간/주간 탭 바로 다음에 캘린더가 나온다. 외부 백로그 현황(상태별 task 목록) 패널은 일정 화면 맨 아래(날짜 상세 카드 다음)로 이동하되 기존처럼 접이식으로 남는다. requirements.md의 사이드바 구성(B1.3, 기존 \"고정 5개\") 문단을 6개로 갱신. lint/test/build 통과."
+            },
+            "after": {
+              "done_when": "사이드바에 \"설정\" 메뉴가 추가되고 그 화면에서 일정 카테고리 관리(추가/수정/삭제)와 외부 backlog(.json) 소스 관리(등록/삭제)가 그대로 동작한다(접이식 토글 없이 항상 보임). 일정 화면을 열면 카테고리/백로그 소스 관리 UI 없이 월간/주간 탭 바로 다음에 캘린더가 나온다. 외부 백로그 현황(상태별 task 목록) 패널은 일정 화면 맨 아래(날짜 상세 카드 다음)로 이동하되 기존처럼 접이식으로 남는다. 최소 창 크기(420x420, MIN_WINDOW_SIZE)에서 사이드바 6개 메뉴 전부 한 줄로 표시되고 스크롤 없이 마지막 메뉴가 창 안에 들어옴을 Playwright로 실측 확인한다(메뉴 개수가 바뀔 때마다 이 실측을 다시 한다). requirements.md의 사이드바 구성(B1.3, 기존 \"고정 5개\") 문단을 6개로 갱신. lint/test/build 통과."
+            }
+          }
+        },
+        {
+          "at": "2026-09-26T09:37:29.900Z",
+          "owner": null,
+          "status": "done",
+          "note": "critical-reviewer 지적([High] 1건+[Medium] 2건) 전부 반영·재검증: 사이드바 6개 메뉴 최소 창 크기(420x420) 잘림 문제(스크롤바로 인한 줄바꿈 연쇄, 최종 35px)를 Playwright 실측으로 확인 후 index.css sidebar gap/패딩 조정+overflow-y:auto로 해결(재실측 여유 28px), BacklogStatusPanel.jsx 안내문구 정정, 4개 파일 주석 정정. done_when에 최소 창 크기 검증 항목 추가. lint(clean)/vitest(304/304)/build 통과. work-widget-requirements.md v3.31 기록."
+        }
+      ],
+      "done_at": "2026-09-26"
+    },
+    {
+      "id": "P16",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "일정 화면: 캘린더 아래 순서를 날짜 상세 목록 우선으로 재배치",
+      "summary": "사용자 피드백(2026-09-26): 캘린더 바로 아래에 \"새 일정 추가\" 폼이 있어 가독성이 떨어짐(캘린더를 보고 바로 폼이 나와 오늘/선택한 날짜에 이미 있는 일정을 확인하기 전에 추가 폼부터 마주침). 선택한 날짜의 일정 목록(ScheduleDateDetail)을 캘린더 바로 다음으로 올리고, \"새 일정 추가\" 폼은 그 아래로 내린다. 별도 모달/토글로 폼을 숨기는 대신(Projects/Todos/Memos 전 화면이 공유하는 \"팝업 없이 항상 보이는 입력창\" 원칙 유지, work-widget-requirements.md B2.1/B2.2 참고) 순서만 바꾼다 — 이미 있는 일정을 먼저 보고 필요하면 아래로 스크롤해 추가하는 자연스러운 읽기 흐름.",
+      "where": "src/screens/Schedule.jsx",
+      "parent": null,
+      "deps": [],
+      "doc": null,
+      "done_when": "일정 화면에서 캘린더/범례 다음에 선택한 날짜의 일정 목록(ScheduleDateDetail)이 먼저 나오고, \"새 일정 추가\" 카드가 그 다음에 나온다. 외부 백로그 현황 패널은 그대로 맨 아래. 일정 추가/수정/삭제 동작은 기존과 동일하게 작동. lint/test/build 통과.",
+      "est_min": null,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-26T10:56:56.299Z",
+      "log": [
+        {
+          "at": "2026-09-26T10:50:41.199Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "착수. Schedule.jsx에서 ScheduleDateDetail을 캘린더/범례 바로 다음으로 옮기고 새 일정 추가 카드를 그 아래로 내림."
+        },
+        {
+          "at": "2026-09-26T10:53:36.595Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료: Schedule.jsx에서 ScheduleDateDetail을 캘린더/범례 바로 다음으로, 새 일정 추가 카드를 그 아래로 순서만 변경(로직 변경 없음). lint/vitest(304)/build 통과, Playwright로 카드 순서+일정 추가 실제 동작 확인. requirements.md B2.4/changelog 갱신. 리뷰 착수."
+        },
+        {
+          "at": "2026-09-26T10:56:56.299Z",
+          "owner": null,
+          "status": "done",
+          "note": "critical-reviewer 지적([Medium] 3건, Critical/High 없음) 전부 반영·재검증: Schedule.jsx 주석+B2.4 P15 문단의 \"백로그 현황 위치\" 설명을 P16 이후 실제 순서(날짜 상세 카드·새 일정 추가 카드 다음)로 정정, done_when의 수정/삭제 동작을 Playwright로 재실측(수정 반영+삭제 후 data.json 실제 제거 확인, 기존엔 추가만 확인했었음). lint(clean)/vitest(304/304)/build 통과. work-widget-requirements.md v3.33 기록."
+        }
+      ],
+      "done_at": "2026-09-26"
+    },
+    {
+      "id": "P17",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "외부 백로그 현황: 주간 변화 감지 + 숫자 요약 추가",
+      "summary": "사용자 요청(2026-09-26): 백로그 UI(각 프로젝트의 backlog-dashboard.html)를 매번 직접 실행해야 확인 가능해서 불편함 — 위젯에서 편하게 상태를 보고 싶고, 궁극적으로는(이번 범위 밖) 사내 PC의 codex로 지난주 진행 내용 기반 주간보고를 자동 작성하는 것이 목표. 1차로 위젯의 외부 백로그 현황 패널(P14.2 BacklogStatusPanel.jsx)에 (1) 숫자 요약(상태별 개수), (2) 캘린더 주(월~일) 기준 변화 감지(이번 주 기준선 대비 새로 추가/상태 변경/사라진 task), (3) 기존 상태별 전체 목록을 함께 보여준다. 기준선은 매주 처음 그 소스를 확인한 시점의 상태를 이번 주 기준선으로 자동 저장한다(위젯을 그 주 내내 켜두지 않았다면 실제 \"지난 월요일\" 상태를 소급 재구성할 방법은 없음 — 매주 최소 한 번은 위젯을 확인한다는 전제에서만 정확, 이 한계를 문서/UI에 명시).",
+      "where": "electron/dataStore.js,src/lib,src/components/BacklogStatusPanel.jsx,src/components/BacklogStatusSection.jsx,src/screens/Schedule.jsx,src/index.css,work-widget-requirements.md",
+      "parent": null,
+      "deps": [],
+      "doc": null,
+      "done_when": "외부 백로그 현황 패널에서 소스마다 (1) 상태별 개수 요약 한 줄, (2) \"이번 주 변경 사항\"(새로 추가/상태 변경/사라짐, 캘린더 주 월~일 기준) 섹션(변화가 없으면 \"변경 사항 없음\"), (3) 기존 상태별 전체 목록이 함께 보인다. 새 주가 시작된 뒤 처음 그 소스를 확인하면 그 시점 상태가 자동으로 이번 주 기준선으로 저장되고(data.json의 backlog_sources[].weekly_snapshot), 그 다음부터의 변화만 비교 대상이 된다. 소스별 오류 처리(파일 없음/JSON 깨짐/인식 불가)는 기존과 동일하게 유지된다. lint/test/build 통과.",
+      "est_min": null,
+      "gate": null,
+      "owner": null,
+      "claimed_at": null,
+      "updated_at": "2026-09-26T12:00:16.885Z",
+      "log": [
+        {
+          "at": "2026-09-26T11:06:08.144Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "착수. backlogWeeklySnapshot.js(순수 함수: resolveWeeklySnapshot/diffWeeklyChanges)+dataStore.js weekly_snapshot 필드+backlogSnapshotActions.js(저장 핸들러)+BacklogStatusPanel.jsx UI 확장 순서로 구현."
+        },
+        {
+          "at": "2026-09-26T11:30:06.396Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료: backlogWeeklySnapshot.js(순수함수 3종, vitest 10건, dateRange.js getThisWeekRange 재사용)+backlogSnapshotActions.js(배경 자동 저장)+dataStore.js weekly_snapshot 필드(vitest 2건)+BacklogStatusPanel.jsx UI 확장(숫자요약+이번주변경사항+기존목록). lint/vitest(315)/build 통과. Playwright로 이번주 기준선 유지+변경 감지(추가/상태변경/사라짐)+지난주 기준선 자동 롤오버 3가지 시나리오 실측 확인(테스트 스크립트 자체의 타임존 버그로 처음엔 오탐 있었으나 재확인 후 정상 동작 확인). requirements.md B3.5/changelog 갱신. 리뷰 착수."
+        },
+        {
+          "at": "2026-09-26T12:00:16.885Z",
+          "owner": null,
+          "status": "done",
+          "note": "critical-reviewer 지적([High] 2건+[Medium] 4건) 전부 반영. 1차 수정 후 재검증 중 저장 경합 수정이 불완전함을 자체 발견(mutex는 동시실행만 막고 대기 후 통과하는 호출의 클로저 staleness는 못 막음)해 dataRef 즉시동기화로 추가 수정, 5회 반복 재현 테스트로 유실 없음 확인. 저장 재시도 무한루프도 attempted 반환값 기반으로 정확히 1회 제한(건너뜀과 시도-실패 구분). Medium 4건(문서 정정, key충돌, 개수상한, 주경계 재읽기) 반영. lint(clean)/vitest(315/315)/build 통과. work-widget-requirements.md v3.35 기록."
+        }
+      ],
+      "done_at": "2026-09-26"
+    },
+    {
+      "id": "P18",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "캘린더 주 시작 요일: 월요일 -> 일요일",
+      "summary": "사용자 피드백(2026-09-26): 실제 쓰는 달력은 전부 일요일 시작인데 이 위젯은 P5.1부터 월요일 시작으로 구현돼 있어 어색함. 일정 화면의 월간/주간 그리드, 대시보드/할일 화면이 공유하는 이번주 정의(dateRange.js), 반복 일정 요일 체크박스 순서까지 전부 일요일 시작으로 뒤집는다.",
+      "where": "src/lib/dateRange.js,src/lib/scheduleGrid.js,src/components/ScheduleMonthView.jsx,src/components/DueDatePicker.jsx,src/components/ScheduleAddForm.jsx,src/components/ScheduleEditForm.jsx,work-widget-requirements.md",
+      "parent": null,
+      "deps": [],
+      "doc": null,
+      "done_when": "getThisWeekRange/getMonthGrid/getWeekDates가 일요일을 주의 첫날로 계산하고, 월간/주간 캘린더 헤더와 마감일 선택 팝오버가 일-월-화-수-목-금-토 순서로 표시되며, 반복 일정 요일 체크박스도 같은 순서다. 기존 월요일 시작 가정에 맞춰 쓰여있던 테스트가 새 규칙에 맞게 갱신되고 lint/test/build 통과.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-26T15:17:43.646Z",
+      "log": [
+        {
+          "at": "2026-09-26T14:42:56.599Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "착수. 사용자가 캘린더 일요일 시작 요청 + 세션 중단 후 재확인 요청."
+        },
+        {
+          "at": "2026-09-26T14:43:46.387Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료(위 in_progress 노트 참고). lint/test(315개)/build 통과, Playwright 스크린샷으로 달력 렌더링 확인 완료."
+        },
+        {
+          "at": "2026-09-26T15:17:43.646Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "done_when 충족(일요일 시작으로 주 경계/헤더/체크박스 순서 전환) 확인. critical-reviewer 지적 반영: [High] 전환 이전 저장된 weekly_snapshot의 월요일 표기 기준선을 강제 리셋하지 않고 이어받는 호환 처리(resolveWeeklySnapshot)+vitest 추가. lint/vitest(323개)/build 통과, Playwright로 달력 렌더링 확인. work-widget-requirements.md B2.2/B2.4/B3.5에 결정 문단+갱신 포인터 기록."
+        }
+      ],
+      "done_at": "2026-09-26"
+    },
+    {
+      "id": "P19",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "외부 백로그 현황: 전용 탭으로 분리 + 통합 주간 변경 목록",
+      "summary": "사용자 피드백(2026-09-26): P17까지는 외부 백로그 현황이 일정 탭 맨 아래에 얹혀 있었는데, 캘린더와 무관한 정보를 굳이 일정 화면에 넣어야 하는지 의문 + 등록된 백로그가 2개만 있어도 전부 펼쳐 보여주는 방식이 이미 보기 힘듦. 최종 목표(백로그 기반 주간보고를 사내 codex로 자동 작성)를 감안해 사이드바 전용 탭으로 분리하고, 소스별로는 접힌 요약 행(총 개수+이번 주 변경 배지)만 기본 노출, 눌러야 상세가 펼쳐지게 하며, 모든 소스를 합친 '이번 주 전체 변경 사항'을 탭 맨 위에 둔다.",
+      "where": "src/screens/Backlog.jsx,src/components/BacklogSourceCard.jsx,src/components/BacklogWeeklyOverview.jsx,src/components/Sidebar.jsx,src/components/icons.jsx,src/App.jsx,src/screens/Schedule.jsx,src/index.css,work-widget-requirements.md",
+      "parent": null,
+      "deps": [],
+      "doc": null,
+      "done_when": "사이드바에 '백로그' 탭이 추가되고, 그 화면 맨 위에 모든 등록 소스를 합친 '이번 주 전체 변경 사항'(추가/상태변경/사라짐, 소스 이름 태그 포함)이 보인다. 그 아래 등록된 소스마다 접힌 요약 행(총 개수, 변경 있으면 배지)만 기본 표시되고 클릭하면 기존 상태별 전체 목록+해당 소스 단독 주간 변경 내역이 펼쳐진다. 일정 화면에서는 외부 백로그 관련 UI가 완전히 빠진다. lint/test/build 통과.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-26T15:17:54.807Z",
+      "log": [
+        {
+          "at": "2026-09-26T14:43:20.383Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "착수. 사용자가 '백로그 사용 방안 너 생각하는대로 진행해'로 승인."
+        },
+        {
+          "at": "2026-09-26T14:43:47.266Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료(위 in_progress 노트 참고). lint/test(315개)/build 통과, Playwright로 변경 없음/변경 있음 두 시나리오 모두 스크린샷 확인 완료."
+        },
+        {
+          "at": "2026-09-26T15:17:54.807Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "done_when 충족(전용 백로그 탭+통합 주간 변경 목록+소스별 접힘/펼침, 일정 화면에서 완전히 제거) 확인. critical-reviewer 지적 전부 반영: [Critical] snapshot useMemo 고정으로 무한 렌더 루프 제거, [High] handleRotateSnapshot useCallback 고정+사이드바 7개 줄바꿈 연쇄를 nowrap+얇은 스크롤바로 근본 수정, [Medium] 통합 목록 순서를 sourceOrder로 고정+보고 effect 의존값 축소. 재검증 중 자체 발견한 회귀(위 두 안정화 수정이 P17의 암묵적 재시도 경로를 없애 동시 회전 시 한 소스가 영구히 재시도 안 되던 문제)를 retryTick 명시적 재시도로 수정, Playwright 5회 연속 재현 확인. lint/vitest(323개)/build 통과. work-widget-requirements.md B1.3에 결정+리뷰반영 문단 기록."
+        }
+      ],
+      "done_at": "2026-09-26"
+    },
+    {
+      "id": "P20",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "전역 UI: 라벨/제목류 텍스트 2줄 방지(1줄 초과 시 말줄임)",
+      "summary": "사용자 피드백(2026-09-27): 화면 어디서든 글자가 2줄로 줄바꿈되는 걸 개인적으로 싫어함 — 1줄을 넘어가면 줄바꿈 대신 말줄임표(...)로 잘리게 해달라는 요청. 현재 상당수 제목류 클래스(.todo-title/.project-card-name/.memo-list-title 등)는 이미 P12.x 리뷰들에서 개별적으로 nowrap+ellipsis 처리가 돼 있지만, 전 화면 공통으로 쓰이는 .card-title(모든 카드 헤더 제목)을 비롯해 아직 처리 안 된 라벨류가 남아있다(예: .schedule-holiday-name, .backlog-status-source-title/.backlog-status-group-title 등 일부). 전부 훑어서 빠짐없이 처리한다. 단, 이 요청은 '제목/라벨류 짧은 텍스트'에 한정된다고 해석한다 — 메모 본문(자유 서술형 긴 텍스트), 프로젝트/할일 설명 입력창(textarea) 등 원래 여러 줄이 목적인 콘텐츠 영역까지 한 줄로 자르면 내용을 아예 못 보게 되므로 범위에서 제외한다(모호하면 사람에게 재확인).",
+      "where": "src/index.css",
+      "parent": null,
+      "deps": [],
+      "doc": null,
+      "done_when": "Playwright로 창을 좁혀(또는 실제로 긴 텍스트를 입력해) 각 화면(대시보드/프로젝트/할일전체/메모/일정/백로그/설정)의 카드 제목·목록 항목 제목·배지류 라벨이 폭을 넘는 경우 전부 한 줄로 유지되며 끝에 말줄임표(...)가 보이는 것을 확인한다(2줄로 줄바꿈되는 곳이 하나도 없어야 함). 반대로 메모 상세 화면의 본문 텍스트, 프로젝트/할일 설명처럼 원래 여러 줄 표시가 목적인 영역은 이번 변경으로 잘리거나 줄바꿈이 막히지 않아야 한다(회귀 없음). lint/test/build 통과.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-26T19:01:46.542Z",
+      "log": [
+        {
+          "at": "2026-09-26T16:00:55.410Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "착수. 사전 조사 결과 .card-title/.schedule-holiday-name/.backlog-status-source-title/.backlog-status-group-title 등이 nowrap+ellipsis 미적용 확인. 메모 본문/프로젝트-할일 설명 textarea는 제외."
+        },
+        {
+          "at": "2026-09-26T18:52:50.465Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료. .card-title/.content h1/.schedule-holiday-name/.backlog-status-source-title/.backlog-status-group-title(상태 텍스트 부분)/.backlog-weekly-summary/.backlog-source-summary-counts에 nowrap+ellipsis 추가, .card-count-badge에 flex-shrink:0 추가. 메모 본문/설명 textarea는 의도적으로 제외. lint/vitest(323개)/build 통과, Playwright로 평소 화면 무변화 + 극단적으로 긴 텍스트 말줄임 확인(재검증 중 자체 발견한 backlog 토글 라벨 넘침 문제도 추가로 고침)."
+        },
+        {
+          "at": "2026-09-26T19:01:46.542Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "done_when 충족 확인. critical-reviewer 지적 전부 반영: [High] 3건 — .backlog-status-task-owner(외부 status/owner/sourceLabel)에 max-width+말줄임 추가, .backlog-source-label(설정 탭 등록 소스 라벨, 요구사항 문서의 잘못된 '이미 처리됨' 기재도 정정)에 nowrap+ellipsis 추가, 대시보드 진행중 프로젝트 이름(클래스 없는 맨 span)에 .project-row-name 신설. [Medium] 3건 — .backlog-source-summary-counts의 text-overflow가 flex 컨테이너에 안 먹는 CSS 사양 문제를 텍스트 전용 스팬 분리로 수정(배지는 바깥 형제로 분리해 항상 보이게), .backlog-status-group-title 배지 없는 사용처에 white-space:nowrap 추가, .card-header에 gap 추가. ProjectDetail의 설명 미리보기 1줄 제한은 P20 이전부터 있던 별개 설계라 범위 밖으로 남김(문서에 기록). lint/vitest(323개)/build 통과, Playwright로 세 High 항목 전부 실측 재확인."
+        }
+      ],
+      "done_at": "2026-09-26"
+    },
+    {
+      "id": "P21",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "일정 탭: 새 일정 추가 폼을 버튼 클릭 시에만 표시",
+      "summary": "사용자 피드백(2026-09-27): 일정 화면의 '새 일정 추가' 폼이 항상 펼쳐져 있어 공간을 너무 많이 차지한다 — 버튼을 눌러야 나오는 방식으로 바꿔달라는 요청. B2.4/P16 결정 문단은 원래 이 방식(버튼으로 폼을 숨김)을 검토했다가 '이 앱의 다른 화면들이 공유하는 팝업/토글 없이 항상 보이는 입력창 원칙을 일정 화면만 깨는 트레이드오프'를 이유로 채택하지 않았다고 기록돼 있다 — 이번은 사람이 그 트레이드오프를 알고도 다시 요청한 것이므로 그 결정을 뒤집는다(이번에도 프로젝트/할일/메모 화면의 입력창은 그대로 두고 일정 화면만 예외로 남긴다 — 화면마다 항목 밀도가 달라 일정 화면만 특히 좁게 느껴진다는 맥락).",
+      "where": "src/screens/Schedule.jsx,src/index.css,work-widget-requirements.md",
+      "parent": null,
+      "deps": [],
+      "doc": null,
+      "done_when": "일정 화면 진입 시 '새 일정 추가' 폼이 기본적으로 안 보이고 버튼(예: '+ 새 일정 추가')만 보인다. 그 버튼을 누르면 폼이 나타나 기존과 동일하게 일정을 추가할 수 있고, 추가 후 또는 다시 누르면 접힌다. 날짜 상세 카드(ScheduleDateDetail)와 캘린더 등 다른 요소의 위치/동작은 변화 없다. lint/test/build 통과, Playwright로 기본 접힘 상태·버튼 클릭 후 펼침·정상 추가 동작을 확인.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-26T15:59:47.748Z",
+      "log": [
+        {
+          "at": "2026-09-26T15:38:12.510Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "착수. ScheduleAddForm을 기본 접힘 + 버튼 클릭 시 펼침으로 변경."
+        },
+        {
+          "at": "2026-09-26T15:53:17.449Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료. Schedule.jsx에 showAddForm state(기본 false)+토글 버튼(.schedule-category-manager-toggle 재사용) 추가, 폼은 클릭해야 펼쳐짐. lint/vitest(323개)/build 통과, Playwright로 기본 접힘/클릭 후 펼침/추가 동작 확인."
+        },
+        {
+          "at": "2026-09-26T15:59:47.748Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "done_when 충족 확인. critical-reviewer 지적 반영: [Medium] 저장 중(saving) 토글에 disabled 없어 폼이 언마운트되며 에러 표시 기회를 잃을 수 있던 것을 disabled={saving}으로 수정, ScheduleAddForm.jsx 헤더 주석의 '항상 인라인' 뉘앙스를 P21 예외 명시로 정정. lint/vitest(323개)/build 통과."
+        }
+      ],
+      "done_at": "2026-09-26"
+    },
+    {
+      "id": "P22",
+      "status": "done",
+      "priority": "P3",
+      "category": "feature",
+      "title": "스크롤바 전체 앱 다크 테마 적용",
+      "summary": "사용자 피드백(2026-09-27): 스크롤바가 생기는 곳(예: .content 메인 영역)이 Windows 기본 밝은 스크롤바 그대로라 앱의 다크 글래스 테마와 안 맞는다는 지적 — P19에서 .sidebar에만 한정해 얇은 웹킷 스크롤바(::-webkit-scrollbar)를 적용했는데, 이걸 앱 전체(.content 메인 영역, DueDatePicker 팝오버, 할일 태그 목록 등 overflow-y:auto/scroll이 있는 모든 곳)로 확장한다.",
+      "where": "src/index.css",
+      "parent": null,
+      "deps": [],
+      "doc": null,
+      "done_when": "index.css에 전역(또는 스크롤 가능한 모든 컨테이너를 포괄하는) ::-webkit-scrollbar 규칙이 추가돼, 창 크기를 줄이거나 목록이 넘칠 때 나타나는 모든 스크롤바(트랙/썸)가 Windows 기본 밝은 색이 아니라 앱의 다크 글래스 테마 색상(index.css의 --card-bg/--card-border/--text-muted 등 기존 토큰)과 어울리게 보인다. lint/build 통과, Playwright로 최소 창 크기 등 스크롤이 실제로 발생하는 화면에서 스크린샷으로 확인.",
+      "est_min": null,
+      "gate": null,
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-26T15:59:48.707Z",
+      "log": [
+        {
+          "at": "2026-09-26T15:39:28.256Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "착수. .content 등 스크롤 가능한 영역에 다크 테마 웹킷 스크롤바 확장 적용."
+        },
+        {
+          "at": "2026-09-26T15:53:18.421Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료. index.css에 전역 ::-webkit-scrollbar(+scrollbar-width/-color) 규칙 추가, --track-bg/--card-border/--text-faint 기존 토큰 재사용. .sidebar는 폭만 좁은 자체 규칙 유지. lint/build 통과, Playwright로 최소 창 크기에서 스크롤바 색 확인."
+        },
+        {
+          "at": "2026-09-26T15:59:48.707Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "done_when 충족 확인. critical-reviewer 지적 반영: [High] 표준 scrollbar-width/-color가 이 Chromium 버전에서 ::-webkit-scrollbar*를 무시해 .sidebar 스크롤바가 의도한 4px 대신 12px이 되던 문제(Playwright 실측으로 확인) — 표준 속성 제거, webkit 전용으로 전환 후 재실측(4~5px로 복귀). [Medium] 스크롤바 모서리/textarea 리사이저 테마 누락 — ::-webkit-scrollbar-corner/::-webkit-resizer 추가. lint/build 통과."
+        }
+      ],
+      "done_at": "2026-09-26"
     }
   ]
 }

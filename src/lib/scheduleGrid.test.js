@@ -14,15 +14,15 @@ import {
 } from './scheduleGrid.js';
 
 describe('getMonthGrid', () => {
-  it('2026년 9월(30일, 화요일 시작)을 월요일 시작 5주 그리드로 채운다', () => {
+  it('2026년 9월(30일, 화요일 시작)을 일요일 시작 5주 그리드로 채운다', () => {
     const weeks = getMonthGrid(2026, 8); // 0-indexed: 8=9월
     expect(weeks.length).toBe(5);
-    expect(weeks[0][0].date).toBe('2026-08-31'); // 8/31(월)부터 시작
+    expect(weeks[0][0].date).toBe('2026-08-30'); // 8/30(일)부터 시작
     expect(weeks[0][0].inCurrentMonth).toBe(false);
-    expect(weeks[0][1].date).toBe('2026-09-01');
-    expect(weeks[0][1].inCurrentMonth).toBe(true);
+    expect(weeks[0][2].date).toBe('2026-09-01'); // 화요일이라 인덱스2
+    expect(weeks[0][2].inCurrentMonth).toBe(true);
     const lastWeek = weeks[weeks.length - 1];
-    expect(lastWeek[lastWeek.length - 1].date).toBe('2026-10-04'); // 10/4(일)로 끝
+    expect(lastWeek[lastWeek.length - 1].date).toBe('2026-10-03'); // 10/3(토)로 끝
   });
 
   it('모든 주는 항상 7칸이다', () => {
@@ -38,23 +38,23 @@ describe('getMonthGrid', () => {
 });
 
 describe('getWeekDates', () => {
-  it('수요일 날짜를 넣으면 그 주 월~일 7일을 반환한다', () => {
+  it('목요일 날짜를 넣으면 그 주 일~토 7일을 반환한다', () => {
     const days = getWeekDates('2026-09-24'); // 목요일
     expect(days).toEqual([
+      '2026-09-20',
       '2026-09-21',
       '2026-09-22',
       '2026-09-23',
       '2026-09-24',
       '2026-09-25',
       '2026-09-26',
-      '2026-09-27',
     ]);
   });
 
-  it('일요일 날짜를 넣어도 그 주의 월요일부터 시작한다', () => {
+  it('일요일 날짜를 넣으면 그 날짜 자신이 그 주의 시작이다', () => {
     const days = getWeekDates('2026-09-27');
-    expect(days[0]).toBe('2026-09-21');
-    expect(days[6]).toBe('2026-09-27');
+    expect(days[0]).toBe('2026-09-27');
+    expect(days[6]).toBe('2026-10-03');
   });
 });
 
@@ -83,21 +83,18 @@ describe('getWeekdayKind', () => {
   // critical-reviewer 지적(P12.6 리뷰, Medium): 같은 주의 날짜 4개만 확인해서는 getMonthGrid가
   // 채우는 인접 달 날짜(월 경계)에도 이 판정이 맞물려 정확히 적용되는지, 그리고 그리드의 5/6번째
   // 열이 실제로 항상 토/일인지 보호하지 못한다 — 두 달(연 경계 포함)의 모든 주를 직접 돈다.
-  it('월 경계를 넘는 인접 달 날짜를 포함해 모든 주에서 5,6번째 열이 토/일이다', () => {
+  it('월 경계를 넘는 인접 달 날짜를 포함해 모든 주에서 첫/마지막 열이 일/토다', () => {
     const monthsToCheck = [
-      getMonthGrid(2026, 8), // 9월(8/31 월요일 시작)
+      getMonthGrid(2026, 8), // 9월(연 경계 없음)
       getMonthGrid(2026, 11), // 12월(연 경계 넘어 2027-01로 이어짐)
-      // critical-reviewer 지적(재검증 관찰): 위 두 달은 모두 화요일 시작이라 앞쪽 인접 달의
-      // 토/일이 한 번도 커버되지 않았다 — 11월(일요일 시작, 앞쪽 채움 6칸)을 추가해 앞쪽 인접
-      // 달의 토(10/31)까지 포함시킨다.
-      getMonthGrid(2026, 10), // 11월(일요일 시작 → 10/26 월요일부터 채움, 10/31 토 포함)
+      getMonthGrid(2026, 10), // 11월(월 경계 앞쪽 채움 있음)
     ];
     monthsToCheck.forEach((weeks) => {
       weeks.forEach((week) => {
         expect(week).toHaveLength(7);
-        week.slice(0, 5).forEach((cell) => expect(getWeekdayKind(cell.date)).toBe('weekday'));
-        expect(getWeekdayKind(week[5].date)).toBe('saturday');
-        expect(getWeekdayKind(week[6].date)).toBe('sunday');
+        expect(getWeekdayKind(week[0].date)).toBe('sunday');
+        week.slice(1, 6).forEach((cell) => expect(getWeekdayKind(cell.date)).toBe('weekday'));
+        expect(getWeekdayKind(week[6].date)).toBe('saturday');
       });
     });
   });

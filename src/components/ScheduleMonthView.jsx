@@ -9,10 +9,11 @@ import {
   buildScheduleCellTooltip,
 } from '../lib/scheduleGrid.js';
 
-const WEEKDAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
+const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 // P12.6: 헤더는 요일 라벨이 고정 배열이라 날짜 계산 없이도 순서로 토/일을 알 수 있다 — 셀은
 // 인접 달까지 섞여 있어 라벨 순서만으로는 판정할 수 없으므로 getWeekdayKind(cell.date)를 쓴다.
-const WEEKDAY_HEADER_KINDS = ['weekday', 'weekday', 'weekday', 'weekday', 'weekday', 'saturday', 'sunday'];
+// P18: 일요일 시작으로 뒤집으면서 순서도 일-토로 맞춘다.
+const WEEKDAY_HEADER_KINDS = ['sunday', 'weekday', 'weekday', 'weekday', 'weekday', 'weekday', 'saturday'];
 
 function MonthNav({ year, month, onPrev, onNext }) {
   return (

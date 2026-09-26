@@ -1,7 +1,8 @@
 // P5.4/P5.6: 일정 추가 폼. 일회성/반복 두 유형을 하나의 폼에서 다룬다 — B3.4가 두 유형을
 // 같은 레코드 구조(date/is_recurring/recurrence_days)로 규정하므로 폼을 둘로 나누면 필드
 // 대부분(제목/날짜)을 중복 관리해야 한다. "별도 팝업 없이 입력창에서 바로 추가"(B2.1 기조)를
-// 따라 인라인 폼으로 둔다.
+// 따라 인라인 폼으로 둔다(P21: 다만 Schedule.jsx에서 이 폼 자체를 토글 버튼 뒤에 접어 두는
+// 예외를 둔다 — 폼 내부 구조는 그대로 인라인).
 // critical-reviewer 지적(P5.4 리뷰): (1) .project-add-form(가로 flex, wrap 없음)을 그대로
 // 쓰면 제목/날짜/반복 체크/요일 7칸/버튼이 420px 폭 한 줄에 몰려 찌그러진다 — .project-edit-form
 // (세로 flex) 기반으로 바꾼다. (2) key로 강제 리마운트하면 날짜를 클릭해 selectedDate가 바뀔
@@ -11,7 +12,9 @@ import { useState } from 'react';
 import DueDatePicker from './DueDatePicker.jsx';
 import { getUsableCategories, resolveSubmittableCategoryId } from '../lib/scheduleCategoryMutations.js';
 
-const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
+// P18: 일요일 시작 주 순서에 맞춘다(체크박스 표시 순서 + 정렬 기준일 뿐, recurrence_days에
+// 저장되는 값 자체는 그대로 요일 이름 문자열이라 데이터 마이그레이션은 필요 없다).
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
 function sortByWeekday(days) {
   return [...days].sort((a, b) => WEEKDAYS.indexOf(a) - WEEKDAYS.indexOf(b));

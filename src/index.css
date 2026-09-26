@@ -46,6 +46,45 @@
   box-sizing: border-box;
 }
 
+/* P22(사용자 피드백, 2026-09-27): 스크롤바가 생기는 곳(대표적으로 .content 메인 영역)이
+   Windows 기본 밝은 스크롤바 그대로라 다크 글래스 테마와 안 맞는다는 지적 — P19 때
+   .sidebar에만 좁혀 뒀던 웹킷 스크롤바 테마를(아래 .sidebar::-webkit-scrollbar 참고, 폭만
+   더 좁게 남겨 둠) 전역으로 확장한다.
+   critical-reviewer 지적(High, Playwright로 실측 확인): 처음엔 표준 scrollbar-width/-color도
+   같이 뒀었는데, 이 Chromium 버전(Electron 31, Chromium 126)은 표준 scrollbar-color가 걸린
+   요소에서는 ::-webkit-scrollbar* 규칙을 무시하고 표준 스크롤바(고정 "thin" 폭)만 그린다 —
+   실측 결과 .sidebar의 스크롤바가 의도한 4px이 아니라 12px을 차지해, P15/P19가 막았던 폭
+   축소→라벨 줄바꿈 연쇄가 재발할 위험까지 있었다. 이 앱은 Electron 전용이라 Firefox 호환이
+   필요 없으므로, 표준 속성은 빼고 ::-webkit-scrollbar*만 쓴다(색은 이 방식으로도 이미
+   충분히 적용됨). */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--track-bg);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--card-border);
+  border-radius: 999px;
+}
+
+/* critical-reviewer 지적(Medium): 가로+세로 스크롤이 동시에 생기는 요소(예: textarea의
+   resize 손잡이)의 모서리도 기본 밝은 색으로 남을 수 있어 함께 테마를 맞춘다. */
+*::-webkit-scrollbar-corner {
+  background: var(--track-bg);
+}
+
+*::-webkit-resizer {
+  background: var(--track-bg);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
+
 body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
@@ -138,16 +177,37 @@ body {
 }
 
 /* ---- 사이드바 ---- */
+/* P15 리뷰 지적(High): 사이드바 메뉴가 5개→6개("설정" 추가)로 늘면서, 최소 창 높이
+   420px에서 마지막 메뉴 하단이 실측상 창 밖으로 잘렸다(P7.4가 5개 기준 363px로 실측·확정한
+   여유가 6번째 메뉴로 소진됨). 처음엔 gap만 줄이고 overflow-y:auto만 추가했는데, Playwright로
+   재실측하니 6개짜리 세로 합이 사이드바 높이(384px)를 여전히 넘겨 스크롤바가 실제로
+   나타났고, 스크롤바가 폭(약 17px)을 먹으면서 버튼 내부 폭이 좁아져 4글자 라벨("대시보드"
+   등)이 두 줄로 줄바꿈되고, 그 결과 그 버튼들만 더 커져서 넘침이 오히려 악화되는 연쇄가
+   있었다(계산상 6*53(버튼)+5*8(gap)+40(패딩)=398 > 384). 버튼 세로 패딩을 8px→6px로 줄여
+   한 줄 기준 6개 총합이 374px로 384px 안에 확실히 들어오게 했다(줄바꿈 자체가 안 생기므로
+   버튼 폭도 안 좁아짐) — overflow-y:auto는 향후 메뉴가 더 늘어나는 경우에 대비해 그대로 둔다.
+   **P19 리뷰에서 재발(critical-reviewer 지적, High)**: 7번째 메뉴("백로그")가 추가되자 최소
+   창 높이(420px)에서 다시 스크롤바가 뜨고 같은 연쇄(스크롤바가 폭을 먹음 → 라벨 줄바꿈 →
+   버튼이 커짐 → 넘침 악화)가 재현됐다(Playwright 실측: sidebarScrollHeight 472 > clientHeight
+   384). 그때그때 숫자만 맞추면 메뉴가 늘 때마다 또 재발하므로, 이번엔 원인 자체(줄바꿈이
+   버튼 높이를 늘림)를 근본적으로 막는다 — 라벨에 `white-space:nowrap`+말줄임을 둬 아무리
+   메뉴가 늘어 스크롤바가 생겨도 버튼 한 줄 높이가 절대 안 늘어나게 하고(줄바꿈 cascade
+   자체가 발생 불가), 스크롤바 자체도 폭을 줄여 남는 공간을 넓힌다(아래 ::-webkit-scrollbar). */
 .sidebar {
   width: 84px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 20px 10px;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--sidebar-border);
+  overflow-y: auto;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 4px;
 }
 
 .sidebar button {
@@ -159,11 +219,18 @@ body {
   align-items: center;
   gap: 4px;
   width: 100%;
-  padding: 8px 4px;
+  padding: 6px 4px;
   border-radius: 14px;
   color: var(--text-muted);
   font-size: 10px;
   font-weight: 500;
+}
+
+.sidebar button span {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .sidebar button:hover {
@@ -202,6 +269,11 @@ body {
   font-size: 22px;
   font-weight: 800;
   margin: 0;
+  /* P20: 프로젝트 상세(ProjectDetail.jsx)의 <h1>{project.name}</h1>처럼 사용자가 직접 입력한
+     긴 텍스트가 그대로 들어갈 수 있는 화면 제목도 2줄로 줄바꿈되지 않게 한다. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .content h2 {
@@ -243,12 +315,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
 .card-title {
   font-size: 14px;
   font-weight: 700;
+  /* P20(사용자 피드백, 2026-09-27): 어디서든 텍스트가 2줄로 줄바꿈되는 걸 원치 않아, 한 줄을
+     넘으면 항상 말줄임표로 자른다. .card-header가 justify-content:space-between인 flex라
+     기본값(min-width:auto)로는 배지 옆에서 줄어들지 못해 ellipsis가 동작하지 않는다 —
+     min-width:0으로 직접 줄어들 수 있게 한다(.todo-main 등 기존 패턴과 동일한 이유). */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-count-badge {
@@ -258,6 +339,8 @@ body {
   background: var(--accent-soft-bg);
   padding: 2px 8px;
   border-radius: 999px;
+  /* P20: flex 안에서 옆의 제목이 줄어들 때 배지 자신도 같이 눌리며 숫자가 잘리지 않게 한다. */
+  flex-shrink: 0;
 }
 
 .card-list {
@@ -742,12 +825,25 @@ body {
 .project-row-header {
   display: flex;
   justify-content: space-between;
+  gap: 8px;
   font-size: 12.5px;
   font-weight: 600;
   margin-bottom: 5px;
 }
 
+/* critical-reviewer 지적(P20 리뷰, High): 대시보드 "진행중인 프로젝트 현황" 카드의 프로젝트
+   이름은 .project-card-name/ProjectDetail의 <h1>과 같은 사용자 입력인데 클래스가 없어 줄바꿈
+   방지가 빠져 있었다 — 같은 이름을 다른 화면에서는 자르면서 여기만 줄바꿈되면 일관성도
+   깨진다. */
+.project-row-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .project-row-header .percent {
+  flex-shrink: 0;
   color: var(--accent-strong);
 }
 
@@ -1234,6 +1330,9 @@ body {
   font-weight: 600;
   color: var(--danger);
   margin: 0 0 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .schedule-day-number {
@@ -1394,6 +1493,227 @@ body {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+}
+
+/* P14.1: 외부 backlog(.json) 소스 관리 목록 — schedule-category-row와 같은 이유(삭제 실패
+   메시지가 좁게 눌리지 않도록 wrap)로 같은 레이아웃을 쓴다. */
+.backlog-source-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.backlog-source-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.backlog-source-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  /* critical-reviewer 지적(P20 리뷰, High): 등록된 외부 backlog(.json) 소스 라벨(사용자 지정
+     이름 또는 폴더명, 길이 제한 없음)에 줄바꿈 방지가 전혀 없었다 — 부모(.backlog-source-info)
+     는 이미 min-width:0인 flex column이라 이 클래스만 추가하면 된다. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backlog-source-path {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+
+.backlog-source-status {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.backlog-source-status.is-error {
+  color: var(--danger);
+}
+
+/* P14.1 리뷰 반영: "인식 못 한 형식"은 파일이 죽거나 비어있는 게 아니라 이 위젯이 아직
+   그 프로젝트의 배열 구조를 모른다는 뜻이라 오류(danger)보다는 옅은 경고 톤을 쓴다. */
+.backlog-source-status.is-warn {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* P14.2: 소스별 task 목록(상태별 그룹). schedule-category-row 등과 같은 카드 안 리스트
+   스타일을 재사용해(P14 done_when의 "카테고리 관리 화면과 시각적 스타일이 일관됨" 요구)
+   새 색이나 레이아웃 개념을 따로 만들지 않는다. */
+.backlog-status-source + .backlog-status-source {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--card-border);
+}
+
+.backlog-status-source-title {
+  font-size: 13px;
+  margin: 0 0 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* critical-reviewer 지적(P14.2 리뷰, High): 이 바깥 목록에만 리셋이 없어서 브라우저 기본
+   불릿/들여쓰기/여백이 그대로 적용됐다 — .card-list와 같은 리셋을 준다(done_when이 요구하는
+   "카테고리 관리 화면과 시각적 일관성"). */
+.backlog-status-groups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.backlog-status-group {
+  margin-top: 8px;
+}
+
+.backlog-status-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 4px;
+  /* critical-reviewer 지적(P20 리뷰, Medium): "이번 주 변경 사항"처럼 배지 없이 이 클래스를
+     맨 텍스트로 직접 쓰는 자리도 있다 — 그 자리는 .backlog-status-group-title-text로 감싸지
+     않아 익명 flex item이 공백에서 줄바꿈될 여지가 있었다(고정 문구라 실제로 발생할 가능성은
+     낮지만, 원인 자체를 막아 둔다). */
+  white-space: nowrap;
+}
+
+/* P20: 외부 backlog(.json)의 status 값은 이 앱이 통제할 수 없는 임의 문자열이라 길 수 있다 —
+   옆의 card-count-badge는 항상 보이게 두고(flex-shrink:0), 상태 텍스트 쪽만 줄어들며
+   말줄임되게 한다(.card-title과 같은 min-width:0 이유). */
+.backlog-status-group-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backlog-status-task-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.backlog-status-task-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backlog-status-task-owner {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  color: var(--text-faint);
+  /* critical-reviewer 지적(P20 리뷰, High): 이 칸에는 BacklogWeeklyOverview.jsx의
+     sourceLabel, BacklogSourceCard.jsx의 status/owner처럼 이 앱이 길이를 통제 못 하는 외부
+     문자열이 들어간다 — flex-shrink:0만 있고 폭 상한이 없어 길면 카드 밖으로 그대로
+     넘쳤다(형제 .backlog-status-task-title은 min-width:0이라 오히려 그쪽이 0폭까지 밀려
+     제목이 사라짐). max-width로 상한을 두고 넘치면 말줄임한다. */
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* P17: 숫자 요약 한 줄 + 이번 주 변경 사항 — "매번 실행파일을 켜야 확인 가능하다"는 불편을
+   줄이려는 목적이라, 펼치자마자 눈에 들어오도록 목록보다 위·조금 더 진한 글자색으로 둔다. */
+.backlog-weekly-summary {
+  font-size: 12.5px;
+  color: var(--text);
+  margin: 0 0 8px;
+  /* P20: 상태 종류가 많은 외부 backlog(.json)일수록 이 요약 줄이 길어질 수 있다 — 한 줄
+     요약이라는 목적상 줄바꿈보다는 잘라 보여주는 쪽이 맞고, 전체 내역은 바로 아래 상태별
+     목록에서 확인 가능하니 정보 손실도 아니다. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backlog-weekly-changes {
+  margin-bottom: 10px;
+}
+
+/* P19: 소스별 요약 행 — 기본은 접혀 있고(총 개수 + 이번 주 변경 배지만) 눌러야 상세가
+   펼쳐진다. .schedule-category-manager-toggle과 같은 "all: unset 뒤 필요한 스타일만 추가"
+   패턴을 쓰되, 이건 행 전체가 버튼이라 폭 100%·양끝 정렬이 필요해 별도 클래스로 둔다. */
+.backlog-source-summary-toggle {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  cursor: pointer;
+}
+
+.backlog-source-summary-toggle:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.backlog-source-summary-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.backlog-source-summary-toggle .backlog-status-source-title {
+  margin: 0;
+  /* P19 때는 라벨을 절대 안 줄어들게(flex-shrink:0) 해서 옆의 개수 요약 쪽만 줄어들게
+     했었는데, 라벨 자체가 아주 길면(등록된 외부 프로젝트 폴더명이 길 때) 아무 데도 안
+     줄어드는 요소가 없어 버튼 밖으로 그냥 넘쳐흘렀다(P20 사용자 피드백으로 발견 — "2줄
+     줄바꿈"은 아니었지만 컨테이너 밖으로 삐져나가는 것도 같은 문제). 기본 shrink를 허용하고
+     min-width:0을 줘 위 .backlog-status-source-title의 nowrap+ellipsis가 실제로 동작하게
+     한다 — 평소(짧은 라벨)엔 아무 변화 없고, 극단적으로 긴 라벨일 때만 "..."로 잘린다. */
+  min-width: 0;
+}
+
+.backlog-source-summary-counts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  flex-grow: 1;
+  min-width: 0;
+}
+
+/* critical-reviewer 지적(P20 리뷰, Medium): text-overflow:ellipsis는 flex 컨테이너 자체가 아니라
+   block 컨테이너에서만 실제로 "..."을 그린다 — 위처럼 flex 컨테이너에 직접 걸면 넘치는 내용이
+   말줄임 없이 그냥 잘리기만 하고, 그 안에 있던 "이번 주 변경 N" 배지까지 함께 가려질 수 있었다
+   (라벨이 아주 길어 이 영역 자체가 크게 줄어드는 경우). "총 N개" 텍스트만 별도 block 텍스트로
+   감싸 그 안에서 줄어들며 말줄임되게 하고, 배지(.card-count-badge)는 flex-shrink:0가 이미
+   있어 그 바깥 형제로 두면 항상 보인다. */
+.backlog-source-summary-count-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backlog-source-summary-caret {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.backlog-source-detail {
+  margin-top: 8px;
 }
 
 /* critical-reviewer가 잡을 법한 함정을 미리 피함: .category-swatch-button의 `all: unset`

@@ -76,17 +76,17 @@ describe('groupTodosByDate (시스템 시각 2026-09-17 목요일 고정 — 이
     expect(groupTodosByDate(undefined)).toEqual({ today: [], week: [], later: [], droppedCount: 0 });
   });
 
-  it('주 경계(월요일 기준): 지난주 일요일은 나중, 이번주 일요일은 이번주로 나뉜다', () => {
+  it('주 경계(일요일 기준): 이번주 일요일은 이번주, 다음주 일요일은 나중으로 나뉜다', () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 8, 14)); // 월요일, 이번주 09-14~09-20
+    vi.setSystemTime(new Date(2026, 8, 14)); // 월요일, 이번주 09-13~09-19
 
     const todos = [
-      { id: 'last-sunday', due_date: '2026-09-13', priority: '상' },
-      { id: 'this-sunday', due_date: '2026-09-20', priority: '상' },
+      { id: 'this-week-sunday', due_date: '2026-09-13', priority: '상' },
+      { id: 'next-week-sunday', due_date: '2026-09-20', priority: '상' },
     ];
     const { week, later } = groupTodosByDate(todos);
-    expect(week.map((t) => t.id)).toEqual(['this-sunday']);
-    expect(later.map((t) => t.id)).toEqual(['last-sunday']);
+    expect(week.map((t) => t.id)).toEqual(['this-week-sunday']);
+    expect(later.map((t) => t.id)).toEqual(['next-week-sunday']);
   });
 
   it('빈 문자열/형식이 잘못된 due_date는 마감일 없음과 동일하게 나중으로 간다(이번주로 오분류되지 않음)', () => {

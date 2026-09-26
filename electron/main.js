@@ -1,9 +1,10 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, nativeTheme } = require('electron');
 const path = require('path');
-const { loadData, saveData } = require('./dataStore');
+const { loadData, saveData, migrateLegacyUserData } = require('./dataStore');
 const { loadWindowState, saveWindowState, MIN_WINDOW_SIZE } = require('./windowState');
 const { getAutoLaunchFlagPath, hasRegisteredAutoLaunch, markAutoLaunchRegistered } = require('./autoLaunch');
 const { registerWindowControls, forwardMaximizeState } = require('./windowControls');
+const { registerBacklogSourceHandlers } = require('./backlogSources');
 
 let mainWindow;
 let tray;
@@ -68,6 +69,13 @@ function createWindow() {
     // 포함 외곽" 전제는 더 안 맞는다 — minHeight(420) 전체가 콘텐츠 영역이고 그 안에서
     // 타이틀바(36px)가 공간을 나눠 쓴다. 384px(420-36)로 이전(355px)보다 늘었고, Playwright
     // 재실측으로 사이드바 마지막 메뉴 하단이 363px로 안 잘림을 확인(requirements.md B1.1).
+    // P15(critical-reviewer 지적, High): 사이드바 메뉴가 5개→6개("설정" 추가)로 늘면서 이
+    // 363px 계산의 전제(5개 기준)가 깨졌다 — Playwright 재실측 결과 gap/패딩을 그대로 두면
+    // 6번째 메뉴가 창 밖으로 잘리는 정도가 아니라(처음 추정은 6px였지만), 넘친 콘텐츠가
+    // 사이드바에 스크롤바를 만들고 그 스크롤바 폭이 버튼 내부 폭을 줄여 4글자 라벨이 두 줄로
+    // 줄바꿈되며 오히려 더 크게(약 35px) 넘치는 연쇄 문제였다. index.css의 사이드바
+    // gap/버튼 세로 패딩을 줄여 6개 모두 한 줄로 유지되게 고쳤고, 재실측으로 마지막 메뉴
+    // 하단이 392px(420 안에 여유 28px)임을 확인했다(requirements.md B1.1 갱신 참고).
     minWidth: MIN_WINDOW_SIZE,
     minHeight: MIN_WINDOW_SIZE,
     webPreferences: {
@@ -199,7 +207,7 @@ function createTray() {
     console.error('트레이 아이콘을 불러오지 못했습니다:', iconPath);
   }
   tray = new Tray(icon);
-  tray.setToolTip('업무 위젯');
+  tray.setToolTip('TaskDock');
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: '열기/숨기기', click: () => (mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show()) },
   ]));
@@ -232,6 +240,9 @@ app.whenReady().then(() => {
   // <select> 대신 토글 버튼 그룹으로 바꾼 진짜 이유, index.css 참고). 그래도 이 앱은 라이트
   // 테마를 제공하지 않으므로(다크 글래스 단일 테마) 트레이 컨텍스트 메뉴 등 이 설정이 실제로
   // 영향을 주는 다른 OS 네이티브 UI를 위해 'system'이 아닌 'dark'로 고정해 둔다.
+  // P13: 이름/아이콘 리브랜딩으로 userData 경로가 바뀌었으니, 창/트레이/자동실행 등 무엇이든
+  // userData를 건드리기 전에 옛 폴더("업무 위젯")가 있으면 가장 먼저 옮겨온다.
+  migrateLegacyUserData();
   nativeTheme.themeSource = 'dark';
   // P12.1 결정(2026-09-25): 트레이 상주 위젯에는 쓸모없는 Electron 기본 메뉴(File/Edit/
   // View/Window/Help)를 완전히 없앤다 — dev/패키지 모두 동일하게 적용한다(dev 편의 단축키는
@@ -275,3 +286,7 @@ ipcMain.handle('data:save', (_event, data) => {
 // electron/windowControls.js로 옮겼다 — mainWindow는 이 파일에서 재할당되는 let 변수라
 // getter로 넘긴다.
 registerWindowControls(() => mainWindow);
+// P14.1: 외부 backlog(.json) 소스 파일 선택+읽기 전용 IPC는 electron/backlogSources.js로
+// 분리한다(main.js 300줄 한도, P12.22와 같은 이유). dialog.showOpenDialog가 부모 창을
+// 필요로 해 같은 getter 패턴을 재사용한다.
+registerBacklogSourceHandlers(() => mainWindow);

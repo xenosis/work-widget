@@ -59,4 +59,24 @@ module.exports = [
       globals: { ...globals.node },
     },
   },
+  {
+    // P14.1(critical-reviewer 지적, Medium): "위젯이 등록된 외부 backlog(.json) 경로에
+    // 절대 쓰지 않는다"는 done_when 조건이 grep/눈으로 확인하는 것 말고는 강제되지 않았다 —
+    // 이후 누군가 실수로 fs 쓰기 API를 이 파일들에 추가해도 lint가 잡도록 명시적으로 금지한다.
+    // (electron/dataStore.js 등 이 위젯 자신의 data.json/백업에 쓰는 다른 파일들은 대상이
+    // 아니다 — 그건 정상 동작이다.)
+    files: ['electron/backlogSourceReader.js', 'electron/backlogSources.js'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        ...['writeFile', 'writeFileSync', 'appendFile', 'appendFileSync', 'rename', 'renameSync', 'unlink', 'unlinkSync', 'rm', 'rmSync', 'rmdir', 'rmdirSync', 'mkdir', 'mkdirSync', 'copyFile', 'copyFileSync', 'truncate', 'truncateSync', 'chmod', 'chmodSync', 'chown', 'chownSync', 'symlink', 'symlinkSync', 'link', 'linkSync', 'utimes', 'utimesSync', 'createWriteStream'].map(
+          (property) => ({
+            object: 'fs',
+            property,
+            message: 'P14.1: 외부 backlog(.json) 소스는 읽기 전용이어야 한다 — 이 경로에 쓰기 금지.',
+          })
+        ),
+      ],
+    },
+  },
 ];

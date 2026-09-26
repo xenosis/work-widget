@@ -2,17 +2,50 @@ const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
 
-// B3: projects / todos / memos / schedules / schedule_categories(P12.16 추가) 5개 배열을 담은
-// 단일 JSON 파일
+// B3: projects / todos / memos / schedules / schedule_categories(P12.16 추가) /
+// backlog_sources(P14.1 추가) 6개 배열을 담은 단일 JSON 파일
 // 계약: Todo/Project/Schedule의 date 필드(due_date, date 등)는 로컬 타임존 기준 "YYYY-MM-DD" 문자열로
 // 저장한다(다른 형식 없음). 화면 쪽(예: src/screens/Dashboard.jsx)이 이 값을 문자열 완전일치(===)로
 // "오늘"과 비교하므로, 이 형식이 깨지면 그 비교가 조용히 실패한다.
 // P12.16: 일정 카테고리(분류) 배열을 새 최상위 키로 추가한다 — 기존 4개 배열과 같은 방식으로
 // 정규화(누락 시 빈 배열, 항목마다 FIELD_DEFAULTS 적용)돼야 하므로 여기 포함시킨다.
-const ARRAY_KEYS = ['projects', 'todos', 'memos', 'schedules', 'schedule_categories'];
+// P14.1: 등록된 외부 프로젝트 backlog(.json) 경로 목록(backlog_sources)도 같은 방식으로
+// 정규화한다 — 이 배열 자체는 이 위젯의 data.json에 저장되는 "등록 정보"일 뿐, 가리키는
+// 대상 파일(다른 프로젝트의 backlog(.json))은 이 정규화와 무관하게 읽기 전용으로만 다룬다.
+const ARRAY_KEYS = ['projects', 'todos', 'memos', 'schedules', 'schedule_categories', 'backlog_sources'];
 
 function getDataPath() {
   return path.join(app.getPath('userData'), 'data.json');
+}
+
+// P13(2026-09-26, critical-reviewer 지적, Critical): 앱 이름이 "업무 위젯"→"TaskDock"으로
+// 바뀌면서 Electron의 userData 경로(`app.getPath('userData')`, 기본적으로 `%APPDATA%\<앱
+// 이름>`)도 자동으로 따라 바뀐다 — 이름만 바꿨을 뿐인데 사용자 눈에는 기존 프로젝트/할일/메모/
+// 일정이 전부 사라진 것처럼 보이는 문제였다(실제로는 옛 폴더에 그대로 남아있을 뿐). 새 폴더에
+// 아직 data.json이 없고 옛 폴더에는 있으면 그 폴더 전체(백업/window-state/자동실행 플래그
+// 포함)를 한 번만 그대로 복사한다. 새 폴더에 이미 data.json이 있으면(이미 마이그레이션했거나
+// 애초에 신규 설치) 아무것도 하지 않아 매 실행마다 다시 덮어쓰지 않는다. 옛 폴더 자체를
+// 지우지는 않는다(복사 실패/부분 실패 시에도 원본이 안전하게 남아있도록 — 실패해도 다음 실행
+// 때 다시 시도할 수 있다).
+// 실사용 중 발견한 버그(2026-09-27): Electron의 userData 폴더 이름은 `productName`이 아니라
+// package.json의 `name` 필드(`app.name`의 기본값)를 따른다 — 처음엔 옛 `productName`("업무
+// 위젯")을 옛 폴더 이름으로 잘못 가정해서, 실제 옛 폴더("work-widget", 옛 `name` 필드 값)를
+// 못 찾아 마이그레이션이 조용히 아무 일도 안 하고 지나갔다(실제 사용자 데이터로 확인). 후보
+// 두 개를 순서대로 확인하도록 고친다 — 실제 원인인 "work-widget"을 먼저 보되, 혹시 모를
+// 다른 환경(예: productName 기준으로 resolve되는 경우)도 방어적으로 포함한다.
+const LEGACY_USER_DATA_DIR_NAMES = ['work-widget', '업무 위젯'];
+
+function migrateLegacyUserData() {
+  const currentDir = app.getPath('userData');
+  if (fs.existsSync(path.join(currentDir, 'data.json'))) return;
+  const parentDir = path.dirname(currentDir);
+  for (const legacyName of LEGACY_USER_DATA_DIR_NAMES) {
+    const legacyDir = path.join(parentDir, legacyName);
+    if (!fs.existsSync(path.join(legacyDir, 'data.json'))) continue;
+    fs.mkdirSync(currentDir, { recursive: true });
+    fs.cpSync(legacyDir, currentDir, { recursive: true });
+    return;
+  }
 }
 
 const BACKUP_DIR_NAME = 'backups';
@@ -132,6 +165,15 @@ const FIELD_DEFAULTS = {
   // critical-reviewer 지적(재검증 2라운드, Medium): 다른 4개 엔티티는 전부 created_at/
   // updated_at을 기본값에 넣는데 이 엔티티만 빠져 있었다 — P6.4 패턴과 통일.
   schedule_categories: { name: '', color: 'gray', created_at: null, updated_at: null },
+  // P14.1: path는 등록 시 항상 채워지지만(파일 선택 다이얼로그를 거쳐야만 생성됨), 다른
+  // 필드와 마찬가지로 방어적으로 기본값을 둔다 — label은 비어 있으면 화면에서 path가 위치한
+  // 폴더 이름(대개 프로젝트 폴더명)으로 대체 표시한다(backlogSourceMutations.js의
+  // getSourceDisplayLabel/deriveLabelFromPath 참고, critical-reviewer 지적으로 문구 정정:
+  // "파일명"이 아니라 "폴더명"이다 — 파일명 자체는 대개 backlog.json으로 다 똑같아서).
+  // P17: 그 소스를 "이번 주 들어 처음 확인한 시점"의 task 상태를 이번 주 변화 감지 기준선으로
+  // 저장한다({ weekStart, tasks }) — src/lib/backlogWeeklySnapshot.js가 주 경계를 넘으면 자동
+  // 갱신한다. 새로 등록된 소스는 아직 한 번도 확인 안 했으므로 null(첫 확인 시 즉시 채워짐).
+  backlog_sources: { path: null, label: null, weekly_snapshot: null, created_at: null, updated_at: null },
 };
 
 // critical-reviewer 지적: FIELD_DEFAULTS의 배열 기본값(tags)이 레코드마다 같은 인스턴스를
@@ -247,4 +289,5 @@ module.exports = {
   pruneOldBackups,
   backupIfNeeded,
   todayDateStamp,
+  migrateLegacyUserData,
 };

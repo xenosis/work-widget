@@ -46,7 +46,7 @@ export default function TitleBar() {
   return (
     <div className="titlebar">
       <div className="titlebar-drag-region" onDoubleClick={handleDoubleClick}>
-        <span className="titlebar-title">업무 위젯</span>
+        <span className="titlebar-title">TaskDock</span>
       </div>
       <div className="titlebar-controls">
         <button

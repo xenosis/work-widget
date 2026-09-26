@@ -18,7 +18,7 @@ A Windows tray-resident desktop widget (single user, no sync) for managing proje
 ## Architecture decisions already locked in the requirements
 
 - **Stack**: Electron (React/JS), packaged with `electron-builder`; auto-registered as a Windows startup item.
-- **Storage**: local-only, no cloud/server sync. A single `data.json` holds five arrays — `projects`, `todos`, `memos`, `schedules`, `schedule_categories` (added P12.16) (see requirements B3 for field-level schema). Splitting into per-entity files is an accepted future migration if the single file grows too large.
+- **Storage**: local-only, no cloud/server sync. A single `data.json` holds six arrays — `projects`, `todos`, `memos`, `schedules`, `schedule_categories` (added P12.16), `backlog_sources` (added P14.1 — registered *paths* to other projects' backlog(.json) files, read-only; the widget never writes to those external files, see requirements B3.5) (see requirements B3 for field-level schema). Splitting into per-entity files is an accepted future migration if the single file grows too large.
 - **Derived vs. stored fields**: `Project.progress` is never persisted — it's computed at read time from the completion ratio of that project's todos.
 - **Recurring schedules**: a recurring schedule is one rule record (with `recurrence_days`), not one record per occurrence. Editing a recurring schedule updates the rule and applies to all future occurrences; per-occurrence exceptions are out of scope.
 - **Project status auto-transitions**: all todos complete → project auto-flips to "완료"; unchecking a todo or adding a new one to a completed project flips it back to "진행중" automatically. "보류" is only ever set manually, never automatic.

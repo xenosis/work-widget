@@ -26,27 +26,27 @@ describe('getTodayDateString / getThisWeekRange (시스템 시각 고정)', () =
   });
 
   it.each([
+    ['일요일', 2026, 9, 13],
     ['월요일', 2026, 9, 14],
     ['화요일', 2026, 9, 15],
     ['수요일', 2026, 9, 16],
     ['목요일', 2026, 9, 17],
     ['금요일', 2026, 9, 18],
     ['토요일', 2026, 9, 19],
-    ['일요일', 2026, 9, 20],
-  ])('%s이어도 같은 주(2026-09-14~09-20)를 반환한다', (_label, y, m, d) => {
+  ])('%s이어도 같은 주(2026-09-13~09-19)를 반환한다', (_label, y, m, d) => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(y, m - 1, d));
-    expect(getThisWeekRange()).toEqual({ weekStart: '2026-09-14', weekEnd: '2026-09-20' });
+    expect(getThisWeekRange()).toEqual({ weekStart: '2026-09-13', weekEnd: '2026-09-19' });
   });
 
-  it('연/월 경계를 넘어도 정확하다(2027-01-02 토요일 -> 2026-12-28~2027-01-03)', () => {
+  it('연/월 경계를 넘어도 정확하다(2027-01-02 토요일 -> 2026-12-27~2027-01-02)', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2027, 0, 2));
-    expect(getThisWeekRange()).toEqual({ weekStart: '2026-12-28', weekEnd: '2027-01-03' });
+    expect(getThisWeekRange()).toEqual({ weekStart: '2026-12-27', weekEnd: '2027-01-02' });
   });
 });
 
-describe('isThisWeekExcludingToday (시스템 시각 2026-09-16 수요일 고정 — 이번주는 09-14~09-20)', () => {
+describe('isThisWeekExcludingToday (시스템 시각 2026-09-16 수요일 고정 — 이번주는 09-13~09-19)', () => {
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -54,10 +54,10 @@ describe('isThisWeekExcludingToday (시스템 시각 2026-09-16 수요일 고정
   it('경계값(주 시작/끝)은 포함, 경계 밖(하루 전/후)은 제외한다', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 16));
-    expect(isThisWeekExcludingToday('2026-09-14')).toBe(true); // weekStart
-    expect(isThisWeekExcludingToday('2026-09-20')).toBe(true); // weekEnd
-    expect(isThisWeekExcludingToday('2026-09-13')).toBe(false); // 하루 전
-    expect(isThisWeekExcludingToday('2026-09-21')).toBe(false); // 하루 후
+    expect(isThisWeekExcludingToday('2026-09-13')).toBe(true); // weekStart
+    expect(isThisWeekExcludingToday('2026-09-19')).toBe(true); // weekEnd
+    expect(isThisWeekExcludingToday('2026-09-12')).toBe(false); // 하루 전
+    expect(isThisWeekExcludingToday('2026-09-20')).toBe(false); // 하루 후
   });
 
   it('오늘 날짜는 이번주 범위 안이어도 제외한다', () => {

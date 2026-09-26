@@ -14,8 +14,9 @@ import { getMonthGrid, getHolidayInfo, getDayCellClassNames, shiftMonth } from '
 import { getTodayDateString, isValidDateString } from '../lib/dateRange.js';
 import { ScheduleIcon } from './icons.jsx';
 
-const WEEKDAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
-const WEEKDAY_HEADER_KINDS = ['weekday', 'weekday', 'weekday', 'weekday', 'weekday', 'saturday', 'sunday'];
+// P18: 일요일 시작으로 뒤집으면서 순서도 일-토로 맞춘다(ScheduleMonthView.jsx와 동일).
+const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
+const WEEKDAY_HEADER_KINDS = ['sunday', 'weekday', 'weekday', 'weekday', 'weekday', 'weekday', 'saturday'];
 
 // critical-reviewer 지적(High): ProjectEditForm처럼 값을 형식 검증 없이 그대로 넘기는 호출부가
 // 있으면(손상된 data.json 등) 아래 monthCursorFor의 split이 TypeError를 던지고, 이 앱엔

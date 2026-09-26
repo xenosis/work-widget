@@ -28,4 +28,8 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('window:maximized-changed', listener);
     return () => ipcRenderer.removeListener('window:maximized-changed', listener);
   },
+  // P14.1: 외부 backlog(.json) 소스 등록용 — 파일 선택은 취소 시 null, 읽기는 항상
+  // { ok, tasks|error } 형태로 돌아온다(reject 없음, electron/backlogSources.js 참고).
+  pickBacklogSourceFile: () => ipcRenderer.invoke('backlog-source:pick-file'),
+  readBacklogSourceTasks: (filePath) => ipcRenderer.invoke('backlog-source:read-tasks', filePath),
 });

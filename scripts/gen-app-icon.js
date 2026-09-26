@@ -1,16 +1,16 @@
-// P8.1: electron-builder의 win.icon(설치 파일/실행 파일 아이콘, 보통 256x256을 포함한 다중
-// 해상도 .ico)을 트레이 아이콘과 같은 디자인(scripts/lib/pngIcon.js)으로 만든다. 실행:
-// node scripts/gen-app-icon.js
+// P8.1 → P13(리브랜딩)에서 갱신: electron-builder의 win.icon(설치 파일/실행 파일 아이콘, 다중
+// 해상도 .ico)을 사람이 GPT 아이콘 생성기로 만든 원본(scripts/assets/icon-source.png)에서
+// 만든다. 실행: node scripts/gen-app-icon.js
 //
-// ICO 컨테이너는 직접 만든다(이미지 처리 라이브러리 없음, P7.1과 같은 이유). 전통적인 BMP/DIB
-// 방식 대신, Windows Vista부터 지원하는 "PNG를 그대로 이미지 데이터로 넣는 ICO" 방식을 쓴다 —
-// 32비트 진짜 컬러+알파를 다루는 BMP/DIB 인코더를 새로 만들 필요 없이 이미 검증된 buildPng를
-// 그대로 재사용할 수 있고, 256x256처럼 큰 해상도는 이 방식이 사실상 표준이다.
+// ICO 컨테이너는 P8.1 때처럼 직접 만든다 — Windows Vista부터 지원하는 "PNG를 그대로 이미지
+// 데이터로 넣는 ICO" 방식이라 별도 BMP/DIB 인코더가 필요 없다. 리사이즈만 scripts/lib/resizePng.js
+// (pngjs 기반, P13에서 추가)로 하고 나머지 ICO 패킹 로직은 그대로 재사용한다.
 const fs = require('fs');
 const path = require('path');
-const { buildPng } = require('./lib/pngIcon');
+const { buildResizedPngs } = require('./lib/resizePng');
 
 const SIZES = [16, 32, 48, 256];
+const sourcePath = path.join(__dirname, 'assets', 'icon-source.png');
 
 function buildIco(images) {
   const count = images.length;
@@ -39,11 +39,12 @@ function buildIco(images) {
   return Buffer.concat([header, ...entries, ...datas]);
 }
 
-const images = SIZES.map((size) => ({ size, png: buildPng(size) }));
+const sourceBuffer = fs.readFileSync(sourcePath);
+const images = buildResizedPngs(sourceBuffer, SIZES);
 const ico = buildIco(images);
 
 const outDir = path.join(__dirname, '..', 'electron', 'assets');
 fs.mkdirSync(outDir, { recursive: true });
 const outPath = path.join(outDir, 'app-icon.ico');
 fs.writeFileSync(outPath, ico);
-console.log(`wrote app-icon.ico (${SIZES.join('/')}) to`, outPath);
+console.log(`wrote app-icon.ico (${SIZES.join('/')}) from ${sourcePath} to`, outPath);

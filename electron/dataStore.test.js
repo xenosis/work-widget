@@ -164,4 +164,31 @@ describe('normalizeData', () => {
     const result = normalizeData({ schedules: [{ id: 's1', title: '옛날 일정', date: '2026-01-01' }] });
     expect(result.schedules[0].category_id).toBeNull();
   });
+
+  // P14.1: backlog_sources도 같은 배열 정규화 패턴을 받는지 확인.
+  it('backlog_sources 키가 아예 없으면 빈 배열로 채운다', () => {
+    const result = normalizeData({});
+    expect(result.backlog_sources).toEqual([]);
+  });
+
+  it('backlog_source에 label/weekly_snapshot/created_at/updated_at이 없으면 기본값을 채운다', () => {
+    const result = normalizeData({ backlog_sources: [{ id: 'src1', path: 'C:/foo/backlog.json' }] });
+    expect(result.backlog_sources[0]).toMatchObject({
+      path: 'C:/foo/backlog.json',
+      label: null,
+      weekly_snapshot: null,
+      created_at: null,
+      updated_at: null,
+    });
+  });
+
+  // P17: weekly_snapshot은 이미 값이 있으면(이전에 저장된 이번 주 기준선) 그대로 보존돼야 한다 —
+  // FIELD_DEFAULTS는 "누락된 필드만" 채우므로 확인.
+  it('backlog_source에 weekly_snapshot이 이미 있으면 그대로 보존한다', () => {
+    const snapshot = { weekStart: '2026-09-14', tasks: [{ id: 't1', title: 'A', status: 'todo', owner: null }] };
+    const result = normalizeData({
+      backlog_sources: [{ id: 'src1', path: 'C:/foo/backlog.json', weekly_snapshot: snapshot }],
+    });
+    expect(result.backlog_sources[0].weekly_snapshot).toEqual(snapshot);
+  });
 });

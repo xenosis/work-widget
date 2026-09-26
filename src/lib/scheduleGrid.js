@@ -7,21 +7,22 @@ import { isHoliday } from 'korean-holidays';
 import { formatLocalDate, DATE_STRING_RE } from './dateRange.js';
 import { resolveCategoryColor } from './categoryPalette.js';
 
-// B2.2/대시보드가 이미 월요일 시작을 확정했으므로(dateRange.js) 일정 화면도 같은 주 경계를 쓴다.
+// B2.2/대시보드는 일요일 시작 주 경계를 쓴다(dateRange.js) — P18에서 월요일 시작을 사람이 실제
+// 쓰는 달력(일요일 시작)에 맞춰 뒤집었다. 일정 화면도 같은 경계를 공유한다.
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
 
-// year/month(0-indexed)가 속한 달을 월요일 시작 주 단위로 채운 그리드. 앞뒤로 인접 달의
+// year/month(0-indexed)가 속한 달을 일요일 시작 주 단위로 채운 그리드. 앞뒤로 인접 달의
 // 날짜를 채워 항상 7의 배수 칸(5주 또는 6주)을 돌려준다 — 달력 UI가 매달 다른 줄 수로
 // 들쭉날쭉해지는 것을 막기 위함.
 export function getMonthGrid(year, month) {
   const firstOfMonth = new Date(year, month, 1);
   const firstDow = firstOfMonth.getDay(); // 0=일 ... 6=토
-  const leadingDays = firstDow === 0 ? 6 : firstDow - 1;
+  const leadingDays = firstDow;
   const gridStart = new Date(year, month, 1 - leadingDays);
 
   const lastOfMonth = new Date(year, month + 1, 0);
   const lastDow = lastOfMonth.getDay();
-  const trailingDays = lastDow === 0 ? 0 : 7 - lastDow;
+  const trailingDays = 6 - lastDow;
   const totalDays = leadingDays + lastOfMonth.getDate() + trailingDays;
 
   const cells = [];
@@ -40,18 +41,17 @@ export function getMonthGrid(year, month) {
   return weeks;
 }
 
-// 주어진 날짜가 속한 주(월~일)의 7일. dateRange.js의 getThisWeekRange와 같은 월요일 시작
+// 주어진 날짜가 속한 주(일~토)의 7일. dateRange.js의 getThisWeekRange와 같은 일요일 시작
 // 규칙이지만, 일정 화면은 "이번주"뿐 아니라 임의 날짜 기준 이전/다음 주 이동이 필요해 날짜를
 // 인자로 받도록 일반화했다.
 export function getWeekDates(dateString) {
   const [y, m, d] = dateString.split('-').map(Number);
   const date = new Date(y, m - 1, d);
   const dow = date.getDay();
-  const mondayOffset = dow === 0 ? -6 : 1 - dow;
-  const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate() + mondayOffset);
+  const sunday = new Date(date.getFullYear(), date.getMonth(), date.getDate() - dow);
   const days = [];
   for (let i = 0; i < 7; i += 1) {
-    days.push(formatLocalDate(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i)));
+    days.push(formatLocalDate(new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + i)));
   }
   return days;
 }

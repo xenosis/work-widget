@@ -144,7 +144,7 @@ export default function Dashboard() {
               {inProgressProjects.map((p) => (
                 <li key={p.id} className="project-row">
                   <div className="project-row-header">
-                    <span>{p.name}</span>
+                    <span className="project-row-name">{p.name}</span>
                     <span className="percent">{p.progress}%</span>
                   </div>
                   <div className="progress-track">

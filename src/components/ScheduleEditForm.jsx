@@ -12,7 +12,9 @@ import { isValidDateString } from '../lib/dateRange.js';
 import DueDatePicker from './DueDatePicker.jsx';
 import { getUsableCategories, resolveSubmittableCategoryId } from '../lib/scheduleCategoryMutations.js';
 
-const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
+// P18: 일요일 시작 주 순서에 맞춘다(체크박스 표시 순서 + 정렬 기준일 뿐, recurrence_days에
+// 저장되는 값 자체는 그대로 요일 이름 문자열이라 데이터 마이그레이션은 필요 없다).
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
 function sortByWeekday(days) {
   return [...days].sort((a, b) => WEEKDAYS.indexOf(a) - WEEKDAYS.indexOf(b));

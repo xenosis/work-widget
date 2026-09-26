@@ -3,8 +3,9 @@
 // 여러 화면(Dashboard의 오늘/이번주 마감, 이후 Todos의 오늘/이번주/나중 그룹핑 등)이 같은 "이번주"
 // 정의를 공유해야 하므로 여기 한 곳에만 둔다.
 //
-// 주 시작 요일은 요구사항 문서(work-widget-requirements.md)에 규정이 없다 — 월요일 시작으로
-// 해석해서 구현한 결정이며, 이 구현 결정이 모든 화면에 일관되게 적용되도록 이 모듈을 공유한다.
+// 주 시작 요일은 요구사항 문서(work-widget-requirements.md)에 규정이 없다 — 처음엔 월요일
+// 시작으로 구현했다가, 사람이 실제 쓰는 달력(일요일 시작)과 달라 P18에서 일요일 시작으로
+// 뒤집었다. 이 구현 결정이 모든 화면에 일관되게 적용되도록 이 모듈을 공유한다.
 
 export function formatLocalDate(date) {
   const year = date.getFullYear();
@@ -17,15 +18,14 @@ export function getTodayDateString() {
   return formatLocalDate(new Date());
 }
 
-// 오늘이 속한 주의 월요일~일요일을 "YYYY-MM-DD" 문자열 쌍으로 반환한다.
+// 오늘이 속한 주의 일요일~토요일을 "YYYY-MM-DD" 문자열 쌍으로 반환한다.
 // new Date(year, month, day + offset)는 월/연 경계를 자동으로 정규화하므로 월말/연말에도 안전하다.
 export function getThisWeekRange() {
   const now = new Date();
   const dow = now.getDay(); // 0=일 ... 6=토
-  const mondayOffset = dow === 0 ? -6 : 1 - dow;
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + mondayOffset);
-  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
-  return { weekStart: formatLocalDate(monday), weekEnd: formatLocalDate(sunday) };
+  const sunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow);
+  const saturday = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + 6);
+  return { weekStart: formatLocalDate(sunday), weekEnd: formatLocalDate(saturday) };
 }
 
 // scheduleGrid.js(P5.1)도 같은 형식 검증을 재사용한다 — 0 채움 없는 날짜("2026-9-15")가
