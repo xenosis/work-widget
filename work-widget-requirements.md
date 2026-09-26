@@ -95,6 +95,55 @@ Windows 위젯형 도구를 만든다.
   기본 메뉴가 함께 제공하던 확대/축소(Ctrl+=/Ctrl+-/Ctrl+0), 전체화면(F11), 창 닫기(Ctrl+W)
   단축키도 이번에 같이 사라진다 — 이 위젯은 always-on-top이 아닌 일반 창(B1.1)이고 전체화면이나
   본문 확대 요구가 명시된 적이 없어 의도적으로 범위 밖에 둔다(필요해지면 별도 task로 복원 검토).
+- (2026-09-25 결정, P12.2 → 2026-09-26 구현, P12.3) 네이티브 타이틀바/창 컨트롤(최소화/
+  최대화/닫기 버튼)은 OS가 그려서 이 앱의 다크 글래스 테마(index.css)가 안 미친다. 세 방식
+  (a) `nativeTheme.themeSource='dark'`만 적용 (b) `titleBarStyle:'hidden'`+`titleBarOverlay`로
+  네이티브 버튼은 유지하고 색만 지정 (c) `frame:false` 완전 커스텀 중, 사람이 (c)로 결정했다
+  (최소화/최대화/닫기까지 렌더러가 직접 그림 — 접근성/유지보수 부담이 가장 크지만 테마
+  일관성을 완전히 확보). 구현(P12.3): `electron/main.js`의 `BrowserWindow`에 `frame: false`
+  추가, `backgroundColor`를 `--bg`에 근접한 hex로 지정해(oklch→hex 변환 라이브러리가 없어
+  눈대중 근사) 창이 뜨는 순간 흰 배경이 잠깐 보이는 문제(frame:false 창의 흔한 증상)를
+  막는다. 렌더러에 새 컴포넌트 `src/components/TitleBar.jsx`(드래그 가능 영역 + 앱 이름
+  "업무 위젯" + 최소화/최대화/닫기 버튼, CSS `-webkit-app-region: drag`/`no-drag`로 영역
+  구분)를 추가하고 `App.jsx`를 `.app-shell`(세로: 타이틀바 36px + 기존 `.app`)로 재구성했다.
+  버튼 클릭은 `electron/preload.js`가 노출한 IPC(`window:minimize`/`window:toggle-maximize`/
+  `window:close`)로 메인 프로세스에 요청한다 — 닫기는 `mainWindow.close()`만 호출하고
+  실제로 트레이로 숨길지(B5.1)는 기존 `close` 이벤트 핸들러가 그대로 판단해(로직 이원화
+  방지) `mainWindow.on('maximize'/'unmaximize', ...)`로 상태 변화를 렌더러에 알려 최대화/
+  복원 버튼 아이콘을 실제 상태와 동기화한다(마운트 시 `window:is-maximized`를 한 번 조회해
+  초기값을 맞추고, 이후는 이벤트로 갱신 — critical-reviewer 지적: 처음엔 이벤트만 구독해서
+  창이 이미 최대화된 채로 새로고침되면 아이콘이 실제 상태와 어긋났었다). 드래그 영역
+  더블클릭으로도 최대화/복원을 토글할 수 있도록 `onDoubleClick` 핸들러를 추가했다 —
+  다만 `-webkit-app-region: drag` 영역이 Windows에서 OS 캡션(HTCAPTION)으로 처리돼 DOM
+  더블클릭 이벤트 자체가 렌더러까지 안 올 가능성, 반대로 OS가 자체적으로 더블클릭 시
+  최대화/복원을 이미 처리해서 이 핸들러와 겹쳐 두 번 토글(결과적으로 안 바뀜)될 가능성 둘 다
+  코드나 문서만으로는 확정할 수 없어(critical-reviewer 지적: 이전 버전은 "직접 구현이
+  필요하다"고 단정했으나 실측 근거가 없었음) 사람이 실제로 확인했다 — 아래 참고.
+  타이틀바 배경은 `--bg`(대시보드 등 콘텐츠 배경)가 아니라 `--sidebar-bg`를 쓴다 — 타이틀바가
+  화면 위쪽에서 사이드바 바로 위로 이어지는 위치라 사이드바와 같은 톤으로 시각적 연속성을
+  주는 것이 콘텐츠 배경과 맞추는 것보다 자연스럽다는 판단이다(`BrowserWindow`의
+  `backgroundColor`는 별개로, 창이 뜨는 순간 잠깐 보일 흰 화면을 막는 용도라 `--bg` 근사값을
+  쓴다 — 둘의 용도가 다르다).
+  Playwright로 실측: `frame:false`에서도 `isMinimizable`/`isMaximizable`/`isResizable`
+  전부 유지됨(최소화/최대화/리사이즈 전부 정상 동작), 최소화·최대화·복원 버튼과 아이콘
+  동기화, 닫기 버튼이 트레이로 숨김(프로세스 생존, `isDestroyed:false`)을 확인했다. 새
+  프레임 기준(타이틀바가 창 높이 36px를 내부에서 차지) `minHeight:420`에서 사이드바
+  마지막 메뉴("일정") 하단이 363px로 창 높이(420px) 안에 여유 있게 들어와(약 57px 여유,
+  기존 P7.4가 요구한 최소 콘텐츠 영역보다 넉넉함) 별도 조정 없이 기존 `MIN_WINDOW_SIZE`
+  (420)를 그대로 유지했다 — 네이티브 프레임이 없어져 그만큼(구 프레임 오버헤드 약 65px)
+  콘텐츠 영역이 오히려 늘었기 때문이다.
+  **Playwright로 확인 못 해 사람이 직접 확인한 것(critical-reviewer 지적, 2026-09-26
+  사용자 수동 확인 완료)**: (1) 실제 마우스로 타이틀바를 눌러 끄는 동작 — CDP(Chrome
+  DevTools Protocol)로 주입하는 합성 마우스 이벤트는 Windows의 네이티브 창 이동(OS 레벨
+  드래그) 경로를 타지 않아 자동으로 재현할 수 없었다 → **정상 동작 확인**(드래그로 창이
+  움직임). (2) 더블클릭 시 최대화/복원이 정확히 한 번만 토글되는지(OS 자체 처리와 겹쳐 두
+  번 토글될 가능성이 이론상 있었음) → **정상 동작 확인**(한 번만 토글됨). (3) Alt+Space(네이티브
+  타이틀바의 창 시스템 메뉴 단축키)가 `frame:false`에서도 동작하는지 → **정상 동작 확인**.
+  (4) 버전 업그레이드 시 기존 `window-state.json`에 저장된 크기가 네이티브 프레임을 포함한
+  값이라, 이 업데이트 이후 첫 실행에서 창 콘텐츠 영역이 그 프레임만큼(약 65px) 더 커 보이는
+  1회성 변화가 있다 — 데이터 손실이나 오류는 아니고, 창을 한 번 움직이거나 크기 조절하면
+  새 값으로 다시 저장된다(이 항목은 실제 업그레이드 시점에만 나타나므로 별도 확인 없이
+  받아들이는 것으로 정리).
 - (2026-09-25 결정, P12.13) 앱 전체의 select(7곳)와 date 입력(7곳 — 착수 시점 grep으로
   재확인해 원래 분석의 "4곳"을 정정, `Projects.jsx`/`ProjectDetail.jsx` 누락돼 있었음)이
   지금까지 배경/테두리만 다크 토큰을 따르고 화살표/옵션 목록/달력 아이콘은 OS 기본 모양
@@ -187,6 +236,33 @@ Windows 위젯형 도구를 만든다.
   모두 이 함수를 쓰게 통일했다. Playwright로 저장 경로까지 재현 확인: 손상값(`"2026-13-45"`)을
   가진 할일을 수정 폼에서 아무것도 건드리지 않고 바로 저장해도 `data.json`엔 `due_date: null`로
   정리됨을 확인했다. 이 task는 총 3라운드의 critical-reviewer 재검증을 거쳐 완료됐다.
+- (2026-09-26 결정, P12.15) 위 P12.19 문단의 "일정 화면 자체의 날짜 입력은 요청 범위 밖이라
+  네이티브로 그대로 둔다"는 서술은 그 시점(사용자가 프로젝트/할일 마감일만 언급) 기준이었고
+  영구 제외가 아니었다 — 남은 `ScheduleAddForm.jsx`/`ScheduleEditForm.jsx`의 날짜 입력 2곳도
+  `DueDatePicker`로 마저 교체해 앱 전체에 네이티브 date input이 하나도 남지 않게 했다. 새
+  컴포넌트를 만들지 않고 기존 `DueDatePicker`를 재사용했고, 이 문맥에 맞게 세 가지 prop을
+  추가했다: `clearLabel`(지우기 버튼 문구 — 기본값 "마감일 지우기"는 하위 호환용으로 남기고,
+  일정 폼은 필수 입력이라 애초에 지우기 버튼 자체를 숨김), `clearable`(기본 `true`, 일정 폼은
+  `false`), `popoverAlign`(기본 `'right'` — 프로젝트/할일 5곳은 트리거가 행의 오른쪽 끝에
+  있어 그대로 유지, 일정 폼 2곳은 트리거가 행의 왼쪽 끝에 있어 `'left'`로 반대 방향 펼침).
+  critical-reviewer 지적(High, Playwright 스크린샷으로 실측 확인): 트리거가 왼쪽에 있는데
+  기존 `right: 0`를 그대로 쓰면 팝오버가 사이드바 영역까지 넘어가 월/화 요일 칸이 사이드바에
+  가려 안 보이는 결함이 있었다 — `popoverAlign="left"`로 팝오버가 `left: 0`(트리거 왼쪽 끝
+  기준 오른쪽으로 펼침)을 쓰도록 분기해 해결했고, 프로젝트/할일 기존 5곳은 영향받지 않음을
+  재확인했다. `ScheduleEditForm.jsx`의 `schedule.date` 초기 state도 `ProjectEditForm.jsx`/
+  `TodoEditForm.jsx`와 같은 `isValidDateString` 정규화 패턴으로 맞췄다. 앱에 네이티브
+  `input[type=date]`가 더는 없으므로 index.css의 그 전용 hover/focus/disabled/달력 아이콘
+  규칙(P12.13에서 추가)은 죽은 코드가 돼 삭제했다.
+  **범위 밖으로 남긴 것과 최종 확정(critical-reviewer 지적으로 P12.21 분리 → 사람 확인 완료)**:
+  "소속 프로젝트" select 3곳(가변 옵션 목록)을 커스텀 드롭다운으로 바꿀지는 이 task에서
+  다루지 않았다 — P12.14(2026-09-25, "커스텀 Select/DatePicker를 만든다")와 P12.13 구현 중
+  나온 later 결정(2026-09-25, AskUserQuestion, "소속 프로젝트 select는 네이티브 유지+한계
+  수용")이 서로 다른 방향을 가리켜서, 메인 세션이 임의로 정리하지 않고 P12.21로 분리해 사람
+  확인을 받았다. **최종 확정(2026-09-26, AskUserQuestion)**: 소속 프로젝트 select는 네이티브
+  유지로 확정 — P12.13의 결정이 최종이고, P12.14의 "커스텀 Select를 만든다"는 그 이후 실측
+  (Windows에서 드롭다운 옵션 팝업이 CSS/nativeTheme 어느 쪽으로도 테마 적용 불가함을 확인)을
+  반영해 대체된 것으로 확인됐다. 커스텀 드롭다운으로 바꾸는 추가 구현은 하지 않으며, P12.21은
+  cancelled 처리했다.
 
 ### B1.2 초기 진입 화면
 - 위젯을 펼치면(또는 상시 노출 상태에서) 가장 먼저 "오늘의 할일 요약" 대시보드가 보임
@@ -386,18 +462,121 @@ Windows 위젯형 도구를 만든다.
   P12.7 문단 참고. 2026년 제헌절(7/17) 공휴일 복원 여부는 라이브러리 값을 검증 없이 그대로
   신뢰한다(고정 공휴일이라 연도 제한과는 무관). 이 범위를 P12.7/P12.8의 "결정된 범위"로 그대로
   받아들이기로 했다 — 별도 보정 작업은 하지 않는다.
+- (2026-09-26 결정, P12.9) 사용자 피드백: 월간/주간 셀이 "일정이 있다/없다"만 점 하나로
+  보여줘서, 며칠에 몇 개의 일정이 있는지·반복/일회성 어느 쪽인지는 날짜를 클릭해야만 알 수
+  있었다(P5.2 당시 420px 폭 제약 때문에 의도적으로 단순화한 범위). 스키마 변경 없이 클릭 없는
+  정보 표시를 늘렸다: `scheduleGrid.js`의 `getScheduleCellSummary(schedules, dateString,
+  maxDots=3)` 순수 함수가 그날 일정 목록을 최대 `maxDots`개의 점(반복/일회성 색 구분)과 그
+  초과분 "+N" 카운트, 그리고 툴팁용 제목 목록으로 요약한다. 점이 0~3개 어느 경우든 점 줄의
+  높이를 고정해(`.schedule-day-dots { height: 8px }`) 셀 높이가 흔들리지 않게 한다(단일 점을
+  visibility로만 켜고 끄던 P5.2 때부터의 트릭과 같은 이유 — 다만 이번엔 점 개수 자체가
+  가변이라 래퍼 높이를 고정하는 방식으로 확장; 처음엔 6px/7px 글자로 좁게 잡았다가
+  critical-reviewer 재검증에서 "+N"이 일반 DPI에서 거의 안 보인다는 지적을 받아 8px/8.5px로
+  올렸다 — 높이가 모든 셀에 동일하게 적용되는 한 흔들림 방지 효과 자체는 유지된다). 색은
+  반복=`--accent`(기존 단일 점과 같은 색, 하위 호환), 일회성=`--priority-mid`(우선순위 칩에
+  이미 쓰는 톤 재사용, 새 토큰 추가 없음)로 구분한다 — 다만 `--priority-mid`가 할일 우선순위
+  "중"에도 쓰이는 색이라 범례 없이는 구분이 불가능했다(critical-reviewer 지적) — 월간/주간
+  뷰 아래에 공용 범례("● 반복 ● 일회성", `Schedule.jsx`에 한 번만 렌더링)를 추가했다. 다른 달
+  날짜(`is-outside`)의 점도 숫자와 마찬가지로 `opacity: 0.55`로 흐리게 해 "다른 달"이라는
+  신호가 점에서만 사라지지 않게 했다. 제목은 셀에 직접 넣기엔 폭이 부족해(P12.8과 같은 이유)
+  마우스 오버 네이티브 툴팁(`title` 속성)에 공휴일 이름과 함께 표시한다 — `buildScheduleCellTooltip`
+  공용 함수가 "공휴일 · 제목1, 제목2" 형태로 합쳐, 월간/주간 두 뷰가 각자 조립하다 형식이
+  갈라지는 것을 막는다(P12.19의 `getDayCellClassNames`와 같은 이유). `title`은 마우스 호버
+  전용이라 키보드/스크린리더로는 안 드러나고, 새로 추가한 "+N" 텍스트가 버튼의 접근 가능한
+  이름에 그대로 섞여 들어가는 회귀가 있었다(critical-reviewer 지적) — 날짜 숫자/점 표시부는
+  `aria-hidden`으로 이름 계산에서 빼고, 버튼 자체에 `aria-label="{n}일, 일정 {count}개"`
+  (일정이 없으면 개수 절 생략, 주간 뷰는 요일명 포함)를 명시했다. 제목 목록 자체는 aria-label이
+  아니라 `title`에만 있다(스크린리더 사용자는 "일정이 몇 개 있다"까지만 알 수 있고 구체적
+  제목은 날짜를 선택해 상세 카드를 봐야 한다 — summary가 애초에 "aria-label로 제목 목록
+  제공"이라고 적었던 것은 실제 구현과 달라 정정이 필요했던 부분). 창이 넓을 때 제목을 한 줄
+  말줄임으로 셀에 직접 보여주는 선택 사항은 이번 범위에서 구현하지 않았다. Playwright로 실측:
+  혼합 2개(반복+일회성) 셀과 4개(overflow "+1" 발생) 셀, 0개 셀의 `.schedule-day-cell` 높이가
+  모두 동일함을 확인했고(38px 월간/52px 주간), 420px 창에서 가로 스크롤이 생기지 않음도
+  확인했다. 스크린샷은 세션 스크래치패드(`p12-9-screenshots/month-view.png`,
+  `week-view.png`)에 저장했다 — 세션이 끝나면 사라지는 임시 경로이므로, 이 문서의 서술과
+  vitest 케이스가 실질적인 영구 근거다.
+- (2026-09-26 결정, P12.17) 위 P12.9 문단의 점 색 배정(반복=`--accent`, 일회성=`--priority-mid`)은
+  P12.16이 ScheduleCategory를 도입하면서 같은 시각 채널(점 색)을 카테고리 구분에도 쓰고 싶다는
+  요구와 충돌했다 — 사용자에게 재확인 질문을 한 번 올렸으나 반려되었고, 대신 사용자가 참고로
+  든 'routine-planner'(`src/components/calendar/MonthCalendar.tsx`)를 살펴보니 그 앱은 점을
+  항상 카테고리 색으로만 쓰고 반복 여부는 점 색과 무관한 별도 신호로 구분하지 않는 구조였다.
+  이를 근거로 다음과 같이 재설계했다(질문을 다시 올리지 않고 참고 자료 기반으로 판단 후 진행,
+  다만 critical-reviewer 지적대로 정정: routine-planner에서 실제로 가져온 부분은 "점 색 =
+  카테고리 색"뿐이고, 아래의 반복 표시용 테두리 링은 그 앱에 없는 이 프로젝트만의 추가
+  설계다 — 앞서 "그 앱은 반복 여부를 별도 신호로 구분하지 않는다"고 이미 적었던 문장과
+  "링도 참고 자료 기반"이라는 서술이 서로 어긋나 있었다):
+  점 색은 이제 `category_id`가 가리키는 카테고리 색(`categoryPalette.js`의 7색, 미분류는
+  배경 없이 옅은 테두리만 있는 빈 점 `is-none` — 처음엔 회색으로 채웠다가 회색 카테고리와
+  구분이 안 된다는 critical-reviewer 지적으로 정정)을 그대로 쓰고, 반복 여부는 점 색을 바꾸는
+  대신 점 테두리
+  (`box-shadow: 0 0 0 1px var(--text)`, 클래스 `is-recurring-ring`)로 표시한다. `box-shadow`를
+  택한 이유는 `border`와 달리 레이아웃 박스 크기에 영향을 주지 않아 P12.9에서 고정한 점 줄
+  높이(`.schedule-day-dots`)가 흔들리지 않기 때문이다. `getScheduleCellSummary`의 반환 형태를
+  `{ type: 'recurring'|'once' }`에서 `{ color, isRecurring }`으로 바꾸고, 색 클래스 계산을
+  `getScheduleDotClassName` 공용 함수(`scheduleGrid.js`)로 뽑아 월간/주간 두 뷰가 공유한다.
+  범례 문구도 "● 반복 ● 일회성"에서 "점 색 = 카테고리(카테고리 관리 참고) / 테두리 = 반복
+  일정"으로 바꿨다. 카테고리를 고르는 UI는 `ScheduleAddForm.jsx`/`ScheduleEditForm.jsx`에 가변
+  옵션 목록이라 네이티브 `<select>`로 추가했다(P12.13/P12.21에서 확정한 "가변 옵션 목록은
+  네이티브 select 유지" 원칙 그대로 적용, 토글 버튼 그룹을 쓰지 않음). 날짜 상세 카드
+  (`ScheduleDateDetail.jsx`)의 각 일정 행에도 'routine-planner'의 `RoutineItem.tsx` `colorBar`
+  패턴을 그대로 가져와, 행 왼쪽에 카테고리 색을 나타내는 4px 폭 전체 높이 막대
+  (`.schedule-item-colorbar`, hover 시 카테고리 이름을 보여주는 `title` 포함 — 색만으로
+  구분하기 어려운 경우를 위한 보완)를 추가했다 — 이를 위해 행 레이아웃을 세로 flex 하나에서
+  "막대(가로) + 내용(세로) 두 열" 구조로 바꿨다. 점이 `maxDots`(3개)를 넘는 날은 P12.9의
+  overflow 정책을 그대로 승계해 앞 3개만 점으로 표시하고 나머지는 "+N"으로 뭉친다 — 뭉쳐진
+  일정의 카테고리 색은 셀에는 안 나타나고 날짜 상세에서 확인한다.
+
+  **critical-reviewer 1차 리뷰에서 잡힌 문제와 반영**: (1) [High] 두 폼(`ScheduleAddForm.jsx`/
+  `ScheduleEditForm.jsx`)이 제출 시 `categoryId`를 현재 카테고리 목록과 대조하지 않고 그대로
+  저장해서, 폼이 열린 채로 같은 화면의 "카테고리 관리" 패널에서 그 카테고리를 삭제하면(정상
+  사용 흐름, 수기 편집 아님) select는 "미분류"로 보이는데 저장은 삭제된 id를 그대로 써서 고아
+  참조가 생겼다 — B3.4가 명시한 "삭제되면 null로 되돌아감" 전제가 이 경로에서 깨졌다.
+  `scheduleCategoryMutations.js`에 `resolveSubmittableCategoryId(categoryId, categories)`를
+  추가해 두 폼의 제출 직전 항상 유효성을 재검증하도록 고쳤다(vitest 4케이스 추가). (2) [Medium]
+  미분류를 회색으로 채워서 "회색 카테고리"와 4px 크기에서 구분이 안 됐다 — 위에서 정정한 대로
+  배경 없는 빈 테두리(`box-shadow`)로 바꿈. (3) [Medium] 점 사이 간격(2px)이 좁아 반복 링
+  두 개가 붙으면 서로 맞닿을 수 있어 3px로 넓힘. (4) [Medium] `getScheduleDotClassName`에
+  vitest 케이스가 없었다 — 색 유무×반복 여부 4조합을 `scheduleCellSummary.test.js`에 추가.
+  (5) [Medium] routine-planner 출처 오기(위에서 정정). (6) done_when이 "스크린샷"을 문자
+  그대로 요구하는데 실제로는 영구 저장된 스크린샷이 없다 — P12.9 선례(문단 495-497, "스크린샷은
+  임시 경로라 문서 서술과 vitest가 영구 근거")를 따르기로 하고 done_when 문구를 그에 맞게
+  `set-field`로 정정했다(아래 근거는 backlog.json의 log 참고). Playwright로 재실측 확인: 위
+  수정 후에도 카테고리가 있는 일정의 달력 점 색과 상세 카드 막대 색이 일치함, 반복 일정의
+  점에 테두리가 함께 표시됨, 미분류 일정은 빈 테두리 점으로 표시됨, 수정 폼을 열면 저장된
+  category_id가 select에 정확히 선택돼 나타남, 카테고리를 지운 뒤 저장해도 더 이상 고아
+  참조가 생기지 않음(수동 재현: 폼을 연 채로 카테고리 삭제 후 저장 → category_id가 null로
+  저장됨을 확인).
+
+  **critical-reviewer 2차 재검증(1차 수정분 재확인)에서 잡힌 잔여 문제와 반영**: 대부분
+  해결로 확인됐으나 3건이 남아 있었다 — (1) [Medium] 날짜 상세 카드의 색 막대
+  (`.schedule-item-colorbar.is-none`)는 달력 점과 달리 여전히 회색으로 채워져 있어 회색
+  카테고리와 구분이 안 됐고 주석과도 안 맞았다 — 점과 같은 기법(배경 없음 + inset
+  box-shadow 테두리)으로 맞췄다(막대는 사각형이라 바깥쪽 box-shadow 대신 inset 사용). (2)
+  [Medium] `Schedule.jsx`의 범례 위 주석 한 곳에 여전히 "routine-planner의 캘린더 방식을
+  따름"이라는 문구가 남아, 반복 테두리 링까지 그 앱에서 가져온 것처럼 읽혔다 — "점 색만
+  참고, 테두리는 이 프로젝트의 추가 결정"으로 정정. (3) [Medium] 범례에 "빈 점=미분류"
+  항목이 없어 반복 테두리와 헷갈릴 수 있었다 — 항목 추가. (참고: 달력 점에서 `is-none`과
+  `is-recurring-ring`이 같은 요소에 함께 붙는 경우(미분류+반복) 둘 다 outset `box-shadow`를
+  쓰기 때문에 값이 합쳐지지 않고 소스 순서상 `is-recurring-ring`이 이긴다 — 2차 재검증에서
+  확인됐고, 배경이 계속 투명해 "미분류" 신호 자체는 유지되므로 회귀로 보지 않기로 했다. 막대의
+  `is-none`은 반복 테두리를 받지 않는 요소라 이 충돌과 무관하다.) Playwright로 재실측: 색
+  막대 is-none이 배경 투명+inset 테두리로 렌더됨, 범례 텍스트에 "빈 점 = 미분류" 포함됨을
+  확인. lint(clean)/vitest(271 통과)/build 재통과.
 
 ---
 
 ## B3. 데이터 구조
 
-> 저장 형식: JSON 파일. 단일 파일(`data.json`) 안에 projects / todos / memos / schedules 4개의 배열을 두는 구조를 기본안으로 함 — 구조가 단순하고 백업/이동이 한 파일로 끝나서 편리. 데이터가 많이 늘어나면 엔티티별 파일 분리로 전환 가능.
+> 저장 형식: JSON 파일. 단일 파일(`data.json`) 안에 projects / todos / memos / schedules /
+> schedule_categories(2026-09-26 결정, P12.16 추가 — 정확한 스키마는 B3.4의 ScheduleCategory
+> 표 참고) 5개의 배열을 두는 구조를 기본안으로 함 — 구조가 단순하고 백업/이동이 한 파일로
+> 끝나서 편리. 데이터가 많이 늘어나면 엔티티별 파일 분리로 전환 가능.
 > (2026-09-24 결정, P6.4) 구버전 레코드에 이 절이 나중에 추가한 필드가 없으면(undefined)
 > electron/dataStore.js가 로드 시점에 기본값을 채운다. non-nullable로 적힌 필드(예: Project.type,
 > Todo.priority, Schedule.date, 각 엔티티의 created_at/updated_at)도 안전한 "빈" 기본값이
 > 마땅치 않으면 null로 채운다 — "필드 없음"과 "null"을 이미 동일하게 취급하는 기존 코드
 > 기준으로는 문제가 없지만, 엄밀히는 이 절이 정하지 않은 해석이다. 이 정규화는 메모리에서만
-> 적용되고, 화면에서 저장이 한 번이라도 일어나면(어느 엔티티를 편집했든) 전체 4개 배열이
+> 적용되고, 화면에서 저장이 한 번이라도 일어나면(어느 엔티티를 편집했든) 전체 5개 배열이
 > 기본값이 채워진 채로 디스크에 반영된다 — 편집 없이 읽기만 한 세션에서는 디스크의 구버전
 > 레코드가 그대로 남는다. id는 지어내지 않으며, 이미 값이 있지만 타입이 잘못된 경우(예:
 > title이 객체, is_recurring이 문자열)는 이 정규화가 고치지 않는다(P6.6이 boolean 필드
@@ -452,6 +631,7 @@ Windows 위젯형 도구를 만든다.
 | date | date | 일회성 일정의 날짜. 반복 일정의 경우 반복이 시작되는 기준일 |
 | is_recurring | boolean | 반복 일정 여부 |
 | recurrence_days | string[] (nullable) | 반복 요일 목록 (예: ["화","목"]) — is_recurring이 true일 때만 사용 |
+| category_id | string (nullable) | (2026-09-26 결정, P12.16) ScheduleCategory의 id 참조. null이면 미분류. 그 카테고리가 삭제되면 이 필드도 null로 되돌아감(정합성 유지) |
 | created_at | datetime | 생성일 |
 | updated_at | datetime | 수정일 (반복 일정 수정 시 이 규칙 자체가 갱신되며, 이후 모든 회차에 일괄 반영) |
 
@@ -463,6 +643,35 @@ Windows 위젯형 도구를 만든다.
   가능) — 사람 확인 결과, 이런 손상 데이터가 생기는 경로가 현재 코드에는 없어(수동 data.json
   편집 외) 위험이 낮다고 보고 코드를 바꾸지 않고 현행을 유지한다. 이 문단이 그 알려진
   트레이드오프의 기록이다.
+- (2026-09-25 결정, P12.10 → 2026-09-26 구현, P12.16) 일정 내용을 색으로 구분할 방법이 없었다
+  — 사람이 자유 색상 선택이 아니라 이름+고정 팔레트 색을 가진 재사용 가능한 카테고리 엔티티를
+  도입하기로 결정했다(사용자가 참고로 든 'routine-planner'의 별도 설정창 방식을 본뜸). B3.4에
+  `category_id`(Schedule, nullable — 미분류 허용) 필드를 추가하고, 새 엔티티 **ScheduleCategory**를
+  둔다:
+
+  | 필드 | 타입 | 설명 |
+  |---|---|---|
+  | id | string | 고유 식별자 |
+  | name | string | 카테고리 이름 |
+  | color | string | 고정 팔레트 key 7종 중 하나(`red`/`orange`/`yellow`/`green`/`blue`/`purple`/`gray`) — 실제 색값이 아니라 이름표. `src/lib/categoryPalette.js`가 key→실제 표시(라벨, CSS 클래스)를 담당해, 나중에 팔레트의 실제 색조를 조정해도 저장된 데이터는 마이그레이션 없이 새 색을 그대로 물려받는다(priority 필드가 '상'/'중'/'하' 문자열만 저장하고 실제 색은 CSS가 담당하는 것과 같은 방식) |
+  | created_at | datetime | 생성일 |
+  | updated_at | datetime | 수정일 |
+
+  구현: `electron/dataStore.js`의 `ARRAY_KEYS`에 `schedule_categories`를 추가해 기존 4개
+  배열과 같은 정규화(P6.4 패턴 — 누락 시 빈 배열, 항목마다 기본값)를 받게 하고, `schedules`의
+  `FIELD_DEFAULTS`에 `category_id: null`을 추가해 구버전 데이터(카테고리 개념이 없던 시절)도
+  "미분류"로 정상 로드되게 한다. 관리 UI는 새 사이드바 메뉴를 만들지 않고 일정 화면
+  (`Schedule.jsx`) 안의 접이식 진입점("카테고리 관리" 토글)으로 뒀다 — 이 위젯은 단일
+  사용자용이고 카테고리 관리는 자주 쓰는 기능이 아니라, 고정 5개인 사이드바 메뉴를 늘리기보다
+  관련 화면 안에 접어두는 편이 이 앱의 "화면당 하나의 목적" 기조에 맞다는 판단이다. 카테고리
+  삭제 시 그 카테고리를 쓰던 일정은 능동적으로 "미분류"(`category_id: null`)로 되돌린다 —
+  P2.8의 프로젝트 고아 참조(사용자가 재배정할 때까지 고아로 남겨둠)와 다른 선택인데, 이유는
+  카테고리 id가 `crypto.randomUUID()`라 삭제 후 그 id를 다른 새 카테고리가 재사용할 방법이
+  없어(프로젝트처럼 사람이 "이 프로젝트가 다시 생겼다"고 재배정할 대상 자체가 없음) 고아로
+  두면 영구 고아가 되기 때문이다. 카테고리 배열과 일정 배열 갱신은 한 번의 저장 호출에
+  함께 담는다(`useAppData.js`의 "저장 호출 지점 하나" 전제 유지). 이 task는 카테고리를
+  고르는 UI(`ScheduleAddForm.jsx`/`ScheduleEditForm.jsx`)나 달력 색 반영은 다루지 않는다 —
+  그건 P12.17의 몫이다(완료, 위 B2.4의 P12.17 문단 참고).
 
 ---
 
@@ -597,3 +806,16 @@ Windows 위젯형 도구를 만든다.
 - v3.9 (2026-09-26): B1.1에 프로젝트/할일 마감일 커스텀 날짜 선택기 결정 반영(P12.19) — 사용자가 마감일 달력에 주말/공휴일 색이 없다고 지적, 원인은 P12.13과 같은 네이티브 date input 팝업의 플랫폼 제약. 새 컴포넌트 DueDatePicker.jsx가 scheduleGrid.js/ScheduleMonthView.jsx의 월간 그리드·주말/공휴일 판정을 재사용해 프로젝트/할일 마감일 입력 5곳에 적용. 팝오버가 카드 밖으로 넘쳐 가로 스크롤 생기던 걸 발견해 위치를 right:0으로 수정
 - v3.10 (2026-09-26): B1.1의 P12.19 문단에 critical-reviewer가 잡은 실제 결함 반영 — 손상 due_date 데이터로 DueDatePicker 마운트 시 크래시하던 것(ErrorBoundary 없음) 수정, aria-label이 선택값을 가리던 접근성 회귀 수정, 포커스 복귀/onBlur 닫힘으로 키보드 사용성 보완, ScheduleMonthView.jsx와 셀 클래스 계산 중복을 scheduleGrid.js의 getDayCellClassNames 공용 함수로 통합 + vitest 추가
 - v3.11 (2026-09-26): P12.19의 2·3차 critical-reviewer 재검증에서 잡은 마지막 결함 반영 — 형태만 보는 DATE_STRING_RE로는 "2026-13-45"처럼 형태는 맞지만 실존하지 않는 날짜를 못 걸러내던 문제를 dateRange.js/formatLocalDate 왕복 검증(isValidDateString)으로 해결하고, 처음엔 DueDatePicker.jsx에만 넣었다가 TodoEditForm.jsx/ProjectEditForm.jsx의 state 정리 로직이 갈라져 "화면은 빈칸, 저장은 깨진 값"이 재발한 것을 dateRange.js 공유 export로 통일해 마무리. Playwright로 저장 경로(손상값→data.json에 null 저장)까지 재현 확인. P12.19는 총 3라운드 critical-reviewer 재검증 끝에 done 처리, docs/backlog/P12.19.md 재생성
+- v3.12 (2026-09-26): P12.18(삭제 2단계 확인 취소 버튼 스타일 정리) done 처리 — 프로젝트/할일/일정/메모 4곳의 삭제 확인/취소 버튼 폰트(11.5px)·패딩(4px 0) 통일. 2차 재검증에서 잡힌 버그: 뒤로가기 전용 .back-button과 분리한 새 .delete-cancel-button이 align-self:flex-start를 그대로 가져와 가로 배치(할일/일정/메모)에서 취소 버튼만 위로 붙던 정렬 어긋남 수정, :disabled 상태에 opacity/cursor 표시 추가(P12.11 패턴 완전 이식), font-size/padding 통일 범위를 목록 행 토글까지 건드리지 않도록 삭제 확인 컨텍스트로 좁힘. 기존부터 있던 .project-delete-button의 hover 무반응(할일/일정/메모와 비대칭)은 회귀가 아니라 P12.20으로 분리
+- v3.13 (2026-09-26): P12.9(월간/주간 셀 일정 정보 표시 개선) 구현 — 셀이 "일정 있음/없음" 점 하나만 보여주던 것을 반복/일회성 구분 점(최대 3개, 초과분 "+N")과 마우스 오버 툴팁(제목 목록)으로 확장. scheduleGrid.js에 getScheduleCellSummary/buildScheduleCellTooltip 공용 함수 추가(월간/주간 두 뷰 공유), 점 줄 높이를 고정해 셀 높이 흔들림 방지
+- v3.14 (2026-09-26): P12.9 done 처리 — critical-reviewer 4라운드 재검증에서 잡힌 문제 전부 반영: (1) title(호버 전용)만으로는 키보드/스크린리더 접근이 안 되고 "+N" 텍스트가 버튼 접근 가능한 이름에 섞이던 회귀 — aria-hidden+aria-label(날짜+개수, 제목은 title에만)로 수정. (2) "+N"이 6px/7px·--text-faint라 가독성이 떨어짐 — 8px/8.5px·--text-muted로. (3) 반복/일회성 점 색(--accent/--priority-mid)이 범례 없이는 구분 불가+--priority-mid가 할일 우선순위 "중"과 겹침 — Schedule.jsx에 공용 범례 추가. (4) is-outside(다른 달) 셀의 점이 숫자와 달리 안 흐려지던 것 — opacity 0.55 추가. (5) 문서·summary가 실제 구현과 어긋난 부분(높이 6px→8px 미반영, 출처를 P12.6으로 오기, aria-label이 제목까지 담는다고 잘못 서술) 정정. gate/est_min 누락 보완, 스크린샷 근거를 로그에 경로로 기록
+- v3.15 (2026-09-26): P12.12(프로젝트 상세 할일 카드 안내 문구 간격 보정) done 처리 — ProjectDetail.jsx의 편집 모드 안내 문구("요약 수정을 마치거나...")가 공유 클래스 .empty-text(margin:0)만 써서 비편집 모드(AddTodoForm, margin-bottom:10px)와 목록까지의 간격이 달랐던 것을, 전용 클래스 .project-detail-editing-notice(margin-bottom:10px만)를 새로 추가해 맞췄다 — .empty-text 자체는 그대로 둬 할일/메모 "목록 없음" 등 다른 11곳 표시에 영향 없음(grep으로 확인). Playwright로 두 모드 모두 간격 10px로 일치함을 실측
+- v3.16 (2026-09-26): P12.20(프로젝트 삭제 확인 버튼 hover 반응 없음) done 처리 — .project-delete-button에 :hover:not(:disabled) { text-decoration: underline; } 추가. danger 색은 그대로 두고 밑줄로만 hover 피드백을 줘서 할일/일정/메모 삭제 확인 쌍과 상호작용 수준을 맞춤(색을 바꾸는 대신 밑줄을 택한 이유: danger 위계 유지). B-섹션 문서 변경 없음(CSS 한 줄, doc 필드 null)
+- v3.17 (2026-09-26): P12.15(일정 화면 날짜 입력 2곳 DueDatePicker 교체) done 처리 — B1.1에 결정 문단 추가(위 P12.19 문단 뒤 참고). 원래 P12.14 결정("커스텀 Select/DatePicker를 만든다")은 이후 P12.13 구현 중 나온 later 결정(소속 프로젝트 select는 네이티브 유지)과 부분적으로 충돌해, 두 결정이 겹치지 않는 부분(날짜 선택기)만 이번에 이행하고 겹치는 부분(소속 프로젝트 select)은 P12.21로 분리
+- v3.18 (2026-09-26): P12.21 해소 — AskUserQuestion으로 사용자에게 직접 확인한 결과 "소속 프로젝트 select는 네이티브 유지"로 최종 확정(P12.13이 최종, P12.14는 그 이후 실측으로 대체됨). B1.1의 P12.15 문단에 최종 확정 내용 추가, P12.21은 cancelled 처리(추가 구현 없음)
+- v3.19 (2026-09-26): P12.3(타이틀바/창 컨트롤 다크 글래스 테마 구현) 구현 — B1.1에 P12.2/P12.3 결정+구현 문단 추가. P12.2의 사람 결정(frame:false 완전 커스텀)대로 electron/main.js에 frame:false+backgroundColor, TitleBar.jsx 신규(드래그 영역+앱 이름+최소화/최대화/닫기 버튼), preload.js에 window control IPC 3종+상태 동기화 이벤트 추가. Playwright로 실측: frame:false에서도 최소화/최대화/리사이즈 전부 정상 동작, 닫기 버튼이 기존 B5.1 로직(트레이로 숨김) 그대로 재사용됨을 확인, minHeight=420에서 사이드바 마지막 메뉴가 안 잘림(오히려 네이티브 프레임이 없어져 콘텐츠 영역이 늘어남)을 확인
+- v3.20 (2026-09-26): P12.3 done 처리 — critical-reviewer 2라운드 재검증 지적(isMaximized 초기값 미조회+unhandled rejection 가능성, main.js 300줄 한도 임박, 더블클릭 관련 문서 문구가 실측 없이 단정됨) 전부 반영, main.js IPC 분리는 P12.22로 후속 분리. Playwright로 검증 불가능했던 4가지(실제 마우스 드래그, 더블클릭 1회 토글, Alt+Space, window-state.json 1회성 크기 변화)는 사용자가 직접 확인 — 드래그/더블클릭/Alt+Space 전부 정상 동작 확인됨
+- v3.21 (2026-09-26): P12.22 done 처리 — electron/main.js의 창 제어 IPC 4개를 electron/windowControls.js로 분리(순수 리팩터, 동작 변화 없음), main.js가 299줄→277줄로 줄어 300줄 한도 여유 확보
+- v3.22 (2026-09-26): P12.16(일정 카테고리 데이터 모델+관리 화면) 구현 — B3.4에 새 엔티티 ScheduleCategory(id/name/color) 추가, Schedule의 category_id(nullable) 필드 추가. color는 실제 색값이 아니라 고정 팔레트 7종의 key(src/lib/categoryPalette.js)를 저장 — priority 필드와 같은 패턴. electron/dataStore.js가 schedule_categories를 기존 4개 배열과 같은 방식(P6.4)으로 정규화. 관리 UI는 새 사이드바 메뉴 대신 일정 화면 안의 접이식 진입점("카테고리 관리" 토글)으로 구현. 카테고리 삭제 시 그 카테고리를 쓰던 일정은 능동적으로 미분류(category_id: null)로 되돌림(P2.8의 프로젝트 고아 참조 방식과 다른 선택, 이유는 문서 참고). 카테고리를 실제로 고르는 UI/달력 색 반영은 P12.17 몫으로 남김
+- v3.23 (2026-09-26): P12.17(일정 추가/수정 폼 + 달력에 카테고리 색상 반영) 구현 — B2.4의 P12.9 문단 뒤에 재설계 결정 문단 추가(위 참고). 점 색의 의미를 반복/일회성 구분에서 카테고리 색으로 바꾸고(getScheduleCellSummary 반환 형태를 {type}에서 {color, isRecurring}으로 변경), 반복 여부는 box-shadow 테두리(is-recurring-ring, 레이아웃에 영향 없음)로 분리 표시. 색 클래스 계산은 getScheduleDotClassName 공용 함수로 통합해 월간/주간 뷰가 공유. ScheduleAddForm.jsx/ScheduleEditForm.jsx에 카테고리 select(네이티브, P12.13/P12.21 원칙 유지) 추가, scheduleFactory.js가 categoryId를 받아 저장. ScheduleDateDetail.jsx의 일정 행에 routine-planner의 RoutineItem.tsx를 참고한 4px 폭 colorBar 추가(행 레이아웃을 세로 flex에서 "막대+내용" 2열 구조로 변경). resolveCategoryColor/resolveCategoryName(categoryPalette.js)이 미분류·고아 참조(삭제된 카테고리 id) 둘 다 방어적으로 null 처리. lint/vitest(263개)/build 전부 통과, Playwright로 카테고리 점 색·반복 테두리·colorBar·수정 폼 select 값 복원까지 실측 확인
+- v3.24 (2026-09-26): P12.17 done 처리 — critical-reviewer 2라운드 재검증 지적 전부 반영. 1차: [High] 두 폼이 제출 시 categoryId를 현재 카테고리 목록과 대조하지 않아, 폼이 열린 채로 그 카테고리가 삭제되면(정상 사용 흐름) 고아 category_id가 저장되던 버그 — resolveSubmittableCategoryId(scheduleCategoryMutations.js) 추가로 제출 직전 항상 재검증하도록 수정, Playwright로 실제 재현·수정 확인. 그 외 [Medium] 5건: done_when의 "스크린샷" 문구를 P12.9 선례에 맞게 정정, maxDots 초과 정책 문서화, routine-planner 출처 오기 정정(점 색만 참고, 반복 테두리 링은 이 프로젝트 자체 결정), is-none을 회색 채움에서 배경 없는 빈 테두리로 변경(회색 카테고리와 구분), getScheduleDotClassName vitest 4케이스 추가, 점 간격 2px→3px. 2차 재검증에서 잔여 3건 추가 확인·반영: 날짜 상세 색 막대(schedule-item-colorbar)의 is-none도 점과 같은 방식(inset box-shadow)으로 통일, Schedule.jsx 범례 위 주석에 남아있던 routine-planner 출처 오기 정정, 범례에 "빈 점=미분류" 항목 추가. done_when도 set-field로 재작성(자동 검증 가능한 문구로). lint/vitest(271개)/build 전부 통과, Playwright 재실측으로 모든 수정 확인. 총 2라운드 critical-reviewer 재검증 끝에 done 처리, docs/backlog/P12.17.md 갱신

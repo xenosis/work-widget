@@ -270,7 +270,7 @@ export default function Memos() {
                   <button type="button" className="todo-delete-toggle" onClick={handleDeleteMemo}>
                     확인
                   </button>
-                  <button type="button" className="back-button" onClick={() => setConfirmingDelete(false)}>
+                  <button type="button" className="delete-cancel-button" onClick={() => setConfirmingDelete(false)}>
                     취소
                   </button>
                 </span>

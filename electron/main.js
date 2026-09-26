@@ -3,6 +3,7 @@ const path = require('path');
 const { loadData, saveData } = require('./dataStore');
 const { loadWindowState, saveWindowState, MIN_WINDOW_SIZE } = require('./windowState');
 const { getAutoLaunchFlagPath, hasRegisteredAutoLaunch, markAutoLaunchRegistered } = require('./autoLaunch');
+const { registerWindowControls, forwardMaximizeState } = require('./windowControls');
 
 let mainWindow;
 let tray;
@@ -43,6 +44,16 @@ function createWindow() {
     width: savedState ? savedState.width : 420,
     height: savedState ? savedState.height : 640,
     ...(savedState ? { x: savedState.x, y: savedState.y } : {}),
+    // P12.2 결정(사람, 2026-09-25): 방식 (a)/(b)/(c) 중 (c) frame:false 완전 커스텀으로
+    // 진행 — 최소화/최대화/닫기 버튼까지 렌더러(TitleBar.jsx)가 직접 그린다(P12.3). 네이티브
+    // 타이틀바는 OS가 그려서 다크 글래스 테마가 안 먹지만(P12.13/P12.19의 select/date 팝업과
+    // 같은 종류의 제약), frame:false는 타이틀바 자체를 웹 콘텐츠로 만들어 이 제약을 원천적으로
+    // 피한다. backgroundColor는 렌더러 CSS가 아직 로드/페인트되기 전 잠깐 보일 수 있는 흰
+    // 배경(frame:false 창의 흔한 문제)을 막기 위함 — index.css의 --bg(oklch(20% 0.02 260))에
+    // 근접한 근사 hex 값이다(oklch→hex 변환 라이브러리가 없어 눈대중 근사, 어차피 페인트 전
+    // 아주 짧게만 보이므로 완벽히 일치할 필요는 없음).
+    frame: false,
+    backgroundColor: '#1a1c24',
     // P7.4 결정: B1.1은 리사이즈/이동 가능·always-on-top 아님을 요구할 뿐 최소 크기는 정하지
     // 않는다 — resizable/movable=true, alwaysOnTop=false는 Electron 기본값이라 이미 충족되지만
     // 최소 크기는 비어 있었다. minWidth는 검증된 유일한 폭(420, P1.7/P3.3/P4.3 텍스트 오버플로
@@ -53,6 +64,10 @@ function createWindow() {
     // 콘텐츠 영역은 더 작음, 실측 시 295px)에서는 사이드바 마지막 메뉴가 창 밖으로 잘렸다.
     // 420이면 콘텐츠 영역이 약 355px로 327px보다 넉넉해 안 잘리는 것을 Playwright로 실측
     // 확인했다 — 폭과 같은 420으로 맞춰 외우기 쉽게 한다.
+    // P12.3(critical-reviewer 지적: 이 주석이 갱신 안 돼 있었음): frame:false라 위 "프레임
+    // 포함 외곽" 전제는 더 안 맞는다 — minHeight(420) 전체가 콘텐츠 영역이고 그 안에서
+    // 타이틀바(36px)가 공간을 나눠 쓴다. 384px(420-36)로 이전(355px)보다 늘었고, Playwright
+    // 재실측으로 사이드바 마지막 메뉴 하단이 363px로 안 잘림을 확인(requirements.md B1.1).
     minWidth: MIN_WINDOW_SIZE,
     minHeight: MIN_WINDOW_SIZE,
     webPreferences: {
@@ -164,6 +179,8 @@ function createWindow() {
   }
   mainWindow.on('show', notifyDataChanged);
   mainWindow.on('restore', notifyDataChanged);
+  // P12.22: 최대화 상태 변화를 렌더러에 알리는 로직(P12.3)은 electron/windowControls.js로 옮겼다.
+  forwardMaximizeState(mainWindow);
   // P5.7 critical-reviewer 지적: show/restore만으로는 "창을 띄운 채로 자정을 넘기고 그냥
   // 클릭만 하는" 경우를 못 잡는다 — focus도 같은 신호를 보내 재조회 계기를 넓힌다(정책 자체는
   // 안 바뀜: 렌더러의 Schedule.jsx가 이 신호로 다시 렌더될 때 오늘 날짜가 바뀌었는지 비교해서
@@ -253,3 +270,8 @@ ipcMain.handle('data:save', (_event, data) => {
   saveData(data);
   return true;
 });
+
+// P12.22: TitleBar.jsx(렌더러)의 최소화/최대화/닫기/상태조회 IPC 핸들러(P12.3)는
+// electron/windowControls.js로 옮겼다 — mainWindow는 이 파일에서 재할당되는 let 변수라
+// getter로 넘긴다.
+registerWindowControls(() => mainWindow);

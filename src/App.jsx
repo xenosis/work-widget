@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import TitleBar from './components/TitleBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Dashboard from './screens/Dashboard.jsx';
 import Projects from './screens/Projects.jsx';
@@ -20,11 +21,14 @@ export default function App() {
   const Screen = SCREENS[screen];
 
   return (
-    <div className="app">
-      <Sidebar current={screen} onSelect={setScreen} />
-      <main className="content">
-        <Screen />
-      </main>
+    <div className="app-shell">
+      <TitleBar />
+      <div className="app">
+        <Sidebar current={screen} onSelect={setScreen} />
+        <main className="content">
+          <Screen />
+        </main>
+      </div>
     </div>
   );
 }

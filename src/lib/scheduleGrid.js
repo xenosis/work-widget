@@ -5,6 +5,7 @@
 // 조용히 갈라짐).
 import { isHoliday } from 'korean-holidays';
 import { formatLocalDate, DATE_STRING_RE } from './dateRange.js';
+import { resolveCategoryColor } from './categoryPalette.js';
 
 // B2.2/대시보드가 이미 월요일 시작을 확정했으므로(dateRange.js) 일정 화면도 같은 주 경계를 쓴다.
 const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
@@ -128,6 +129,56 @@ export function getSchedulesForDate(schedules, dateString) {
     }
     return s.date === dateString;
   });
+}
+
+// P12.9: 월간/주간 셀이 "일정이 있다/없다" boolean 점 하나만 보여줘서 반복/일회성 구분도,
+// 몇 개인지도, 무슨 일정인지도 클릭해야만 알 수 있었다(P5.2 당시 420px 폭 제약으로 의도된
+// 단순화) — 클릭 없이도 개수·유형을 구분할 수 있게, 셀 하나가 표시할 점 목록과 툴팁용 제목
+// 목록을 계산하는 순수 함수로 뽑는다(ScheduleMonthView.jsx/ScheduleWeekView.jsx 공유 — 한쪽만
+// 고치면 두 뷰의 점 색/개수 판정이 갈라질 위험을 P12.19의 getDayCellClassNames와 같은 이유로
+// 피한다). maxDots를 넘는 개수는 점 대신 "+N"으로 뭉쳐 좁은 셀 폭에서 점이 넘치지 않게 한다.
+// P12.17(사용자가 참고로 든 routine-planner의 캘린더 방식 참고 — 단, 점 색을 카테고리 색으로
+// 쓰는 부분만 그대로 따온 것이고, 반복 여부를 테두리 링으로 구분 표시하는 부분은 그 앱에는
+// 없는 이 프로젝트만의 추가 결정이다. routine-planner는 반복 여부를 점과 별개로 표시하지
+// 않는다 — critical-reviewer 지적, 출처 오기 정정): 점 색은 이제 "반복/일회성"이 아니라
+// 카테고리 색을 직접 담는다 — 반복 일정은 점 색을 가리지 않는 별도 신호(테두리 링,
+// index.css의 is-recurring-ring)로 표시해 두 정보(카테고리/반복 여부)가 같은 채널(색)을
+// 두고 충돌하지 않게 한다. color가 null이면 미분류(is-none, 옅은 테두리만 있는 빈 점).
+// maxDots를 넘는 일정은 배열 삽입 순서 기준 앞 maxDots개만 점으로 그려지고 나머지는 "+N"으로
+// 뭉친다 — 그 뭉쳐진 일정의 카테고리 색은 셀에는 안 나타나고 날짜를 선택해야 상세 카드에서
+// 볼 수 있다(P12.9의 overflow 정책을 그대로 승계, 별도 재배열/우선순위 로직 없음).
+export function getScheduleCellSummary(schedules, dateString, categories, maxDots = 3) {
+  const matched = getSchedulesForDate(schedules, dateString);
+  const dots = matched.slice(0, maxDots).map((s) => ({
+    color: resolveCategoryColor(s.category_id, categories),
+    isRecurring: isScheduleRecurring(s),
+  }));
+  const titles = matched.map((s) =>
+    typeof s.title === 'string' && s.title.trim() ? s.title.trim() : '(제목 없음)'
+  );
+  return {
+    count: matched.length,
+    dots,
+    overflowCount: Math.max(0, matched.length - dots.length),
+    titles,
+  };
+}
+
+// P12.17: getScheduleCellSummary가 돌려주는 dot({color, isRecurring})을 실제 CSS 클래스
+// 문자열로 바꾸는 로직 — ScheduleMonthView.jsx/ScheduleWeekView.jsx 두 곳이 각자 조립하면
+// 한쪽만 고쳤을 때 갈라질 위험이 있어(getDayCellClassNames와 같은 이유) 한 곳으로 모은다.
+export function getScheduleDotClassName(dot) {
+  const base = dot.color ? `schedule-day-dot is-${dot.color}` : 'schedule-day-dot is-none';
+  return dot.isRecurring ? `${base} is-recurring-ring` : base;
+}
+
+// 공휴일 이름과 일정 제목 목록을 하나의 툴팁 문자열로 합친다 — 두 뷰가 각자 조립하면 구분자나
+// 순서가 갈라질 수 있어 한 곳으로 모은다(getDayCellClassNames와 같은 이유).
+export function buildScheduleCellTooltip(holidayName, titles) {
+  const parts = [];
+  if (holidayName) parts.push(holidayName);
+  if (titles.length > 0) parts.push(titles.join(', '));
+  return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
 // P5.2 월 이동 버튼(이전/다음 달)의 12↔1월 연도 경계 처리를 컴포넌트 밖으로 빼서 테스트

@@ -4,6 +4,11 @@
 // 주말/공휴일 판정(scheduleGrid.js)을 그대로 재사용해, 프로젝트/할일의 마감일 입력을 이
 // 컴포넌트로 교체한다 — 트리거 버튼을 누르면 팝오버로 월간 그리드가 뜨고, 날짜를 클릭하면
 // 값이 선택되며 팝오버가 닫힌다.
+// P12.15: 이름/기본 문구('마감일 지우기')는 원래 목적(마감일) 그대로지만, ScheduleAddForm.jsx/
+// ScheduleEditForm.jsx가 "마감일"이 아닌 다른 의미의 날짜(일정 날짜, 반복 기준일)에도 이
+// 컴포넌트를 재사용한다 — 다만 그 두 곳은 날짜가 필수 입력이라 지우기 버튼 자체를 꺼두므로
+// (clearable=false) 문구가 실제로 보일 일이 없다. ariaLabel은 호출부가 지정하고,
+// popoverAlign/clearable로 배치·필수 여부를 커스터마이즈한다.
 import { useState, useRef, useEffect } from 'react';
 import { getMonthGrid, getHolidayInfo, getDayCellClassNames, shiftMonth } from '../lib/scheduleGrid.js';
 import { getTodayDateString, isValidDateString } from '../lib/dateRange.js';
@@ -26,7 +31,23 @@ function monthCursorFor(dateString) {
   return { year: y, month: m - 1 };
 }
 
-export default function DueDatePicker({ value, onChange, disabled = false, ariaLabel = '마감일(선택)' }) {
+// critical-reviewer 지적(P12.15 재검증, High): P12.19의 5곳은 모두 트리거가 한 행의 오른쪽
+// 끝(제목 입력 옆)에 있어 팝오버를 트리거 오른쪽 끝 기준 왼쪽으로 펼치면(right:0) 항상 폭
+// 안에 들어왔다 — 그런데 ScheduleAddForm.jsx/ScheduleEditForm.jsx는 트리거가 행의 왼쪽 끝에
+// 있어서 같은 방식이면 팝오버가 사이드바 영역까지 넘어가 월/화 요일 칸이 사이드바에 가려
+// 안 보였다(Playwright 스크린샷으로 확인). popoverAlign으로 방향을 고를 수 있게 한다 —
+// 기본값 'right'는 기존 5곳과 하위 호환.
+export default function DueDatePicker({
+  value,
+  onChange,
+  disabled = false,
+  ariaLabel = '마감일(선택)',
+  popoverAlign = 'right',
+  // critical-reviewer 지적(재검증, Medium): 일정 화면의 날짜는 필수 입력인데 지우기 버튼을
+  // 누르면 빈 값이 됐다가 제출 시 "날짜를 선택하세요" 오류만 나는 무의미한 경로였다 —
+  // 선택 입력(마감일 등)에서만 지우기를 보여주고, 필수 입력 호출부는 꺼둘 수 있게 한다.
+  clearable = true,
+}) {
   const safeValue = isValidDateString(value) ? value : '';
   const [open, setOpen] = useState(false);
   const [monthCursor, setMonthCursor] = useState(() => monthCursorFor(safeValue));
@@ -96,7 +117,11 @@ export default function DueDatePicker({ value, onChange, disabled = false, ariaL
         <span className={safeValue ? '' : 'due-date-placeholder'}>{safeValue || '날짜 선택'}</span>
       </button>
       {open && (
-        <div className="due-date-popover" role="dialog" aria-label={ariaLabel}>
+        <div
+          className={popoverAlign === 'left' ? 'due-date-popover due-date-popover--left' : 'due-date-popover'}
+          role="dialog"
+          aria-label={ariaLabel}
+        >
           <div className="schedule-month-nav">
             <button
               type="button"
@@ -152,7 +177,7 @@ export default function DueDatePicker({ value, onChange, disabled = false, ariaL
               ))}
             </tbody>
           </table>
-          {safeValue && (
+          {clearable && safeValue && (
             <button type="button" className="due-date-clear" onClick={() => selectDate('')}>
               마감일 지우기
             </button>

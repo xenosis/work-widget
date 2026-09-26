@@ -207,7 +207,7 @@ export function DeleteTodoButton({ onDelete, disabled = false }) {
       >
         확인
       </button>
-      <button type="button" className="back-button" disabled={busy} onClick={() => setConfirming(false)}>
+      <button type="button" className="delete-cancel-button" disabled={busy} onClick={() => setConfirming(false)}>
         취소
       </button>
       {deleteError && <span className="data-issue-notice">{deleteError}</span>}

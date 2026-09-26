@@ -60,3 +60,44 @@ export function ScheduleIcon(props) {
     </svg>
   );
 }
+
+// P12.3: 커스텀 타이틀바(frame:false)의 최소화/최대화/복원/닫기 버튼 — 다른 아이콘과 달리
+// 아주 작게(14px 안팎) 쓰이므로 strokeWidth를 조금 더 두껍게(2) 잡아 축소해도 선이 흐려지지
+// 않게 한다.
+const TITLEBAR_SVG_PROPS = { ...SVG_PROPS, strokeWidth: 2, 'aria-hidden': 'true' };
+
+export function MinimizeIcon(props) {
+  return (
+    <svg {...TITLEBAR_SVG_PROPS} {...props}>
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
+export function MaximizeIcon(props) {
+  return (
+    <svg {...TITLEBAR_SVG_PROPS} {...props}>
+      <rect x="5" y="5" width="14" height="14" rx="1.5" />
+    </svg>
+  );
+}
+
+// 최대화 상태에서 다시 누르면 이전 크기로 — 네이티브 창의 "복원" 아이콘(겹친 사각형)과 같은
+// 관례를 따른다.
+export function RestoreIcon(props) {
+  return (
+    <svg {...TITLEBAR_SVG_PROPS} {...props}>
+      <rect x="8" y="5" width="11" height="11" rx="1.5" />
+      <path d="M5 8v11a1 1 0 0 0 1 1h11" />
+    </svg>
+  );
+}
+
+export function CloseIcon(props) {
+  return (
+    <svg {...TITLEBAR_SVG_PROPS} {...props}>
+      <line x1="6" y1="6" x2="18" y2="18" />
+      <line x1="18" y1="6" x2="6" y2="18" />
+    </svg>
+  );
+}

@@ -28,6 +28,18 @@
   /* P12.6: 토=파랑/일=빨강은 대부분의 달력 UI에서 통용되는 배색이라 그대로 따른다. 일요일은
      기존 --danger(빨강 계열)를 재사용해 색 토큰을 늘리지 않는다. */
   --weekend-sat-text: oklch(72% 0.13 250);
+  /* P12.16(P12.10 사람 결정: 자유 색상이 아니라 고정 팔레트): 일정 카테고리가 고를 수 있는
+     7가지 색 — src/lib/categoryPalette.js의 key와 이름을 맞춘다. 기존 의미 있는 토큰
+     (--danger/--priority-mid 등)과 값이 우연히 겹칠 수 있어도 새로 이름을 붙이는 이유는,
+     카테고리는 사용자가 임의로 의미를 부여하는 이름표라 "위험/우선순위 중간" 같은 기존
+     토큰의 의미와 섞이면 안 되기 때문이다. */
+  --category-red: oklch(72% 0.19 25);
+  --category-orange: oklch(75% 0.16 55);
+  --category-yellow: oklch(83% 0.16 95);
+  --category-green: oklch(75% 0.15 145);
+  --category-blue: oklch(72% 0.13 250);
+  --category-purple: oklch(72% 0.18 300);
+  --category-gray: oklch(65% 0.02 260);
 }
 
 * {
@@ -41,9 +53,88 @@ body {
   color: var(--text);
 }
 
+/* P12.3: frame:false(네이티브 타이틀바 제거, electron/main.js)로 창 전체가 웹 콘텐츠라 —
+   .app-shell이 창의 전체 높이(100vh)를 차지하고, 그 안에서 타이틀바(고정 높이)와 기존
+   .app(사이드바+콘텐츠, 나머지 공간 전부)을 세로로 쌓는다. */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
 .app {
   display: flex;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---- 커스텀 타이틀바(P12.3) ----
+   네이티브 타이틀바는 OS가 그려서 다크 글래스 테마가 안 먹는다(P12.13/P12.19에서 겪은
+   select/date 팝업과 같은 종류의 플랫폼 제약) — frame:false로 없애고 렌더러가 직접 그린다.
+   -webkit-app-region: drag는 그 요소를 마우스로 눌러 끌면 창이 움직이는 네이티브 동작을
+   Electron이 부여하는 CSS 확장 속성이다 — 버튼처럼 클릭이 필요한 요소는 no-drag로 되돌려야
+   클릭 이벤트가 드래그에 먹히지 않는다. */
+.titlebar {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  height: 36px;
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+.titlebar-drag-region {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+  -webkit-app-region: drag;
+}
+
+.titlebar-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titlebar-controls {
+  display: flex;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  color: var(--text-muted);
+}
+
+.titlebar-button:hover {
+  background: var(--sidebar-hover);
+  color: var(--text);
+}
+
+/* 닫기 버튼만 네이티브 타이틀바 관례대로 hover 시 danger(빨강) 배경 — 다른 두 버튼과 구분되는
+   "위험한 동작"이라는 신호. 실제로는 트레이로 숨기는 것뿐이라 데이터가 사라지진 않지만, 관례를
+   따르는 편이 다른 앱과의 사용자 기대에 맞는다. */
+.titlebar-close:hover {
+  background: var(--danger);
+  color: var(--text);
+}
+
+.titlebar-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 /* ---- 사이드바 ---- */
@@ -123,6 +214,15 @@ body {
   font-size: 12.5px;
   color: var(--text-muted);
   margin: 0;
+}
+
+/* P12.12: 프로젝트 상세의 "할일" 카드는 편집 모드일 때 AddTodoForm 대신 안내 문구가 뜬다
+   (ProjectDetail.jsx) — 비편집 모드에서 AddTodoForm이 주는 margin-bottom:10px(.todo-add-form)
+   과 같은 간격을 이 문구에도 줘서, 편집/비편집 모드를 오가도 할일 목록 위치가 흔들리지
+   않게 한다. .empty-text 자체를 고치면 할일/메모 "목록 없음" 문구 등 다른 화면의 간격도
+   같이 바뀌므로(critical-reviewer 지적 소지), 이 문구 전용 클래스를 별도로 건다. */
+.project-detail-editing-notice {
+  margin-bottom: 10px;
 }
 
 .data-issue-notice {
@@ -269,9 +369,11 @@ body {
   gap: 8px;
 }
 
+/* P12.15: 이 파일에 남아있던 마지막 네이티브 input[type='date'](일정 화면 2곳)도
+   DueDatePicker로 교체돼, 이제 이 규칙은 select(소속 프로젝트, P12.13에서 네이티브 유지로
+   확정)에만 적용된다. */
 .project-add-form select,
-.project-edit-row select,
-.project-edit-row input[type='date'] {
+.project-edit-row select {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 10px;
@@ -282,7 +384,6 @@ body {
 }
 
 .project-edit-row select,
-.project-edit-row input[type='date'],
 .project-edit-row .field-toggle-group {
   flex: 1;
   min-width: 0;
@@ -408,7 +509,28 @@ body {
   color: var(--danger);
   font-size: 11.5px;
   font-weight: 600;
+  padding: 4px 0;
   margin-top: 10px;
+}
+
+/* P12.20(critical-reviewer 지적, P12.18 재검증): 할일/일정/메모의 삭제 확인 쌍(.todo-delete-toggle)은
+   hover 시 색이 바뀌어 반응이 보이는데, 프로젝트 삭제 확인 쌍(.project-delete-button)엔 hover
+   규칙이 아예 없어 마우스를 올려도 아무 피드백이 없었다 — danger 색 위계(빨강)는 그대로 두고
+   밑줄로만 반응을 준다(색을 더 강하게 하면 danger 톤 자체가 흔들릴 수 있어, 다른 화면의
+   hover들처럼 색을 바꾸는 대신 밑줄을 택함). */
+.project-delete-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+/* critical-reviewer 지적(P12.18 재검증, Medium): done_when이 요구한 "P12.11의
+   .project-edit-cancel과 동일 패턴"은 hover 가드뿐 아니라 :disabled의 opacity/cursor 표시도
+   한 세트였다 — 비활성 중에도 여전히 클릭 가능한 것처럼 보이는 문제를 막으려면 이것도 같이
+   있어야 한다. */
+.project-delete-button:disabled,
+.todo-delete-confirm .todo-delete-toggle:disabled,
+.delete-cancel-button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .project-delete-button:focus-visible {
@@ -550,8 +672,13 @@ body {
   font-weight: 600;
 }
 
-.todo-edit-toggle:hover,
-.todo-delete-toggle:hover {
+/* critical-reviewer 지적(P12.11 리뷰 이후 P12.18로 이월): disabled 중에도 hover 색이
+   바뀌어 아직 클릭 가능한 것처럼 보이는 문제 — ScheduleEditForm.jsx/TodoEditForm.jsx의
+   삭제 확인 버튼이 disabled={busy}를 받는 동안에도 마우스를 올리면 색이 바뀌었다. 이 두
+   클래스는 목록 행의 수정/삭제 토글(TodoRow.jsx/ScheduleDateDetail.jsx)에도 쓰이므로 여기
+   가드는 전역으로 둔다(disabled가 실제로 전달되는 모든 곳에 적용돼야 함).*/
+.todo-edit-toggle:hover:not(:disabled),
+.todo-delete-toggle:hover:not(:disabled) {
   color: var(--text);
 }
 
@@ -559,6 +686,15 @@ body {
 .todo-delete-toggle:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* critical-reviewer 지적(P12.18 재검증, Medium): font-size/padding 통일을 .todo-edit-toggle/
+   .todo-delete-toggle 자체에 걸면 목록 행의 수정/삭제 토글(TodoRow.jsx/ScheduleDateDetail.jsx)
+   까지 커져서 행 높이가 늘어나는 의도치 않은 부수효과가 생긴다 — 삭제 2단계 확인의 "확인"
+   버튼(.todo-delete-confirm 안에서만 쓰임)에만 좁혀서 적용한다. */
+.todo-delete-confirm .todo-delete-toggle {
+  font-size: 11.5px;
+  padding: 4px 0;
 }
 
 .todo-delete-confirm {
@@ -755,11 +891,34 @@ body {
   padding: 4px 0;
 }
 
-.back-button:hover {
+/* P12.18: 프로젝트/할일/일정/메모 삭제 2단계 확인의 "취소" 버튼 전용 — .back-button과
+   색/hover/focus-visible 동작은 같지만, 뒤로가기(ProjectDetail.jsx의 실제 화면 이동)와는
+   폰트 크기가 달라야 삭제 확인 쌍(확인/취소)의 크기가 서로 맞는다(critical-reviewer 지적:
+   .back-button은 12.5px, 짝인 .project-delete-button/.todo-delete-toggle은 11.5px로 갈려
+   있었음) — .back-button 자체를 바꾸면 뒤로가기 버튼 크기까지 같이 바뀌므로 별도 클래스로
+   분리한다(P12.11에서 .project-edit-cancel을 따로 둔 것과 같은 이유). critical-reviewer
+   지적(재검증, Medium): .back-button의 align-self: flex-start를 그대로 가져왔더니, 가로
+   flex(.todo-delete-confirm 등, align-items: center)에 놓이는 할일/일정/메모 쪽에서 취소
+   버튼만 위쪽에 붙고 확인 버튼은 가운데 정렬돼 어긋났다 — .back-button은 세로 배치(자기
+   컨테이너 폭 전체를 차지하는 카드)에서만 쓰여 align-self가 필요하지만, .delete-cancel-button은
+   가로 배치 컨텍스트에서도 쓰이므로 뺀다. */
+.delete-cancel-button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.back-button:hover:not(:disabled),
+.delete-cancel-button:hover:not(:disabled) {
   color: var(--text);
 }
 
-.back-button:focus-visible {
+.back-button:focus-visible,
+.delete-cancel-button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -1081,25 +1240,303 @@ body {
   font-size: 11.5px;
 }
 
+/* P12.9: 일정 있다/없다만 보여주던 점 하나를 반복/일회성 구분이 가능한 여러 점(최대 N개)+
+   초과분 "+N" 표시로 바꾼다. 점이 0개인 칸도 다른 칸과 같은 자리를 차지해야 칸 높이가
+   흔들리지 않으므로(P12.9 이전의 단일 점 visibility 트릭과 같은 이유 — 그 트릭 자체는 P5.2
+   때부터 있었다), 래퍼에 고정 높이를 두고 내용물 유무와 무관하게 유지한다.
+   critical-reviewer 지적(재검증, Medium): 처음엔 이 높이를 6px로 좁게 잡아 "+N" 글자를
+   7px로 욱여넣었더니 일반 DPI에서 거의 안 보였다 — 높이 흔들림 방지 목적은 "모든 칸이 같은
+   높이"면 되므로, 더 읽기 편한 값(8px 높이, 8.5px 글자)으로 올려도 흔들림 방지 효과는 그대로다. */
+.schedule-day-dots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 8px;
+}
+
 .schedule-day-dot {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--accent);
-  /* 점이 없는 칸도 항상 같은 자리를 차지해서(점 유무로 칸 높이/세로 정렬이 달라지지 않도록,
-     critical-reviewer 지적) visibility만 바꾼다 — display:none을 쓰지 않는다. */
-  visibility: hidden;
+  flex-shrink: 0;
 }
 
-.schedule-day-dot.has-schedule {
-  visibility: visible;
+/* P12.17(사용자가 참고로 든 routine-planner의 캘린더 방식 중 "점 색 = 카테고리 색" 부분만
+   가져옴 — 반복 표시용 테두리 링은 이 프로젝트의 별도 결정, 위 scheduleGrid.js 주석 참고):
+   점 색은 이제 반복/일회성이 아니라 카테고리 색(--category-*, categoryPalette.js와 값 공유)을
+   직접 담는다. */
+.schedule-day-dot.is-red {
+  background: var(--category-red);
+}
+
+.schedule-day-dot.is-orange {
+  background: var(--category-orange);
+}
+
+.schedule-day-dot.is-yellow {
+  background: var(--category-yellow);
+}
+
+.schedule-day-dot.is-green {
+  background: var(--category-green);
+}
+
+.schedule-day-dot.is-blue {
+  background: var(--category-blue);
+}
+
+.schedule-day-dot.is-purple {
+  background: var(--category-purple);
+}
+
+.schedule-day-dot.is-gray {
+  background: var(--category-gray);
+}
+
+/* critical-reviewer 지적(Medium): 미분류를 회색으로 채우면 "회색 카테고리를 직접 고름"과
+   4px 크기에서 사실상 구분이 안 된다 — 배경을 비우고 옅은 테두리만 그려(레이아웃 크기에
+   영향 없는 box-shadow, is-recurring-ring과 같은 기법) 채워진 카테고리 색과 확실히 다른
+   모양으로 구분한다. */
+.schedule-day-dot.is-none {
+  background: transparent;
+  box-shadow: 0 0 0 1px var(--text-faint);
+}
+
+/* 반복 일정은 점 색(카테고리)을 가리지 않는 별도 신호(테두리 링)로 표시한다 — box-shadow는
+   레이아웃 크기에 영향을 안 줘서 점 사이 gap이나 셀 높이가 흔들리지 않는다. */
+.schedule-day-dot.is-recurring-ring {
+  box-shadow: 0 0 0 1px var(--text);
+}
+
+.schedule-day-overflow {
+  font-size: 8.5px;
+  line-height: 8px;
+  color: var(--text-muted);
+  margin-left: 1px;
+}
+
+/* critical-reviewer 지적(재검증, Medium): is-outside(다른 달 날짜)는 버튼 color만 흐리게 해서
+   숫자는 흐려지는데, 점은 background로 직접 칠해서 흐려지지 않아 "다른 달"이라는 흐림 신호가
+   점에서만 사라지는 회귀가 있었다 — P12.6이 주말 숫자에 opacity를 따로 건 것과 같은 이유로
+   점 줄에도 건다. */
+.schedule-day-cell.is-outside .schedule-day-dots {
+  opacity: 0.55;
+}
+
+/* critical-reviewer 지적(재검증, Medium): 1차 리뷰에서 "+N"에 지적했던 것과 같은 조합
+   (작은 글자 + --text-faint)을 범례에도 그대로 써서 일반 DPI에서 읽기 어려웠다 — "+N"과
+   같은 --text-muted로 통일. */
+.schedule-dot-legend {
+  display: flex;
+  gap: 12px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin: 6px 0 0;
+}
+
+.schedule-dot-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ---- P12.16: 일정 카테고리 관리 ---- */
+.schedule-category-manager-toggle {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  align-self: flex-start;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.schedule-category-manager-toggle:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.schedule-category-manager-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* critical-reviewer 지적(P12.16 재검증, Low): 삭제 실패 메시지(.data-issue-notice)가 이
+   행의 세 번째 flex 아이템이 되면서 space-between 때문에 좁게 눌려 보였다 — flex-wrap으로
+   줄바꿈을 허용하고, 에러 메시지는 항상 새 줄 전체 폭을 차지하게 한다. */
+.schedule-category-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.schedule-category-row > .data-issue-notice {
+  flex-basis: 100%;
+}
+
+.schedule-category-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.schedule-category-name {
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-category-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* critical-reviewer가 잡을 법한 함정을 미리 피함: .category-swatch-button의 `all: unset`
+   리셋 규칙을 먼저 두고, 모양을 공유하는 규칙(border-radius/flex-shrink)을 그 뒤에 둔다 —
+   반대로 두면 특이도가 같은 두 규칙 중 소스 순서상 나중에 나온 `all: unset`이 border-radius를
+   도로 지워버려 버튼이 동그랗지 않고 각지게 보인다(이 프로젝트가 P12.6/P12.8/P12.13 등에서
+   반복 지적된 "같은 특이도, 소스 순서 의존" 버그와 같은 종류). */
+.category-swatch-button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  border: 2px solid transparent;
+}
+
+/* 카테고리 한 곳(목록 표시)과 팔레트 선택 버튼(고르는 UI) 둘 다 같은 7색 배경을 쓴다 —
+   색 정의를 한 곳에 모아 두 용도가 같은 색 값을 공유하게 한다. */
+.schedule-category-swatch,
+.category-swatch-button {
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.schedule-category-swatch {
+  width: 14px;
+  height: 14px;
+}
+
+.schedule-category-swatch.is-red,
+.category-swatch-button.is-red {
+  background: var(--category-red);
+}
+
+.schedule-category-swatch.is-orange,
+.category-swatch-button.is-orange {
+  background: var(--category-orange);
+}
+
+.schedule-category-swatch.is-yellow,
+.category-swatch-button.is-yellow {
+  background: var(--category-yellow);
+}
+
+.schedule-category-swatch.is-green,
+.category-swatch-button.is-green {
+  background: var(--category-green);
+}
+
+.schedule-category-swatch.is-blue,
+.category-swatch-button.is-blue {
+  background: var(--category-blue);
+}
+
+.schedule-category-swatch.is-purple,
+.category-swatch-button.is-purple {
+  background: var(--category-purple);
+}
+
+.schedule-category-swatch.is-gray,
+.category-swatch-button.is-gray {
+  background: var(--category-gray);
+}
+
+.category-swatch-picker {
+  display: flex;
+  gap: 6px;
+}
+
+.category-swatch-button.selected {
+  border-color: var(--text);
+}
+
+.category-swatch-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.category-swatch-button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .schedule-item-row {
   display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+/* P12.17(routine-planner의 RoutineItem.tsx colorBar 참고): 행 전체 높이를 채우는 4px 폭
+   막대로 카테고리 색을 표시 — 달력 점(schedule-day-dot)과 같은 색 토큰을 공유한다. */
+.schedule-item-colorbar {
+  flex-shrink: 0;
+  width: 4px;
+  border-radius: 2px;
+}
+
+.schedule-item-colorbar.is-red {
+  background: var(--category-red);
+}
+
+.schedule-item-colorbar.is-orange {
+  background: var(--category-orange);
+}
+
+.schedule-item-colorbar.is-yellow {
+  background: var(--category-yellow);
+}
+
+.schedule-item-colorbar.is-green {
+  background: var(--category-green);
+}
+
+.schedule-item-colorbar.is-blue {
+  background: var(--category-blue);
+}
+
+.schedule-item-colorbar.is-purple {
+  background: var(--category-purple);
+}
+
+.schedule-item-colorbar.is-gray {
+  background: var(--category-gray);
+}
+
+/* critical-reviewer 지적(2차 재검증, Medium): 달력 점(is-none)은 속 빈 링으로 고쳤지만 이
+   막대는 여전히 회색으로 채워져 있어 회색 카테고리(is-gray)와 구분이 안 됐고, 주석("무색")과도
+   안 맞았다 — 점과 같은 기법(테두리만, 배경 없음)으로 맞춘다. 막대는 사각형이라 바깥쪽
+   box-shadow는 링 형태가 안 나서(모서리가 각짐) inset으로 안쪽 테두리를 그린다 — 박스 크기에
+   영향 없음은 동일. */
+.schedule-item-colorbar.is-none {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--text-faint);
+}
+
+.schedule-item-content {
+  display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 12.5px;
+  min-width: 0;
+  flex: 1;
 }
 
 .schedule-item-main {
@@ -1115,9 +1552,6 @@ body {
   gap: 10px;
 }
 
-.schedule-item-row-editing {
-  display: block;
-}
 
 .schedule-item-title {
   min-width: 0;
@@ -1312,9 +1746,11 @@ body {
    "소속 프로젝트" select 3곳(TodoAddForm.jsx/TodoEditForm.jsx/Memos.jsx)뿐이다 — 항목 수가
    가변이라 토글 버튼으로 바꿀 수 없어 네이티브 select를 유지한다(사람 결정, 2026-09-25).
    date 입력은 당시 7곳 전부(.project-edit-row input[type='date']가 전부 커버) 대상이었으나,
-   P12.19(critical-reviewer 지적: 이 주석이 갱신 안 돼 있었음, 정정)에서 프로젝트/할일 관련
-   5곳이 DueDatePicker(커스텀 컴포넌트, 이 규칙의 대상이 아님)로 바뀌어, 이제 이 규칙은
-   일정 화면의 날짜 입력 2곳(ScheduleAddForm.jsx/ScheduleEditForm.jsx)에만 적용된다.
+   P12.19에서 프로젝트/할일 관련 5곳이, P12.15에서 나머지 일정 화면 2곳(ScheduleAddForm.jsx/
+   ScheduleEditForm.jsx)이 모두 DueDatePicker(커스텀 컴포넌트)로 바뀌어, 이제 앱에 남은
+   네이티브 date 입력은 없다 — 아래 select 관련 규칙만 유효하고, 예전에 여기 있던
+   input[type='date'] 전용 hover/focus/disabled/calendar-picker-indicator 규칙은 P12.15에서
+   삭제했다(critical-reviewer 지적: 죽은 CSS + 갱신 안 된 주석).
    이 파일 맨 끝에 모아 둔 이유: 위쪽의 각 컨텍스트별 규칙(.project-add-form select 등)이 이미
    background/padding을 shorthand로 선언하고 있어서, 같은 선택자에 더 앞쪽에서 끼워 넣으면
    나중에 나오는 그 shorthand 선언이 내가 추가한 background-image/padding-right을 조용히
@@ -1389,38 +1825,6 @@ body {
   color: var(--text);
 }
 
-/* date 입력에도 select와 같은 수준의 상태 피드백을 맞춘다. 달력 아이콘은 :root의
-   color-scheme:dark 덕에 이미 밝은 색으로 뜨지만(브라우저 기본 다크 렌더링), opacity로
-   대기/hover 대비를 줘서 다른 컨트롤과 상태 언어를 통일한다 — 아이콘 자체를 --accent로
-   덧칠하는 filter 값은 브라우저마다 달라 깨지기 쉬워 opacity만 쓴다. */
-.project-edit-row input[type='date']:hover:not(:disabled) {
-  border-color: var(--accent-soft-border);
-}
-
-.project-edit-row input[type='date']:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.project-edit-row input[type='date']:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.project-edit-row input[type='date']::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.75;
-}
-
-.project-edit-row input[type='date']:hover::-webkit-calendar-picker-indicator {
-  opacity: 1;
-}
-
-.project-edit-row input[type='date']:disabled::-webkit-calendar-picker-indicator {
-  cursor: default;
-  opacity: 0.4;
-}
-
 /* ---- P12.19: 프로젝트/할일 마감일 커스텀 날짜 선택기 ----
    트리거는 기존 네이티브 date input과 같은 박스 모델(배경/테두리/radius/패딩/폰트)을 쓰고,
    팝오버 안의 월간 그리드는 ScheduleMonthView.jsx와 완전히 같은 클래스(.schedule-month-grid/
@@ -1485,6 +1889,17 @@ body {
 
 .due-date-popover .schedule-month-grid {
   font-size: 10.5px;
+}
+
+/* P12.15(critical-reviewer 지적, High): ScheduleAddForm.jsx/ScheduleEditForm.jsx는 트리거가
+   행의 왼쪽 끝에 있어(제목이 별도 줄 위에 있고, 이 행은 날짜+반복 체크박스만 있음), 기존
+   right:0(트리거 오른쪽 끝 기준으로 왼쪽으로 펼침)을 그대로 쓰면 팝오버가 사이드바 영역까지
+   넘어가 월/화 요일 칸이 사이드바에 가려 안 보였다(Playwright 스크린샷으로 확인) — 트리거가
+   왼쪽에 있는 호출부는 popoverAlign="left"로 반대 방향(트리거 왼쪽 끝 기준 오른쪽으로 펼침)을
+   쓸 수 있게 한다. */
+.due-date-popover--left {
+  right: auto;
+  left: 0;
 }
 
 .due-date-clear {

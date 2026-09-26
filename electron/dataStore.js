@@ -2,11 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
 
-// B3: projects / todos / memos / schedules 4개 배열을 담은 단일 JSON 파일
+// B3: projects / todos / memos / schedules / schedule_categories(P12.16 추가) 5개 배열을 담은
+// 단일 JSON 파일
 // 계약: Todo/Project/Schedule의 date 필드(due_date, date 등)는 로컬 타임존 기준 "YYYY-MM-DD" 문자열로
 // 저장한다(다른 형식 없음). 화면 쪽(예: src/screens/Dashboard.jsx)이 이 값을 문자열 완전일치(===)로
 // "오늘"과 비교하므로, 이 형식이 깨지면 그 비교가 조용히 실패한다.
-const ARRAY_KEYS = ['projects', 'todos', 'memos', 'schedules'];
+// P12.16: 일정 카테고리(분류) 배열을 새 최상위 키로 추가한다 — 기존 4개 배열과 같은 방식으로
+// 정규화(누락 시 빈 배열, 항목마다 FIELD_DEFAULTS 적용)돼야 하므로 여기 포함시킨다.
+const ARRAY_KEYS = ['projects', 'todos', 'memos', 'schedules', 'schedule_categories'];
 
 function getDataPath() {
   return path.join(app.getPath('userData'), 'data.json');
@@ -112,7 +115,23 @@ const FIELD_DEFAULTS = {
     updated_at: null,
   },
   memos: { project_id: null, title: '', content: '', created_at: null, updated_at: null },
-  schedules: { title: '', date: null, is_recurring: false, recurrence_days: null, created_at: null, updated_at: null },
+  // P12.16: category_id(nullable) 추가 — 기존 일정(카테고리 개념이 없던 시절 데이터)도
+  // null로 채워져 "미분류"로 정상 로드된다. 실제로 카테고리를 고르는 UI는 P12.17의 몫이라
+  // 이 시점엔 항상 null로만 채워지지만, 스키마 자체는 지금 확정해 둔다.
+  schedules: {
+    title: '',
+    date: null,
+    is_recurring: false,
+    recurrence_days: null,
+    category_id: null,
+    created_at: null,
+    updated_at: null,
+  },
+  // P12.16: color는 src/lib/categoryPalette.js가 정의한 고정 팔레트 키(문자열, 예: 'blue') —
+  // 자유 색상이 아니라 palette.js가 팔레트를 바꾸면 전체가 함께 갱신되는 간접 참조다.
+  // critical-reviewer 지적(재검증 2라운드, Medium): 다른 4개 엔티티는 전부 created_at/
+  // updated_at을 기본값에 넣는데 이 엔티티만 빠져 있었다 — P6.4 패턴과 통일.
+  schedule_categories: { name: '', color: 'gray', created_at: null, updated_at: null },
 };
 
 // critical-reviewer 지적: FIELD_DEFAULTS의 배열 기본값(tags)이 레코드마다 같은 인스턴스를
@@ -133,7 +152,7 @@ function applyFieldDefaults(entityKey, record) {
   return result;
 }
 
-// 필드 누락/타입 불일치 방어(P6.3): 4개 키가 없거나 배열이 아니면 빈 배열로 보정하고,
+// 필드 누락/타입 불일치 방어(P6.3): ARRAY_KEYS의 키가 없거나 배열이 아니면 빈 배열로 보정하고,
 // 배열 안에 객체가 아닌 항목은 제거한다. 향후 스키마가 늘어나도 이 함수만 확장하면 된다.
 function normalizeData(data) {
   const result = {};

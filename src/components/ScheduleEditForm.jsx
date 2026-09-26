@@ -8,6 +8,9 @@
 // 적용된다는 사실도 화면에 없었다 — 둘 다 안내 문구를 추가한다.
 import { useState } from 'react';
 import { isScheduleRecurring } from '../lib/scheduleGrid.js';
+import { isValidDateString } from '../lib/dateRange.js';
+import DueDatePicker from './DueDatePicker.jsx';
+import { getUsableCategories, resolveSubmittableCategoryId } from '../lib/scheduleCategoryMutations.js';
 
 const WEEKDAYS = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -15,9 +18,19 @@ function sortByWeekday(days) {
   return [...days].sort((a, b) => WEEKDAYS.indexOf(a) - WEEKDAYS.indexOf(b));
 }
 
-export function ScheduleEditForm({ schedule, onSave, onCancel, disabled = false }) {
+export function ScheduleEditForm({ schedule, categories = [], onSave, onCancel, disabled = false }) {
   const [title, setTitle] = useState(schedule.title ?? '');
-  const [date, setDate] = useState(schedule.date ?? '');
+  // P12.17: 문자열 category_id를 그대로 select value로 쓰되, null/undefined/손상된 타입(예:
+  // 숫자)은 ''(미분류)로 정규화한다 — select value가 undefined거나 문자열이 아니면 React가
+  // uncontrolled 취급 경고를 내거나 옵션이 하나도 안 맞아 조용히 첫 옵션으로 보일 수 있다.
+  const [categoryId, setCategoryId] = useState(typeof schedule.category_id === 'string' ? schedule.category_id : '');
+  const usableCategories = getUsableCategories(categories);
+  // P12.15(critical-reviewer 지적 소지, P12.19와 같은 패턴): schedule.date를 형식 검증 없이
+  // 그대로 넘기면 손상된 data.json(문자열이 아니거나 형식이 깨짐)일 때 DueDatePicker 자체는
+  // 방어하지만(빈 값으로 안전 처리), 이 state는 손상값을 그대로 들고 있다가 사용자가 아무것도
+  // 안 건드리고 저장하면 그대로 다시 쓰인다 — ProjectEditForm.jsx/TodoEditForm.jsx와 같이
+  // 초기 state 자체를 정규화한다.
+  const [date, setDate] = useState(isValidDateString(schedule.date) ? schedule.date : '');
   const [isRecurring, setIsRecurring] = useState(isScheduleRecurring(schedule));
   const [recurrenceDays, setRecurrenceDays] = useState(
     Array.isArray(schedule.recurrence_days) ? schedule.recurrence_days : []
@@ -54,6 +67,7 @@ export function ScheduleEditForm({ schedule, onSave, onCancel, disabled = false 
         date,
         is_recurring: isRecurring,
         recurrence_days: isRecurring ? sortByWeekday(recurrenceDays) : null,
+        category_id: resolveSubmittableCategoryId(categoryId, categories),
       });
     } catch (err) {
       console.error('일정 저장 실패:', err);
@@ -79,7 +93,14 @@ export function ScheduleEditForm({ schedule, onSave, onCancel, disabled = false 
         placeholder="일정 제목"
       />
       <div className="project-edit-row">
-        <input type="date" value={date} disabled={busy} onChange={(e) => setDate(e.target.value)} />
+        <DueDatePicker
+          value={date}
+          onChange={setDate}
+          disabled={busy}
+          ariaLabel="날짜(필수)"
+          popoverAlign="left"
+          clearable={false}
+        />
         <label className="schedule-recurring-toggle">
           <input
             type="checkbox"
@@ -111,6 +132,22 @@ export function ScheduleEditForm({ schedule, onSave, onCancel, disabled = false 
           </div>
         </>
       )}
+      {/* P12.17: 카테고리는 가변 옵션 목록이라(P12.13/P12.21 사람 결정) 토글 버튼 대신 select. */}
+      <div className="project-edit-row">
+        <select
+          aria-label="카테고리"
+          value={categoryId}
+          disabled={busy}
+          onChange={(e) => setCategoryId(e.target.value)}
+        >
+          <option value="">미분류</option>
+          {usableCategories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
       {saveError && <p className="data-issue-notice">{saveError}</p>}
       <div className="project-edit-actions">
         <button type="submit" className="project-edit-save" disabled={busy}>
@@ -160,7 +197,7 @@ export function DeleteScheduleButton({ onDelete, isRecurring = false, disabled =
       >
         확인
       </button>
-      <button type="button" className="back-button" disabled={busy} onClick={() => setConfirming(false)}>
+      <button type="button" className="delete-cancel-button" disabled={busy} onClick={() => setConfirming(false)}>
         취소
       </button>
       {deleteError && <span className="data-issue-notice">{deleteError}</span>}

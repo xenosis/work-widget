@@ -167,7 +167,7 @@ export function DeleteProjectButton({ onDelete, todos, memos, hiddenCount }) {
       </button>
       <button
         type="button"
-        className="back-button"
+        className="delete-cancel-button"
         disabled={deleting}
         onClick={() => setConfirming(false)}
       >

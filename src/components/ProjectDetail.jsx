@@ -142,7 +142,9 @@ export default function ProjectDetail({
           // 요약 카드 수정 저장과 겹쳐 실행되면 useAppData의 낙관적 갱신(단일 저장 호출 지점 전제,
           // useAppData.js 주석 참고)이 둘 중 먼저 끝난 저장을 나중 저장으로 덮어써버릴 수 있어(
           // critical-reviewer 지적), 수정 중에는 이 폼을 숨겨 두 저장이 겹치는 경로 자체를 막는다.
-          <p className="empty-text">요약 수정을 마치거나 취소한 뒤 할일을 추가할 수 있습니다.</p>
+          <p className="empty-text project-detail-editing-notice">
+            요약 수정을 마치거나 취소한 뒤 할일을 추가할 수 있습니다.
+          </p>
         ) : (
           <AddTodoForm onAdd={onAddTodo} />
         )}

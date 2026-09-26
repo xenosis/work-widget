@@ -140,4 +140,28 @@ describe('normalizeData', () => {
     const result = normalizeData({ todos: [{ id: 't1', title: 'A', future_field: 'x' }] });
     expect(result.todos[0].future_field).toBe('x');
   });
+
+  // P12.16: schedule_categories는 새로 추가된 최상위 배열 — 기존 4개와 같은 정규화를 받는지,
+  // 그리고 구버전 schedule 레코드(카테고리 개념이 없던 시절)에도 category_id가 채워지는지 확인.
+  it('schedule_categories 키가 아예 없으면 빈 배열로 채운다', () => {
+    const result = normalizeData({});
+    expect(result.schedule_categories).toEqual([]);
+  });
+
+  // critical-reviewer 지적(재검증 2라운드, Medium): created_at/updated_at 기본값이 다른
+  // 4개 엔티티와 달리 빠져 있었던 것도 함께 고정한다.
+  it('schedule_category에 color/created_at/updated_at이 없으면 기본값을 채운다', () => {
+    const result = normalizeData({ schedule_categories: [{ id: 'c1', name: '업무' }] });
+    expect(result.schedule_categories[0]).toMatchObject({
+      name: '업무',
+      color: 'gray',
+      created_at: null,
+      updated_at: null,
+    });
+  });
+
+  it('구버전 schedule(카테고리 개념 없음)에도 category_id가 null로 채워진다', () => {
+    const result = normalizeData({ schedules: [{ id: 's1', title: '옛날 일정', date: '2026-01-01' }] });
+    expect(result.schedules[0].category_id).toBeNull();
+  });
 });

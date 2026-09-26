@@ -2,6 +2,7 @@
 // 주간 뷰가 공유한다.
 import { useState } from 'react';
 import { getSchedulesForDate, isScheduleRecurring, getHolidayInfo } from '../lib/scheduleGrid.js';
+import { resolveCategoryColor, resolveCategoryName } from '../lib/categoryPalette.js';
 import { ScheduleEditForm, DeleteScheduleButton } from './ScheduleEditForm.jsx';
 
 // TodoRow.jsx와 같은 패턴: 각 행이 자기만의 editing 상태를 들고, 수정 모드일 땐 ScheduleEditForm으로
@@ -9,40 +10,55 @@ import { ScheduleEditForm, DeleteScheduleButton } from './ScheduleEditForm.jsx';
 // 모든 회차에 일괄 반영"(P5.5)/"모든 회차가 함께 사라짐"이 성립한다. disabled는 화면
 // (Schedule.jsx) 전체의 저장 진행 여부 — 다른 행/추가 폼과의 저장 경합을 막는다(Todos.jsx와
 // 동일 패턴, critical-reviewer 지적).
-function ScheduleItemRow({ schedule, onEdit, onDelete, disabled }) {
+// P12.17(routine-planner의 RoutineItem.tsx colorBar 참고): 행 왼쪽에 카테고리 색 막대를 둬서
+// 달력 점과 같은 색 언어를 목록에서도 그대로 쓴다 — 미분류면 무색(is-none과 동일하게 빈 테두리만).
+// critical-reviewer 지적(Medium): 막대가 색만으로 카테고리를 구분시키면 색맹 사용자나 비슷한
+// 톤(회색 카테고리 vs 미분류)에서 식별이 어렵다 — title(hover 툴팁)에 카테고리 이름 텍스트를
+// 함께 제공한다.
+function ScheduleItemRow({ schedule, categories, onEdit, onDelete, disabled }) {
   const [editing, setEditing] = useState(false);
+  const color = resolveCategoryColor(schedule.category_id, categories);
+  const categoryName = resolveCategoryName(schedule.category_id, categories) ?? '미분류';
+  const barClassName = color ? `schedule-item-colorbar is-${color}` : 'schedule-item-colorbar is-none';
 
   if (editing) {
     return (
       <li className="schedule-item-row schedule-item-row-editing">
-        <ScheduleEditForm
-          schedule={schedule}
-          disabled={disabled}
-          onCancel={() => setEditing(false)}
-          onSave={async (updates) => {
-            await onEdit(schedule.id, updates);
-            setEditing(false);
-          }}
-        />
+        <span className={barClassName} title={categoryName} />
+        <div className="schedule-item-content">
+          <ScheduleEditForm
+            schedule={schedule}
+            categories={categories}
+            disabled={disabled}
+            onCancel={() => setEditing(false)}
+            onSave={async (updates) => {
+              await onEdit(schedule.id, updates);
+              setEditing(false);
+            }}
+          />
+        </div>
       </li>
     );
   }
 
   return (
     <li className="schedule-item-row">
-      <div className="schedule-item-main">
-        <span className="schedule-item-title">{schedule.title}</span>
-        {isScheduleRecurring(schedule) && <span className="schedule-recurring-badge">반복</span>}
-      </div>
-      <div className="schedule-item-actions">
-        <button type="button" className="todo-edit-toggle" disabled={disabled} onClick={() => setEditing(true)}>
-          수정
-        </button>
-        <DeleteScheduleButton
-          onDelete={() => onDelete(schedule.id)}
-          isRecurring={isScheduleRecurring(schedule)}
-          disabled={disabled}
-        />
+      <span className={barClassName} title={categoryName} />
+      <div className="schedule-item-content">
+        <div className="schedule-item-main">
+          <span className="schedule-item-title">{schedule.title}</span>
+          {isScheduleRecurring(schedule) && <span className="schedule-recurring-badge">반복</span>}
+        </div>
+        <div className="schedule-item-actions">
+          <button type="button" className="todo-edit-toggle" disabled={disabled} onClick={() => setEditing(true)}>
+            수정
+          </button>
+          <DeleteScheduleButton
+            onDelete={() => onDelete(schedule.id)}
+            isRecurring={isScheduleRecurring(schedule)}
+            disabled={disabled}
+          />
+        </div>
       </div>
     </li>
   );
@@ -51,7 +67,7 @@ function ScheduleItemRow({ schedule, onEdit, onDelete, disabled }) {
 // id 없는 레코드는 React key로 못 쓰므로 제외한다(Dashboard.jsx/projectTodos.js와 동일 방어
 // — electron/dataStore.js의 normalizeData(P6.4)는 누락된 필드를 기본값으로 채우지만 id를
 // 지어내지는 않고, 타입이 잘못된 값(예: title이 객체)도 그대로 둔다).
-export default function ScheduleDateDetail({ date, schedules, onEdit, onDelete, disabled = false }) {
+export default function ScheduleDateDetail({ date, schedules, categories = [], onEdit, onDelete, disabled = false }) {
   const all = getSchedulesForDate(schedules, date);
   const items = all.filter((s) => typeof s.id === 'string');
   const droppedCount = all.length - items.length;
@@ -79,7 +95,14 @@ export default function ScheduleDateDetail({ date, schedules, onEdit, onDelete, 
       ) : (
         <ul className="card-list">
           {items.map((s) => (
-            <ScheduleItemRow key={s.id} schedule={s} onEdit={onEdit} onDelete={onDelete} disabled={disabled} />
+            <ScheduleItemRow
+              key={s.id}
+              schedule={s}
+              categories={categories}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              disabled={disabled}
+            />
           ))}
         </ul>
       )}

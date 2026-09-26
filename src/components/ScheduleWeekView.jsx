@@ -1,7 +1,15 @@
 // P5.3: 주간 뷰. 월간 뷰(ScheduleMonthView)와 같은 셀 스타일(schedule-day-cell)을 그대로
 // 재사용해 7칸을 한 줄에 펼친다 — 두 뷰가 서로 다른 마크업으로 갈라지면 CSS를 두 번 관리해야
 // 하므로 공용 클래스를 그대로 쓴다.
-import { getWeekDates, getDayLabel, getWeekdayKind, getHolidayInfo, getSchedulesForDate } from '../lib/scheduleGrid.js';
+import {
+  getWeekDates,
+  getDayLabel,
+  getWeekdayKind,
+  getHolidayInfo,
+  getScheduleCellSummary,
+  getScheduleDotClassName,
+  buildScheduleCellTooltip,
+} from '../lib/scheduleGrid.js';
 
 // "YYYY-MM-DD ~ YYYY-MM-DD"(23자)는 420px 폭 네비 라벨에서 줄바꿈될 위험이 있어(critical-reviewer
 // 지적) "M/D ~ M/D"로 줄인다.
@@ -26,7 +34,16 @@ function WeekNav({ weekDates, onPrev, onNext }) {
   );
 }
 
-export default function ScheduleWeekView({ weekAnchor, today, selectedDate, schedules, onSelect, onPrev, onNext }) {
+export default function ScheduleWeekView({
+  weekAnchor,
+  today,
+  selectedDate,
+  schedules,
+  categories,
+  onSelect,
+  onPrev,
+  onNext,
+}) {
   const weekDates = getWeekDates(weekAnchor);
   return (
     <div className="card">
@@ -34,9 +51,10 @@ export default function ScheduleWeekView({ weekAnchor, today, selectedDate, sche
       <div className="schedule-week-row">
         {weekDates.map((date) => {
           const dayNumber = Number(date.slice(-2));
-          const hasSchedule = getSchedulesForDate(schedules, date).length > 0;
+          const summary = getScheduleCellSummary(schedules, date, categories);
           const weekdayKind = getWeekdayKind(date);
           const holiday = getHolidayInfo(date);
+          const tooltip = buildScheduleCellTooltip(holiday?.name, summary.titles);
           const classNames = ['schedule-day-cell'];
           if (weekdayKind !== 'weekday') classNames.push(`is-${weekdayKind}`);
           if (holiday) classNames.push('is-holiday');
@@ -49,17 +67,31 @@ export default function ScheduleWeekView({ weekAnchor, today, selectedDate, sche
           if (weekdayKind !== 'weekday') labelClasses.push(`is-${weekdayKind}`);
           if (holiday) labelClasses.push('is-holiday');
           const labelClassNames = labelClasses.join(' ');
+          // critical-reviewer 지적(P12.9 재검증, High): title은 호버 전용이라 키보드/스크린리더로
+          // 안 드러나고, "+N" 텍스트가 접근 가능한 이름에 그대로 섞여 들어가는 회귀가 있었다 —
+          // 날짜/점 표시는 aria-hidden으로 이름 계산에서 빼고 aria-label로 명시한다.
+          const ariaLabel = `${getDayLabel(date)}요일 ${dayNumber}일${summary.count > 0 ? `, 일정 ${summary.count}개` : ''}`;
           return (
             <button
               key={date}
               type="button"
               className={classNames.join(' ')}
-              title={holiday ? holiday.name : undefined}
+              title={tooltip}
+              aria-label={ariaLabel}
               onClick={() => onSelect(date)}
             >
-              <span className={labelClassNames}>{getDayLabel(date)}</span>
-              <span className="schedule-day-number">{dayNumber}</span>
-              <span className={hasSchedule ? 'schedule-day-dot has-schedule' : 'schedule-day-dot'} />
+              <span className={labelClassNames} aria-hidden="true">
+                {getDayLabel(date)}
+              </span>
+              <span className="schedule-day-number" aria-hidden="true">
+                {dayNumber}
+              </span>
+              <span className="schedule-day-dots" aria-hidden="true">
+                {summary.dots.map((dot, i) => (
+                  <span key={i} className={getScheduleDotClassName(dot)} />
+                ))}
+                {summary.overflowCount > 0 && <span className="schedule-day-overflow">+{summary.overflowCount}</span>}
+              </span>
             </button>
           );
         })}

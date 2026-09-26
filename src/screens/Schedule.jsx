@@ -11,8 +11,11 @@ import ScheduleMonthView from '../components/ScheduleMonthView.jsx';
 import ScheduleWeekView from '../components/ScheduleWeekView.jsx';
 import ScheduleDateDetail from '../components/ScheduleDateDetail.jsx';
 import ScheduleAddForm from '../components/ScheduleAddForm.jsx';
+import ScheduleCategoryManager from '../components/ScheduleCategoryManager.jsx';
+import { getUsableCategories } from '../lib/scheduleCategoryMutations.js';
 import { createSchedule } from '../lib/scheduleFactory.js';
 import { applyScheduleUpdate, removeSchedule } from '../lib/scheduleMutations.js';
+import { createScheduleCategoryActions } from '../lib/scheduleCategoryActions.js';
 
 export default function Schedule() {
   const { apiAvailable, data, error, setData } = useAppData();
@@ -31,6 +34,9 @@ export default function Schedule() {
   // 진행 중인 사이 다른 저장이 겹쳐 들어가 옛 data로 나중 저장을 덮어써 방금 만든/지운 일정이
   // 조용히 사라질 수 있다 — Todos.jsx와 동일하게 화면 전체 saving 가드를 둔다.
   const [saving, setSaving] = useState(false);
+  // P12.16: 관리 패널을 접어둔 채로 시작 — 자주 쓰는 기능이 아니라 기본은 숨겨서 화면을
+  // 차지하지 않게 한다.
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   if (!apiAvailable) {
     return (
@@ -116,11 +122,14 @@ export default function Schedule() {
     setView('week');
   }
 
-  async function handleAddSchedule({ title, date, isRecurring, recurrenceDays }) {
+  async function handleAddSchedule({ title, date, isRecurring, recurrenceDays, categoryId }) {
     if (saving) throw new Error('저장이 진행 중입니다. 잠시 후 다시 시도하세요.');
     setSaving(true);
     try {
-      const nextSchedules = [...data.schedules, createSchedule({ title, date, isRecurring, recurrenceDays })];
+      const nextSchedules = [
+        ...data.schedules,
+        createSchedule({ title, date, isRecurring, recurrenceDays, categoryId }),
+      ];
       const newData = { ...data, schedules: nextSchedules };
       await window.api.saveData(newData);
       setData(newData);
@@ -155,6 +164,15 @@ export default function Schedule() {
     }
   }
 
+  // P12.16: 카테고리 CRUD 핸들러는 scheduleCategoryActions.js로 뺐다(이 파일이 max-lines
+  // 한도에 근접해서 — ProjectDetail/ProjectEditForm 분리와 같은 이유).
+  const { handleAddCategory, handleEditCategory, handleDeleteCategory } = createScheduleCategoryActions({
+    data,
+    setData,
+    saving,
+    setSaving,
+  });
+
   return (
     <>
       <h1>일정</h1>
@@ -178,12 +196,40 @@ export default function Schedule() {
           주간
         </button>
       </div>
+      <button
+        type="button"
+        className="schedule-category-manager-toggle"
+        onClick={() => setShowCategoryManager((v) => !v)}
+        aria-expanded={showCategoryManager}
+      >
+        {showCategoryManager ? '카테고리 관리 닫기 ▲' : '카테고리 관리 ▼'}
+      </button>
+      {showCategoryManager && (
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">일정 카테고리</h2>
+            {/* critical-reviewer 지적(재검증 2라운드, Medium): 배지가 필터 전 길이를 쓰고
+                ScheduleCategoryManager는 id 없는 레코드를 걸러낸 뒤 그려서, 손상 데이터가
+                섞이면 배지 숫자와 실제 행 수가 달랐다 — getUsableCategories로 같은 필터를
+                공유한다. */}
+            <span className="card-count-badge">{getUsableCategories(data.schedule_categories).length}</span>
+          </div>
+          <ScheduleCategoryManager
+            categories={data.schedule_categories}
+            onAdd={handleAddCategory}
+            onEdit={handleEditCategory}
+            onDelete={handleDeleteCategory}
+            disabled={saving}
+          />
+        </div>
+      )}
       {view === 'month' ? (
         <ScheduleMonthView
           monthCursor={monthCursor}
           today={today}
           selectedDate={selectedDate}
           schedules={data.schedules}
+          categories={data.schedule_categories}
           onSelect={setSelectedDate}
           onPrev={() => goToMonth(-1)}
           onNext={() => goToMonth(1)}
@@ -194,20 +240,48 @@ export default function Schedule() {
           today={today}
           selectedDate={selectedDate}
           schedules={data.schedules}
+          categories={data.schedule_categories}
           onSelect={setSelectedDate}
           onPrev={() => goToWeek(-1)}
           onNext={() => goToWeek(1)}
         />
       )}
+      {/* P12.17: 점 색이 이제 반복/일회성이 아니라 카테고리 색을 담는다 — 점 색=카테고리 부분만
+          사용자가 참고로 든 routine-planner의 캘린더 방식에서 가져왔고, 반복 표시용 테두리
+          링은 그 앱에는 없는 이 프로젝트만의 추가 결정이다(routine-planner는 반복 여부를 점과
+          별개로 표시하지 않음 — critical-reviewer 지적, 출처 오기 정정: scheduleGrid.js/
+          index.css/work-widget-requirements.md는 이미 정정, 여기 남아있던 것도 정정).
+          색 하나하나의 이름(카테고리 이름)까지 여기 다 나열하면 카테고리가 많을 때 줄이 너무
+          길어지므로, 이름은 아래 '카테고리 관리' 패널에서 확인하도록 하고 여기는 "점=카테고리,
+          테두리=반복, 빈 점=미분류"라는 규칙만 짧게 안내한다. */}
+      <p className="schedule-dot-legend">
+        <span className="schedule-dot-legend-item">
+          <span className="schedule-day-dot is-blue" /> 점 색 = 카테고리(아래 카테고리 관리 참고)
+        </span>
+        <span className="schedule-dot-legend-item">
+          <span className="schedule-day-dot is-blue is-recurring-ring" /> 테두리 = 반복 일정
+        </span>
+        {/* critical-reviewer 지적(2차 재검증, Medium): 빈 점(미분류)의 의미가 범례 어디에도
+            없어서 반복 테두리와 헷갈릴 수 있었다 — 항목을 추가한다. */}
+        <span className="schedule-dot-legend-item">
+          <span className="schedule-day-dot is-none" /> 빈 점 = 미분류
+        </span>
+      </p>
       <div className="card">
         <div className="card-header">
           <h2 className="card-title">새 일정 추가</h2>
         </div>
-        <ScheduleAddForm defaultDate={selectedDate} onAdd={handleAddSchedule} disabled={saving} />
+        <ScheduleAddForm
+          defaultDate={selectedDate}
+          onAdd={handleAddSchedule}
+          categories={data.schedule_categories}
+          disabled={saving}
+        />
       </div>
       <ScheduleDateDetail
         date={selectedDate}
         schedules={data.schedules}
+        categories={data.schedule_categories}
         onEdit={handleEditSchedule}
         onDelete={handleDeleteSchedule}
         disabled={saving}

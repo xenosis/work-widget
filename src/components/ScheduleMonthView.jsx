@@ -1,6 +1,13 @@
 // Schedule.jsx(P5.2)에서 분리 — 월간 그리드 전용. eslint max-lines 여유 확보 목적도 있음
 // (ProjectDetail/ProjectEditForm 분리와 같은 이유).
-import { getMonthGrid, getSchedulesForDate, getHolidayInfo, getDayCellClassNames } from '../lib/scheduleGrid.js';
+import {
+  getMonthGrid,
+  getScheduleCellSummary,
+  getScheduleDotClassName,
+  getHolidayInfo,
+  getDayCellClassNames,
+  buildScheduleCellTooltip,
+} from '../lib/scheduleGrid.js';
 
 const WEEKDAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
 // P12.6: 헤더는 요일 라벨이 고정 배열이라 날짜 계산 없이도 순서로 토/일을 알 수 있다 — 셀은
@@ -23,7 +30,16 @@ function MonthNav({ year, month, onPrev, onNext }) {
   );
 }
 
-export default function ScheduleMonthView({ monthCursor, today, selectedDate, schedules, onSelect, onPrev, onNext }) {
+export default function ScheduleMonthView({
+  monthCursor,
+  today,
+  selectedDate,
+  schedules,
+  categories,
+  onSelect,
+  onPrev,
+  onNext,
+}) {
   const weeks = getMonthGrid(monthCursor.year, monthCursor.month);
   return (
     <div className="card">
@@ -43,19 +59,35 @@ export default function ScheduleMonthView({ monthCursor, today, selectedDate, sc
             <tr key={week[0].date}>
               {week.map((cell) => {
                 const dayNumber = Number(cell.date.slice(-2));
-                const hasSchedule = getSchedulesForDate(schedules, cell.date).length > 0;
+                const summary = getScheduleCellSummary(schedules, cell.date, categories);
                 const holiday = getHolidayInfo(cell.date);
                 const classNames = getDayCellClassNames(cell, { today, selectedDate });
+                const tooltip = buildScheduleCellTooltip(holiday?.name, summary.titles);
+                // critical-reviewer 지적(P12.9 재검증, High): title은 마우스 호버에서만 보이고
+                // 키보드/스크린리더로는 안 드러난다. 게다가 새로 넣은 "+N" 텍스트가 버튼의
+                // 접근 가능한 이름에 그대로 섞여 "26+1"처럼 읽히는 회귀가 생겼다 — 점/overflow
+                // 영역은 aria-hidden으로 이름 계산에서 빼고, 일정 개수를 aria-label로 명시한다.
+                const ariaLabel = `${dayNumber}일${summary.count > 0 ? `, 일정 ${summary.count}개` : ''}`;
                 return (
                   <td key={cell.date}>
                     <button
                       type="button"
                       className={classNames}
-                      title={holiday ? holiday.name : undefined}
+                      title={tooltip}
+                      aria-label={ariaLabel}
                       onClick={() => onSelect(cell.date)}
                     >
-                      <span className="schedule-day-number">{dayNumber}</span>
-                      <span className={hasSchedule ? 'schedule-day-dot has-schedule' : 'schedule-day-dot'} />
+                      <span className="schedule-day-number" aria-hidden="true">
+                        {dayNumber}
+                      </span>
+                      <span className="schedule-day-dots" aria-hidden="true">
+                        {summary.dots.map((dot, i) => (
+                          <span key={i} className={getScheduleDotClassName(dot)} />
+                        ))}
+                        {summary.overflowCount > 0 && (
+                          <span className="schedule-day-overflow">+{summary.overflowCount}</span>
+                        )}
+                      </span>
                     </button>
                   </td>
                 );
