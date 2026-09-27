@@ -40,6 +40,7 @@ export default function ScheduleWeekView({
   selectedDate,
   schedules,
   categories,
+  backlogItems = [],
   onSelect,
   onPrev,
   onNext,
@@ -51,7 +52,7 @@ export default function ScheduleWeekView({
       <div className="schedule-week-row">
         {weekDates.map((date) => {
           const dayNumber = Number(date.slice(-2));
-          const summary = getScheduleCellSummary(schedules, date, categories);
+          const summary = getScheduleCellSummary(schedules, date, categories, 3, backlogItems);
           const weekdayKind = getWeekdayKind(date);
           const holiday = getHolidayInfo(date);
           const tooltip = buildScheduleCellTooltip(holiday?.name, summary.titles);

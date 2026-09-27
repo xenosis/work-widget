@@ -11,6 +11,7 @@ import ScheduleWeekView from '../components/ScheduleWeekView.jsx';
 import ScheduleDateDetail from '../components/ScheduleDateDetail.jsx';
 import ScheduleRangeList from '../components/ScheduleRangeList.jsx';
 import ScheduleAddForm from '../components/ScheduleAddForm.jsx';
+import ScheduleBacklogSection from '../components/ScheduleBacklogSection.jsx';
 import { createSchedule } from '../lib/scheduleFactory.js';
 import { applyScheduleUpdate, removeSchedule } from '../lib/scheduleMutations.js';
 
@@ -21,6 +22,9 @@ export default function Schedule() {
   // P21(B2.4 참고, P16 번복): "새 일정 추가" 폼이 공간을 너무 차지한다는 재요청 — 다른
   // 화면들의 "항상 보이는 입력창" 원칙을 이 화면만 깨는 트레이드오프를 감수해 접이식으로.
   const [showAddForm, setShowAddForm] = useState(false);
+  // P28: 등록된 backlog_sources 중 due_date 있는 task를 캘린더에 얹기 위한 집계 결과(읽기
+  // 전용 — ScheduleBacklogSection.jsx가 실제로 각 소스를 읽어 채운다).
+  const [backlogDueItems, setBacklogDueItems] = useState([]);
   const [monthCursor, setMonthCursor] = useState(() => {
     const [y, m] = today.split('-').map(Number);
     return { year: y, month: m - 1 };
@@ -99,13 +103,9 @@ export default function Schedule() {
     setWeekAnchor(reset.weekAnchor);
   }
 
-  // critical-reviewer 지적(P5.2 리뷰): 월/주를 이동해도 selectedDate가 그대로 남으면 상세
-  // 카드가 지금 보이는 그리드에 없는 날짜를 가리키는 상태가 된다 — 이동한 월/주가 오늘을
-  // 포함하면 오늘로, 아니면 그 월의 1일/그 주의 첫날로 selectedDate를 맞춘다. (P5.7 리뷰
-  // 지적: 여기서 참조하는 today는 이 렌더 시작 시점 값이라, 자정을 넘긴 직후 재렌더가 오기
-  // 전에 사용자가 이 버튼을 누르면 어제 기준으로 계산된다 — 곧이어 오는 재렌더가 knownToday
-  // 리셋으로 그 결과를 오늘 기준으로 다시 덮어써서 첫 클릭이 무시된 것처럼 보일 수 있다.
-  // 하루 한 번, 자정 직후 아주 짧은 창에서만 가능한 드문 경우라 알려진 동작으로 남긴다.)
+  // critical-reviewer 지적(P5.2): 월/주 이동 후 selectedDate가 그대로면 상세 카드가 지금
+  // 그리드에 없는 날짜를 가리킬 수 있다 — 이동한 월/주가 오늘을 포함하면 오늘로, 아니면
+  // 그 달 1일/그 주 첫날로 맞춘다(자정 직후 극히 짧은 창의 알려진 예외는 P5.7 참고, 그대로 둠).
   function goToMonth(delta) {
     const next = shiftMonth(monthCursor, delta);
     setMonthCursor(next);
@@ -185,9 +185,9 @@ export default function Schedule() {
   return (
     <>
       <h1>일정</h1>
-      {/* 사용자 피드백(2026-09-27): "새 일정 추가" 버튼이 화면 맨 아래에 있어 일정이 많으면
-          스크롤해야 보였다 — 월간/주간 탭 줄 우측 여유 공간에 넣고, 펼쳐지는 폼도 달력 위로
-          옮겨 스크롤 없이 바로 보이게 한다. */}
+      <ScheduleBacklogSection sources={data.backlog_sources} onItemsChange={setBacklogDueItems} />
+      {/* 사용자 피드백(2026-09-27): 버튼이 맨 아래에 있어 일정 많으면 스크롤해야 보임 — 탭
+          줄 우측으로, 펼쳐지는 폼도 달력 위로. */}
       <div className="schedule-tabs-row">
         <div className="schedule-tabs" role="tablist">
           <button
@@ -240,6 +240,7 @@ export default function Schedule() {
           selectedDate={selectedDate}
           schedules={data.schedules}
           categories={data.schedule_categories}
+          backlogItems={backlogDueItems}
           onSelect={setSelectedDate}
           onPrev={() => goToMonth(-1)}
           onNext={() => goToMonth(1)}
@@ -251,25 +252,22 @@ export default function Schedule() {
           selectedDate={selectedDate}
           schedules={data.schedules}
           categories={data.schedule_categories}
+          backlogItems={backlogDueItems}
           onSelect={setSelectedDate}
           onPrev={() => goToWeek(-1)}
           onNext={() => goToWeek(1)}
         />
       )}
-      {/* P12.17: 점 색이 이제 반복/일회성이 아니라 카테고리 색을 담는다 — 점 색=카테고리 부분만
-          사용자가 참고로 든 routine-planner의 캘린더 방식에서 가져왔고, 반복 표시용 테두리
-          링은 그 앱에는 없는 이 프로젝트만의 추가 결정이다(routine-planner는 반복 여부를 점과
-          별개로 표시하지 않음 — critical-reviewer 지적, 출처 오기 정정: scheduleGrid.js/
-          index.css/work-widget-requirements.md는 이미 정정, 여기 남아있던 것도 정정).
-          색 하나하나의 이름(카테고리 이름)까지 여기 다 나열하면 카테고리가 많을 때 줄이 너무
-          길어지므로, 이름은 '설정' 탭(P15로 이동)에서 확인하도록 하고 여기는 "점=카테고리,
-          테두리=반복, 빈 점=미분류"라는 규칙만 짧게 안내한다. */}
+      {/* P12.17: 점 색=카테고리(설정 탭에 이름), 테두리=반복 일정. P28: 백로그 유래 점 스타일도 추가. */}
       <p className="schedule-dot-legend">
         <span className="schedule-dot-legend-item">
           <span className="schedule-day-dot is-blue" /> 점 색 = 카테고리(설정 탭 참고)
         </span>
         <span className="schedule-dot-legend-item">
           <span className="schedule-day-dot is-blue is-recurring-ring" /> 테두리 = 반복 일정
+        </span>
+        <span className="schedule-dot-legend-item">
+          <span className="schedule-day-dot is-backlog" /> 백로그 목표일(읽기 전용)
         </span>
         {/* critical-reviewer 지적(2차 재검증, Medium): 빈 점(미분류)의 의미가 범례 어디에도
             없어서 반복 테두리와 헷갈릴 수 있었다 — 항목을 추가한다. */}
@@ -282,6 +280,7 @@ export default function Schedule() {
         date={selectedDate}
         schedules={data.schedules}
         categories={data.schedule_categories}
+        backlogItems={backlogDueItems}
         onEdit={handleEditSchedule}
         onDelete={handleDeleteSchedule}
         disabled={saving}

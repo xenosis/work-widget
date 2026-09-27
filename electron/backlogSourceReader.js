@@ -21,6 +21,19 @@ function extractTaskArray(parsed) {
   return null;
 }
 
+// P28: 목표일(due_date, P27에서 이 프로젝트 자신의 backlog CLI 스키마에 추가됨)도 있으면 함께
+// 읽는다 — 다른 필드(title/status/owner)와 같은 "관대한 파싱" 원칙: 없거나 형식이 이상해도
+// 오류 없이 그냥 null로 둔다(이 값이 있는 task만 일정 탭 캘린더에 얹힌다, B3.5 읽기 전용 원칙
+// 그대로 — 이 값을 쓰는 쪽도 없다). scripts/backlog/lib/schema.js의 isValidDueDate와 같은
+// 로직이지만, 그 파일은 CJS/scripts 전역이라 이 electron 모듈이 직접 재사용하지 않는다
+// (eslint.config.js의 src/electron/scripts 영역 분리 원칙과 같은 이유).
+function isPlausibleDueDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [y, m, d] = value.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
+}
+
 function normalizeExternalTask(raw) {
   if (!raw || typeof raw !== 'object') return null;
   if (typeof raw.id !== 'string' || !raw.id) return null;
@@ -29,6 +42,7 @@ function normalizeExternalTask(raw) {
     title: typeof raw.title === 'string' && raw.title.trim() ? raw.title.trim() : '(제목 없음)',
     status: typeof raw.status === 'string' && raw.status.trim() ? raw.status.trim() : '(상태 없음)',
     owner: typeof raw.owner === 'string' && raw.owner.trim() ? raw.owner.trim() : null,
+    due_date: isPlausibleDueDate(raw.due_date) ? raw.due_date : null,
   };
 }
 

@@ -30,8 +30,8 @@ describe('getScheduleCellSummary', () => {
     const summary = getScheduleCellSummary(schedules, '2026-09-26', CATEGORIES);
     expect(summary.count).toBe(2);
     expect(summary.dots).toEqual([
-      { color: 'blue', isRecurring: true },
-      { color: null, isRecurring: false },
+      { color: 'blue', isRecurring: true, isBacklog: false },
+      { color: null, isRecurring: false, isBacklog: false },
     ]);
     expect(summary.overflowCount).toBe(0);
     expect(summary.titles).toEqual(['주간 회의', '병원 예약']);
@@ -70,7 +70,7 @@ describe('getScheduleCellSummary', () => {
   it('is_recurring이 boolean이 아니면(문자열 "true" 등) isRecurring:false로 분류한다', () => {
     const schedules = [{ id: 's1', date: '2026-09-26', is_recurring: 'true', title: '일정' }];
     expect(getScheduleCellSummary(schedules, '2026-09-26', CATEGORIES).dots).toEqual([
-      { color: null, isRecurring: false },
+      { color: null, isRecurring: false, isBacklog: false },
     ]);
   });
 
@@ -80,8 +80,8 @@ describe('getScheduleCellSummary', () => {
       { id: 's2', date: '2026-09-20', is_recurring: true, recurrence_days: ['토'], title: '반복' },
     ];
     expect(getScheduleCellSummary(schedules, '2026-09-26', CATEGORIES).dots).toEqual([
-      { color: null, isRecurring: false },
-      { color: null, isRecurring: true },
+      { color: null, isRecurring: false, isBacklog: false },
+      { color: null, isRecurring: true, isBacklog: false },
     ]);
   });
 
@@ -93,7 +93,7 @@ describe('getScheduleCellSummary', () => {
   it('category_id가 존재하지 않는 카테고리를 가리키면(고아 참조) color가 null이다', () => {
     const schedules = [{ id: 's1', date: '2026-09-26', is_recurring: false, title: '일정', category_id: '없는-id' }];
     expect(getScheduleCellSummary(schedules, '2026-09-26', CATEGORIES).dots).toEqual([
-      { color: null, isRecurring: false },
+      { color: null, isRecurring: false, isBacklog: false },
     ]);
   });
 });

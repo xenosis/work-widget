@@ -165,6 +165,26 @@ export function getScheduleRangeDates(view, monthCursor, weekAnchor) {
     .map((cell) => cell.date);
 }
 
+// P28: 등록된 외부 backlog(.json) task(electron/backlogSourceReader.js가 만든 {id, title,
+// status, owner, due_date} 형태) 중 due_date가 유효한 것만 걸러 캘린더가 쓸 수 있는 최소
+// 형태로 만든다. sourceLabel을 함께 담아 두는 이유는, 여러 소스가 등록돼 있으면 날짜 상세
+// 카드에서 "어느 프로젝트의 task인지" 구분해 보여줘야 하기 때문이다(done_when).
+// critical-reviewer 지적(Medium): sourceId 없이 task.id만으로는, 서로 다른 두 소스가 같은
+// id를 쓰거나(예: 둘 다 이 프로젝트와 같은 "P1" 관례를 씀) 관대한 파싱상 한 소스 안에서도
+// id 중복이 있을 수 있어(B3.5 — 이 프로젝트가 형식을 통제 못 함) React key 충돌로 행이
+// 사라지거나 재사용될 위험이 있었다 — sourceId를 함께 담아 호출부가 고유 key를 만들 수 있게 한다.
+export function filterTasksWithDueDate(tasks, sourceId, sourceLabel) {
+  return tasks
+    .filter((t) => typeof t.due_date === 'string' && DATE_STRING_RE.test(t.due_date))
+    .map((t) => ({ id: t.id, title: t.title, status: t.status, due_date: t.due_date, sourceId, sourceLabel }));
+}
+
+// getSchedulesForDate와 같은 계약(전체 목록 + 날짜 문자열을 받아 그 날짜 것만 거름) —
+// filterTasksWithDueDate가 만든 평평한 목록에서 날짜별로 다시 좁힐 때 쓴다.
+export function getBacklogDueItemsForDate(items, dateString) {
+  return items.filter((i) => i.due_date === dateString);
+}
+
 // P12.9: 월간/주간 셀이 "일정이 있다/없다" boolean 점 하나만 보여줘서 반복/일회성 구분도,
 // 몇 개인지도, 무슨 일정인지도 클릭해야만 알 수 있었다(P5.2 당시 420px 폭 제약으로 의도된
 // 단순화) — 클릭 없이도 개수·유형을 구분할 수 있게, 셀 하나가 표시할 점 목록과 툴팁용 제목
@@ -181,19 +201,29 @@ export function getScheduleRangeDates(view, monthCursor, weekAnchor) {
 // maxDots를 넘는 일정은 배열 삽입 순서 기준 앞 maxDots개만 점으로 그려지고 나머지는 "+N"으로
 // 뭉친다 — 그 뭉쳐진 일정의 카테고리 색은 셀에는 안 나타나고 날짜를 선택해야 상세 카드에서
 // 볼 수 있다(P12.9의 overflow 정책을 그대로 승계, 별도 재배열/우선순위 로직 없음).
-export function getScheduleCellSummary(schedules, dateString, categories, maxDots = 3) {
+// P28: 등록된 backlog_sources 중 due_date가 있는 외부 task도 이 셀 요약에 함께 얹는다(사람
+// 결정: 별도 토글 없이 기존 캘린더에 그대로 섞어 표시, 시각적으로만 구분). backlogItems는
+// getBacklogDueItemsForDate가 이미 그 날짜로 걸러 넘겨준다는 계약이 아니라(이 함수가 호출부
+// 편의상 전체 목록을 받아 직접 필터링한다 — getSchedulesForDate와 같은 계약으로 통일), 이
+// 함수 하나만 보고도 "이 날짜에 뭐가 뜨는지" 전부 알 수 있게 한다. 반복/일회성처럼 색 채널을
+// 공유하지 않고 항상 고정된 표시(getScheduleDotClassName의 is-backlog)를 쓴다 — 백로그
+// task는 이 프로젝트가 카테고리 개념을 부여할 수 없는 외부 데이터라서다.
+export function getScheduleCellSummary(schedules, dateString, categories, maxDots = 3, backlogItems = []) {
   const matched = getSchedulesForDate(schedules, dateString);
-  const dots = matched.slice(0, maxDots).map((s) => ({
-    color: resolveCategoryColor(s.category_id, categories),
-    isRecurring: isScheduleRecurring(s),
-  }));
-  const titles = matched.map((s) =>
-    typeof s.title === 'string' && s.title.trim() ? s.title.trim() : '(제목 없음)'
-  );
+  const matchedBacklog = getBacklogDueItemsForDate(backlogItems, dateString);
+  const allDots = [
+    ...matched.map((s) => ({ color: resolveCategoryColor(s.category_id, categories), isRecurring: isScheduleRecurring(s), isBacklog: false })),
+    ...matchedBacklog.map(() => ({ color: null, isRecurring: false, isBacklog: true })),
+  ];
+  const dots = allDots.slice(0, maxDots);
+  const titles = [
+    ...matched.map((s) => (typeof s.title === 'string' && s.title.trim() ? s.title.trim() : '(제목 없음)')),
+    ...matchedBacklog.map((b) => `[백로그] ${b.title}`),
+  ];
   return {
-    count: matched.length,
+    count: matched.length + matchedBacklog.length,
     dots,
-    overflowCount: Math.max(0, matched.length - dots.length),
+    overflowCount: Math.max(0, allDots.length - dots.length),
     titles,
   };
 }
@@ -202,6 +232,9 @@ export function getScheduleCellSummary(schedules, dateString, categories, maxDot
 // 문자열로 바꾸는 로직 — ScheduleMonthView.jsx/ScheduleWeekView.jsx 두 곳이 각자 조립하면
 // 한쪽만 고쳤을 때 갈라질 위험이 있어(getDayCellClassNames와 같은 이유) 한 곳으로 모은다.
 export function getScheduleDotClassName(dot) {
+  // P28: 백로그 유래 항목은 카테고리 색 채널을 아예 안 쓰고(이 프로젝트가 부여할 수 없는
+  // 외부 데이터) 항상 고정된 표시 하나만 쓴다 — color/isRecurring과 무관하게 최우선으로 분기.
+  if (dot.isBacklog) return 'schedule-day-dot is-backlog';
   const base = dot.color ? `schedule-day-dot is-${dot.color}` : 'schedule-day-dot is-none';
   return dot.isRecurring ? `${base} is-recurring-ring` : base;
 }

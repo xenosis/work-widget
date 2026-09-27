@@ -1070,6 +1070,58 @@ Windows 위젯형 도구를 만든다.
   `ProjectDetail.jsx`, `BacklogSourceCard.jsx`, `Memos.jsx`)에 `title` 속성(마우스 오버 시
   전체 문구)을 추가해 잘려도 전체 내용을 확인할 수 있게 했다. lint/vitest(331개)/build
   재통과.
+- (2026-09-27 결정, P28, P27 의존) 사용자가 "백로그 기반으로 프로젝트 개발 일정을 관리하고
+  싶다"는 아이디어를 냈고, 논의 끝에 범위를 좁혔다 — P27에서 backlog task에 추가된 선택적
+  due_date가 있는 task만, 일정 탭 캘린더에 읽기 전용으로 함께 표시한다(사람 결정: 별도
+  토글/필터 없이 기존 캘린더에 그대로 섞어 표시, 시각적으로만 구분 — "얼마나 많아질지" 걱정에
+  대해서는 캘린더가 이미 하루에 일정이 많아도 점/개수로 압축 표시하는 구조라 항목이 늘어도
+  버틴다고 판단, 실제로 너무 빽빽해지면 그때 필터링을 추가하기로 함). B3.5의 읽기 전용 원칙을
+  그대로 유지한다 — TaskDock 화면에서 이 항목을 수정/삭제/체크할 수 없고, 상태 변경은 오직
+  원본 backlog(.json)을 다시 읽어야만 반영된다.
+
+  구현: electron/backlogSourceReader.js의 normalizeExternalTask가 due_date도 관대하게
+  파싱(있고 유효한 YYYY-MM-DD면 읽고, 없거나 형식이 이상해도 오류 없이 null)한다.
+  scheduleGrid.js에 filterTasksWithDueDate(tasks, sourceId, sourceLabel)(유효한 due_date만
+  남기고 소스 식별자/이름을 붙임)와 getBacklogDueItemsForDate(items, dateString)(날짜별로
+  좁힘) 추가. getScheduleCellSummary가 5번째 인자(backlogItems, 기본값 []라 기존 호출부는
+  그대로 동작)로 이 항목들을 받아 기존 일정 점과 합쳐 count/dots/overflowCount/titles를
+  계산하고, getScheduleDotClassName은 isBacklog 플래그가 있으면 카테고리 색/반복 여부와
+  무관하게 항상 고정된 점 모양(각진 정사각형, .is-backlog, 무채색)을 쓴다 — 이 프로젝트가
+  카테고리를 부여할 수 없는 외부 데이터라서 색 채널을 아예 안 쓰고, 색맹 사용자도 모양+명도로
+  구분 가능하게 했다.
+
+  등록된 소스마다 실제로 파일을 읽는 일은 새 컴포넌트 쌍이 맡는다 — ScheduleBacklogSourceSync.jsx
+  (소스 하나, useBacklogSourceRead 재사용, 화면엔 아무것도 안 그림)를
+  ScheduleBacklogSection.jsx(소스 배열을 이 컴포넌트 목록으로 펼치고 Backlog.jsx의
+  changesBySource와 같은 패턴으로 결과를 하나의 평평한 배열로 모음)가 감싸, Schedule.jsx는
+  그 결과(backlogDueItems state)만 받아 ScheduleMonthView/ScheduleWeekView/
+  ScheduleDateDetail에 그대로 내려준다. ScheduleDateDetail.jsx는 백로그 항목을 위한
+  전용 읽기 전용 행(BacklogDueItemRow — 제목 + 소스 이름 배지 + 상태만, 수정/삭제 버튼 없음)을
+  기존 목록 끝에 이어 붙인다(빈 상태 판정도 "네이티브 일정 + 백로그 항목 둘 다 없을 때"로
+  수정). ScheduleRangeList.jsx(P23, "이번 달 전체 일정" 목록)에는 통합하지 않았다 — done_when이
+  요구하지 않았고, 범위를 캘린더/날짜 상세 두 곳으로 좁히는 편이 과설계를 피한다고 판단했다.
+
+  lint/vitest(380개: backlogSourceReader 3건, scheduleGrid/scheduleCellSummary 기존 케이스에
+  isBacklog:false 반영, scheduleBacklogDue.test.js 7건 신규)/build 통과. Playwright로 실제
+  due_date(오늘 날짜) 있는 외부 task 1건 + 없는 것 1건 + 형식이 잘못된 것 1건을 등록한
+  시나리오를 만들어, 오늘 셀에 백로그 점이 뜨고, 날짜 상세에서 네이티브 일정과 나란히 읽기
+  전용으로 보이며(수정 버튼이 네이티브 일정 1개분만 있음을 확인), 형식이 잘못되거나 날짜가
+  없는 task는 아예 안 보임을 확인했다.
+
+  **critical-reviewer 리뷰에서 잡힌 문제와 반영**: [High] 1건 — `.is-backlog`에 처음 준
+  `border-radius: 2px`는 4x4px 요소(반지름이 한 변의 절반)에서는 그냥 원이 돼서, "모양으로
+  구분된다"는 done_when 조건이 실제로는 전혀 충족되지 않았었다(카테고리 점과 똑같이 둥글고,
+  색만 --accent라 파란 카테고리와 색상 hue도 가까워 4px 크기에서 거의 안 보임) — 1px로 낮춰
+  실제 각진 사각형이 되게 하고, 색도 무채색(--text)으로 바꿔 모양+명도 둘 다로 구분되게
+  했다. Playwright로 `getComputedStyle`을 직접 찍어 실제 렌더링된 `border-radius`/색을
+  재확인. [Medium] 3건 — (1) 서로 다른 소스가 같은 id를 쓰거나(B3.5, 형식 통제 불가) 한
+  소스 안에서도 id가 중복될 수 있는데 `filterTasksWithDueDate`가 소스 식별자 없이 `id`만
+  담아 React key 충돌 위험이 있었다 — `sourceId`를 추가하고 `ScheduleDateDetail.jsx`의 key를
+  `${sourceId}:${id}:${index}`로 강화, 실제로 두 소스가 같은 id("P1")를 쓰는 시나리오를
+  Playwright로 재현해 두 항목이 모두 보이고 React key 콘솔 경고가 없음을 확인. (2) done_when이
+  요구하는 자동 검증(lint/vitest/build)에 비해 `gate`가 비어 있던 것을 표시용 검증 명령으로
+  채움. (3) `filterTasksWithDueDate` 자체의 방어 로직(형식이 잘못된 문자열)을 검증하는 테스트가
+  없어 회귀 테스트 추가. lint/vitest(381개)/build 재통과.
 
 ---
 

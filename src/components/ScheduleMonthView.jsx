@@ -37,6 +37,7 @@ export default function ScheduleMonthView({
   selectedDate,
   schedules,
   categories,
+  backlogItems = [],
   onSelect,
   onPrev,
   onNext,
@@ -60,7 +61,7 @@ export default function ScheduleMonthView({
             <tr key={week[0].date}>
               {week.map((cell) => {
                 const dayNumber = Number(cell.date.slice(-2));
-                const summary = getScheduleCellSummary(schedules, cell.date, categories);
+                const summary = getScheduleCellSummary(schedules, cell.date, categories, 3, backlogItems);
                 const holiday = getHolidayInfo(cell.date);
                 const classNames = getDayCellClassNames(cell, { today, selectedDate });
                 const tooltip = buildScheduleCellTooltip(holiday?.name, summary.titles);

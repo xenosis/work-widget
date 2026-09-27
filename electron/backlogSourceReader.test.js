@@ -8,7 +8,7 @@ describe('parseBacklogSourceTasks', () => {
   it('최상위가 배열이면 그대로 task 목록으로 본다', () => {
     const json = JSON.stringify([{ id: 't1', title: '할일', status: 'todo' }]);
     expect(parseBacklogSourceTasks(json)).toEqual({
-      tasks: [{ id: 't1', title: '할일', status: 'todo', owner: null }],
+      tasks: [{ id: 't1', title: '할일', status: 'todo', owner: null, due_date: null }],
       recognized: true,
       skippedCount: 0,
     });
@@ -68,6 +68,30 @@ describe('parseBacklogSourceTasks', () => {
     const json = '﻿' + JSON.stringify([{ id: 't1', title: 'BOM 테스트' }]);
     const result = parseBacklogSourceTasks(json);
     expect(result.tasks[0]).toMatchObject({ id: 't1', title: 'BOM 테스트' });
+  });
+
+  // P28: due_date(P27에서 backlog CLI 스키마에 추가됨)도 있으면 함께 읽는다 — 다른 필드와
+  // 같은 관대한 파싱(없거나 이상해도 에러 없이 null).
+  describe('due_date(P28)', () => {
+    it('올바른 YYYY-MM-DD 문자열은 그대로 읽는다', () => {
+      const json = JSON.stringify([{ id: 't1', due_date: '2026-10-05' }]);
+      expect(parseBacklogSourceTasks(json).tasks[0].due_date).toBe('2026-10-05');
+    });
+
+    it('없으면 null이다', () => {
+      const json = JSON.stringify([{ id: 't1' }]);
+      expect(parseBacklogSourceTasks(json).tasks[0].due_date).toBeNull();
+    });
+
+    it('형식이 잘못되거나 존재하지 않는 날짜면 오류 없이 null로 무시한다', () => {
+      const json = JSON.stringify([
+        { id: 't1', due_date: '2026/10/05' },
+        { id: 't2', due_date: '2026-13-01' },
+        { id: 't3', due_date: 20261005 },
+      ]);
+      const tasks = parseBacklogSourceTasks(json).tasks;
+      expect(tasks.every((t) => t.due_date === null)).toBe(true);
+    });
   });
 });
 
