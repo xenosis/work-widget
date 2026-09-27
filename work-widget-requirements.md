@@ -1535,8 +1535,47 @@ Windows 위젯형 도구를 만든다.
   일치함을 확인했다.
 
 ### B5.2 프로그램 종료
-- 별도의 종료 메뉴/버튼 없음
 - Windows 시스템 종료 또는 로그아웃 시 자동으로 함께 종료됨
+- (2026-09-27 결정, P29, 이전 결정 번복) 원래는 "별도의 종료 메뉴/버튼 없음"이 확정 방향이었으나,
+  패키지를 자주 재빌드/재실행하는 실사용 과정에서 프로세스를 끄려면 매번 작업 관리자를 직접
+  열어야 하는 게 번거롭다는 사용자 요청으로 트레이 우클릭 메뉴에 "완전히 종료" 항목을
+  추가했다(`electron/trayMenu.js`). `app.quit()`을 부르면 `main.js`의 `before-quit` 리스너가
+  `app.isQuitting = true`를 먼저 설정해 `mainWindow`의 `close` 핸들러(B5.1의 hide-to-tray
+  분기)가 자연스럽게 우회되므로, 종료 경로에 별도 플래그 조작이 필요 없다. 같은 메뉴에
+  "Windows 시작 시 자동 실행" 체크박스도 추가해(B5.4의 `openAtLogin` 설정을 트레이에서 바로
+  켜고 끌 수 있음) 시작 프로그램 등록도 작업 관리자/Windows 설정 없이 바로 제어할 수 있게
+  했다. Playwright로 실제 Electron 프로세스를 띄워 (1) 메뉴 구조(항목 3개+구분선 2개, 체크박스
+  타입/현재 `getLoginItemSettings().openAtLogin` 반영), (2) "열기/숨기기" 클릭 시 실제 창
+  표시 상태 전환, (3) "완전히 종료" 클릭 시 프로세스가 숨는 게 아니라 실제로 종료(exit
+  code 0)됨을 확인했다 — 자동 실행 체크박스 자체는 클릭 시 실제 Windows 레지스트리 시작
+  프로그램 항목을 바꾸는 부수효과가 있어 자동 검증에서는 직접 클릭하지 않고 구조/상태
+  반영만 확인했다(전자정보 없이 자동으로 `setLoginItemSettings`를 실행하는 위험을 피함).
+  `buildTrayMenu`가 실제 Electron `app`/`Menu`(CJS `require('electron')`)에 의존해, 이 프로젝트의
+  vitest 환경(plain Node, `electron` require가 실행파일 경로 문자열만 내보냄)에서는 `vi.mock`으로도
+  안정적으로 목(mock) 대체가 안 됨을 확인했다(CJS require와 ESM import가 서로 다른 모듈
+  인스턴스로 갈라지는 문제, `fieldMutations.test.js`의 `BacklogError` instanceof 문제와 같은
+  종류).
+
+  **critical-reviewer 리뷰에서 잡힌 문제와 반영**: [High] 1건 — 자동 실행 체크박스에
+  `configureAutoLaunch`(P7.2)와 같은 `app.isPackaged` 가드가 없어서, 개발 모드(`npm run dev`)
+  에서 누르면 개발용 electron.exe 자체가(앱 경로 인자 없이) 실제 Windows 시작 프로그램에
+  등록되는 부작용이 있었다 — P7.2가 정확히 이 부작용을 막으려던 것과 같은 이유로, 패키지
+  빌드가 아니면 이 항목을 비활성화(`enabled: app.isPackaged`)했다. 개발 모드로 실제 실행해
+  `enabled: false`가 되는 것을 확인했다. [Medium] 4건 — (1) `createTray()`가
+  `configureAutoLaunch()`보다 먼저 실행돼, 최초 실행 시 트레이 메뉴가 "자동 실행 미등록"
+  상태로 만들어진 채 바로 다음 줄에서 실제로 등록되는 순서 문제가 있었다(체크박스가 그
+  세션 내내 실제와 어긋나 눌러도 반영이 안 됨) — 호출 순서를 바꿔 해결. (2) "electron
+  의존이라 vitest를 아예 안 둔다"는 원래 서술이 이 프로젝트의 실제 전례(`autoLaunch.test.js`
+  — electron 의존 부분만 떼어내고 순수 로직은 검증)와 달랐다 — 메뉴 템플릿 조립 로직
+  (`buildTrayMenuTemplate`, 어떤 라벨/타입/체크·활성화 상태를 갖고 클릭 시 어떤 콜백을
+  부르는지)을 electron을 전혀 안 쓰는 순수 함수로 분리해 vitest 7건을 추가했다(위 서술도
+  정정) — `app.quit()`/`setLoginItemSettings` 등 실제 Electron API를 부르는 얇은 층
+  (`buildTrayMenu`)만 electron 의존으로 남기고 그 부분만 검증 범위에서 뺐다. (3) `gate`가
+  비어 있어 done_when의 자동 검증 요구가 "미설정 검사" 상태였던 것을 표시용 검증 명령으로
+  채움. (4) `main.js`의 옛 주석 2곳이 P29로 뒤집힌 "종료 메뉴 없음" 결정을 그대로 사실처럼
+  적고 있어(P12.1 결정 문단, `before-quit` 리스너 위) 실제 구조에 맞게 정정. lint/vitest
+  (388개: trayMenu.test.js 7건 신규)/build 재통과, 개발 모드 실측으로 위 High 항목의
+  `enabled:false`를 재확인.
 
 ### B5.3 데이터 백업
 - 주기적인 자동 백업 필요
@@ -1654,3 +1693,4 @@ Windows 위젯형 도구를 만든다.
 - v3.44 (2026-09-27): P24(백로그 상태별 전체 목록: 이번 주 변경 항목 색상 구분 + 50개 cap 예외) done 처리 — 사용자 요청(상태 변경된 항목을 다른 글자색으로) + 사용자가 직접 발견한 50개 cap 문제(변경 항목이 cap 밖에 있으면 색칠해도 안 보임) 반영. backlogTaskGrouping.js에 selectGroupDisplayTasks 추가, BacklogSourceCard.jsx가 상태별 목록 렌더링에 적용, 상태 변경 행에 .is-changed(--priority-mid-text 재사용) + hover 툴팁. critical-reviewer 지적 반영: [High] Set 재필터링 방식이 외부 파일의 id 중복에서 cap 누수/hiddenCount 부풀림을 일으키던 것을 위치 기반 단일 순회로 수정. [Medium] 4건 — added를 cap 예외 대상에서 제외(P14.2 DOM 폭증 방지 취지 보존, done_when도 사용자의 실제 발화 의도에 맞게 정정), id 중복이 여러 상태 그룹에 걸친 경우의 불확정성을 기존 외부 데이터 한계로 문서화, 접근성용 title 툴팁 추가, cap이 실제로 걸리는 조건의 순서 유지 테스트 보강. lint/vitest(333개)/build 통과.
 - v3.45 (2026-09-27): P25(주간보고 자동 생성: codex CLI 연동 백엔드) done 처리 — B3.5의 P25 문단 참고. electron/weeklyReport.js(buildPrompt+generateWeeklyReport+registerWeeklyReportHandlers) 신설, dataStore.js에 backlog_sources[].weekly_report + 전역 weekly_report_example 스키마 추가, main.js/preload.js IPC 배선. critical-reviewer 지적 반영: [High] 2건 — Windows shell:true 타임아웃 시 cmd.exe만 죽고 codex 손자 프로세스는 안 죽던 것을 taskkill /t로 프로세스 트리 전체 종료하도록 수정, "인증 안 됨"이 구분 안 되던 것을 영문 키워드 매칭 기반 AUTH_ERROR 분류 추가로 해결. [Medium] 6건 — try/catch 누락으로 IPC reject 가능하던 것, task 배열 null 원소로 죽을 수 있던 것, stdin EPIPE 무방비, cmd.exe 메타문자 이스케이프 부족, where/실행 대상 불일치, 임시 파일명 충돌 가능성, stdout 파이프 미소비 — 전부 수정. 실제 codex exec 호출 2회로 종단 테스트(사람 사전 동의), NOT_INSTALLED/TIMEOUT 경로는 비용 없이 별도 확인. lint/vitest(350개)/build 통과. UI(P26)는 후속 task.
 - v3.46 (2026-09-27): P25 done 처리 이후 사용자가 직접 발견한 버그 수정 — 실제 패키지로 이 프로젝트 자신의 backlog(.json, 이번 주 신규 7건)를 생성해보니 결과가 한 문장으로 뭉뚱그려 압축됨을 발견, 원인은 buildPrompt의 문체 지시가 예시 문장의 길이/항목 수까지 따라 하라는 뜻으로 읽힌 것 — 문체(어투)와 분량(항목 수)을 분리해 명시하도록 프롬프트 수정, 실제 codex 재호출로 수정 전(한 문장 압축)/후(7개 항목 모두 개별 언급) 비교 확인. weeklyReport.test.js의 실제 프로세스 spawn 테스트 타임아웃도 20초로 늘려 flaky 방지. lint/vitest(353개)/build 통과.
+- v3.47 (2026-09-27): P29(트레이 메뉴에 완전 종료/자동 실행 토글 추가) done 처리 — 사용자 피드백(패키지 재빌드/재실행을 반복하다 보니 프로세스를 끄려면 매번 작업 관리자를 열어야 해서 번거로움) 반영, B5.2 "별도 종료 메뉴 없음" 결정을 사용자가 직접 번복. electron/trayMenu.js 신설(app.quit() 호출 — before-quit이 isQuitting을 먼저 세팅해 hide-to-tray 분기를 자연스럽게 우회, Windows 시작 시 자동 실행 체크박스는 getLoginItemSettings/setLoginItemSettings 반영). critical-reviewer 지적 반영: [High] 개발 모드에서 자동 실행 체크박스를 누르면 개발용 electron.exe가 실제 시작 프로그램에 등록되던 것을 app.isPackaged 가드로 차단(실제 개발 모드 실행으로 enabled:false 확인). [Medium] 4건 — createTray/configureAutoLaunch 호출 순서 버그 수정, 메뉴 템플릿 조립 로직을 electron 의존 없는 순수 함수(buildTrayMenuTemplate)로 분리해 vitest 7건 추가(원래 "vitest 아예 안 둠" 서술이 이 프로젝트의 실제 전례와 달랐던 것 정정), gate 필드 기록, 뒤집힌 결정을 그대로 적고 있던 옛 주석 2곳 정정. lint/vitest(388개)/build 통과.

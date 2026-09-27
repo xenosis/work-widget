@@ -5728,6 +5728,54 @@
       ],
       "due_date": null,
       "done_at": "2026-09-27"
+    },
+    {
+      "id": "P29",
+      "status": "done",
+      "priority": "P2",
+      "category": "feature",
+      "title": "트레이 메뉴에 완전 종료/자동 실행 토글 추가",
+      "summary": "사용자 피드백(2026-09-27): 패키지를 자주 재빌드/재실행하다 보니 실행 중인 프로세스를 끄려면 매번 작업 관리자를 직접 열어야 해서 번거롭다는 요청 — B5.2('별도 종료 메뉴 없음') 결정을 사용자가 직접 번복. 트레이 우클릭 메뉴에 '완전히 종료'와 'Windows 시작 시 자동 실행' 체크박스(B5.4의 openAtLogin을 트레이에서 바로 토글)를 추가한다.",
+      "where": "electron/trayMenu.js,electron/main.js,work-widget-requirements.md",
+      "parent": null,
+      "deps": [],
+      "doc": null,
+      "done_when": "트레이 우클릭 메뉴에 '완전히 종료' 항목이 있고, 클릭하면 트레이로 숨는 게 아니라 프로세스가 실제로 종료된다(app.quit()이 main.js의 before-quit을 거쳐 close 핸들러의 hide-to-tray 분기를 우회). 같은 메뉴에 'Windows 시작 시 자동 실행' 체크박스가 있고, 현재 app.getLoginItemSettings().openAtLogin 값을 반영하며 클릭하면 그 값이 실제로 바뀐다. electron require의 CJS/ESM 인터롭 문제로 이 모듈은 vi.mock 기반 vitest 유닛 테스트가 안정적으로 안 되는 것을 실측 확인했으므로(dataStore.js/autoLaunch.js와 같은 전례), 실제 Electron 프로세스를 Playwright로 띄워 메뉴 구조/열기·숨기기 토글/완전 종료 시 프로세스가 실제로 끝남(exit code)을 확인하는 것으로 대신한다(자동 실행 체크박스 자체는 실제 클릭으로 인한 레지스트리 부수효과를 피해 구조/현재 상태 반영만 확인). lint/vitest/build 통과.",
+      "due_date": null,
+      "est_min": null,
+      "gate": "npm run lint && npm test && npm run build",
+      "owner": "claude",
+      "claimed_at": null,
+      "updated_at": "2026-09-27T10:49:22.048Z",
+      "log": [
+        {
+          "at": "2026-09-27T10:39:30.664Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현+실측 검증 완료: electron/trayMenu.js 신설(완전 종료+자동실행 체크박스), main.js에 배선(3줄 추가, __mainProcessTestHooks에 buildTrayMenu 노출). Playwright로 실제 Electron 프로세스를 띄워 (1) 메뉴 구조(항목 3개+구분선 2개, 체크박스 타입/현재 상태 반영), (2) 열기/숨기기 클릭 시 실제 창 표시 상태 전환, (3) 완전히 종료 클릭 시 트레이로 숨는 게 아니라 프로세스가 실제로 종료(exit code 0)됨을 확인. 자동 실행 체크박스는 실제 클릭으로 인한 Windows 레지스트리 부수효과를 피해 구조/현재 상태 반영만 확인(직접 클릭 안 함). electron require의 CJS/ESM 인터롭 문제로 vi.mock 기반 vitest 유닛 테스트가 불안정함을 실측 확인(dataStore.js/autoLaunch.js와 같은 전례를 따라 vitest 없이 실제 런타임 검증으로 대신). work-widget-requirements.md(B5.2 결정 번복 문단 + 변경이력 v3.47) 갱신 완료. lint/vitest(381개, 변동없음)/build 통과. critical-reviewer+backlog-explainer 병렬 리뷰 착수."
+        },
+        {
+          "at": "2026-09-27T10:49:08.806Z",
+          "owner": null,
+          "status": "in_review",
+          "note": "critical-reviewer 지적대로 done_when의 자동 검증 요구(lint/test/build)가 gate 미설정 상태였던 것을 표시용 검증 명령으로 채움(직접 실행 안 함, 정책대로). Playwright 확인 부분은 이 프로젝트에 커밋된 e2e 스크립트가 없어(P7.1/P7.2 등 기존 electron 검증과 같은 방식) 일회성 수동 검증이라는 점을 그대로 남긴다.",
+          "field_edit": {
+            "before": {
+              "gate": null
+            },
+            "after": {
+              "gate": "npm run lint && npm test && npm run build"
+            }
+          }
+        },
+        {
+          "at": "2026-09-27T10:49:22.048Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer(High 1건+Medium 4건) 반영 후 완료: (1) 자동 실행 체크박스에 app.isPackaged 가드가 없어 개발 모드에서 누르면 개발용 electron.exe가 실제 Windows 시작 프로그램에 등록되던 부작용을 enabled:app.isPackaged로 차단(실제 개발 모드 실행으로 enabled:false 재확인). (2) createTray가 configureAutoLaunch보다 먼저 실행돼 최초 실행 시 체크박스가 실제 상태와 어긋나던 호출 순서 버그 수정. (3) 메뉴 템플릿 조립 로직을 electron 의존 없는 순수 함수(buildTrayMenuTemplate)로 분리해 vitest 7건 추가(원래 'vitest 아예 안 둠'이라던 서술이 이 프로젝트의 실제 전례(autoLaunch.test.js — electron 의존만 떼어내고 순수 로직은 검증)와 달랐던 것도 함께 정정). (4) gate 필드에 표시용 검증 명령 기록. (5) main.js의 옛 주석 2곳(P12.1 결정 문단, before-quit 리스너)이 P29로 뒤집힌 결정을 그대로 사실처럼 적고 있던 것 정정. work-widget-requirements.md(B5.2 결정 번복 문단 + 리뷰 반영 + 변경이력 v3.47) 갱신, docs/backlog/P29.md는 backlog-explainer가 이미 작성함(리뷰 반영 이전 초안 — 재생성 필요). lint/vitest(388개)/build(vite) 통과."
+        }
+      ],
+      "done_at": "2026-09-27"
     }
   ]
 }

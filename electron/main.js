@@ -6,6 +6,7 @@ const { getAutoLaunchFlagPath, hasRegisteredAutoLaunch, markAutoLaunchRegistered
 const { registerWindowControls, forwardMaximizeState } = require('./windowControls');
 const { registerBacklogSourceHandlers } = require('./backlogSources');
 const { registerWeeklyReportHandlers } = require('./weeklyReport');
+const { buildTrayMenu } = require('./trayMenu');
 
 let mainWindow;
 let tray;
@@ -209,9 +210,7 @@ function createTray() {
   }
   tray = new Tray(icon);
   tray.setToolTip('TaskDock');
-  tray.setContextMenu(Menu.buildFromTemplate([
-    { label: '열기/숨기기', click: () => (mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show()) },
-  ]));
+  tray.setContextMenu(buildTrayMenu({ getMainWindow: () => mainWindow }));
   tray.on('click', () => {
     mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
   });
@@ -247,12 +246,16 @@ app.whenReady().then(() => {
   nativeTheme.themeSource = 'dark';
   // P12.1 결정(2026-09-25): 트레이 상주 위젯에는 쓸모없는 Electron 기본 메뉴(File/Edit/
   // View/Window/Help)를 완전히 없앤다 — dev/패키지 모두 동일하게 적용한다(dev 편의 단축키는
-  // createWindow의 before-input-event로 별도 유지). 기본 메뉴의 Quit(Ctrl+Q) 항목이 B5.2
-  // ("종료 메뉴 없음")를 우회하는 경로였는데, 메뉴 자체가 없으니 이 우회로도 함께 없어진다.
+  // createWindow의 before-input-event로 별도 유지). 기본 메뉴의 Quit(Ctrl+Q) 항목은 그 우회
+  // 경로였는데, 메뉴 자체가 없으니 그 경로는 없다(P29 이후 트레이 메뉴에 명시적 종료 항목이
+  // 따로 있음 — 아래 before-quit 리스너 주석 참고).
   Menu.setApplicationMenu(null);
   createWindow();
-  createTray();
+  // P29 critical-reviewer 지적(Medium): createTray()가 먼저면 트레이 메뉴가 "자동 실행
+  // 미등록" 상태로 만들어진 채 바로 다음 줄에서 실제로 등록돼 체크박스가 실제와 어긋난다 —
+  // 순서만 바꿔 항상 최종 상태로 메뉴를 만든다.
   configureAutoLaunch();
+  createTray();
 });
 
 // P7.1 critical-reviewer 지적: tray는 모듈 스코프 변수라 바깥에서 실제 Tray 인스턴스를
@@ -266,9 +269,11 @@ global.__mainProcessTestHooks = {
   configureAutoLaunch,
   getAutoLaunchFlagPath,
   hasRegisteredAutoLaunch,
+  buildTrayMenu: () => buildTrayMenu({ getMainWindow: () => mainWindow }), // P29 검증용
 };
 
-// B5.2: 별도 종료 메뉴 없음 — OS 종료/로그아웃 시에만 실제 종료
+// B5.2(P29에서 번복): OS 종료/로그아웃뿐 아니라 트레이 메뉴 "완전히 종료"(app.quit())도
+// 이 리스너를 거쳐야 close 핸들러(B5.1의 hide-to-tray 분기)를 우회할 수 있다.
 app.on('before-quit', () => {
   app.isQuitting = true;
 });
