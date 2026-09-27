@@ -12,6 +12,7 @@ import ScheduleDateDetail from '../components/ScheduleDateDetail.jsx';
 import ScheduleRangeList from '../components/ScheduleRangeList.jsx';
 import ScheduleAddForm from '../components/ScheduleAddForm.jsx';
 import ScheduleBacklogSection from '../components/ScheduleBacklogSection.jsx';
+import ScheduleDotLegend from '../components/ScheduleDotLegend.jsx';
 import { createSchedule } from '../lib/scheduleFactory.js';
 import { applyScheduleUpdate, removeSchedule } from '../lib/scheduleMutations.js';
 
@@ -258,23 +259,7 @@ export default function Schedule() {
           onNext={() => goToWeek(1)}
         />
       )}
-      {/* P12.17: 점 색=카테고리(설정 탭에 이름), 테두리=반복 일정. P28: 백로그 유래 점 스타일도 추가. */}
-      <p className="schedule-dot-legend">
-        <span className="schedule-dot-legend-item">
-          <span className="schedule-day-dot is-blue" /> 점 색 = 카테고리(설정 탭 참고)
-        </span>
-        <span className="schedule-dot-legend-item">
-          <span className="schedule-day-dot is-blue is-recurring-ring" /> 테두리 = 반복 일정
-        </span>
-        <span className="schedule-dot-legend-item">
-          <span className="schedule-day-dot is-backlog" /> 백로그 목표일(읽기 전용)
-        </span>
-        {/* critical-reviewer 지적(2차 재검증, Medium): 빈 점(미분류)의 의미가 범례 어디에도
-            없어서 반복 테두리와 헷갈릴 수 있었다 — 항목을 추가한다. */}
-        <span className="schedule-dot-legend-item">
-          <span className="schedule-day-dot is-none" /> 빈 점 = 미분류
-        </span>
-      </p>
+      <ScheduleDotLegend />
       {/* P16: 날짜 상세 목록을 캘린더 바로 다음에 둔다(가독성 피드백). */}
       <ScheduleDateDetail
         date={selectedDate}

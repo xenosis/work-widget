@@ -1434,6 +1434,28 @@ body {
 /* critical-reviewer 지적(재검증, Medium): 1차 리뷰에서 "+N"에 지적했던 것과 같은 조합
    (작은 글자 + --text-faint)을 범례에도 그대로 써서 일반 DPI에서 읽기 어려웠다 — "+N"과
    같은 --text-muted로 통일. */
+.schedule-legend-toggle {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.schedule-legend-toggle:hover {
+  background: var(--sidebar-hover);
+  color: var(--text);
+}
+
+.schedule-legend-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .schedule-dot-legend {
   display: flex;
   /* P20 후속(사용자 재지적, 2026-09-27): 위젯 폭을 줄이면 항목 3개가 한 줄에 낑겨 각 항목

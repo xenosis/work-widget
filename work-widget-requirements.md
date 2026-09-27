@@ -877,6 +877,13 @@ Windows 위젯형 도구를 만든다.
   `is-none`은 반복 테두리를 받지 않는 요소라 이 충돌과 무관하다.) Playwright로 재실측: 색
   막대 is-none이 배경 투명+inset 테두리로 렌더됨, 범례 텍스트에 "빈 점 = 미분류" 포함됨을
   확인. lint(clean)/vitest(271 통과)/build 재통과.
+- (2026-09-27 결정, 사용자 요청) 위 범례가 항상 펼쳐진 채로 고정돼 있어, 창이 좁거나 아래
+  콘텐츠(P28의 백로그 목표일 안내 등)를 가릴 수 있다는 피드백에 따라 클릭으로 접고 펼 수 있는
+  토글로 바꿨다 — 새 컴포넌트 `ScheduleDotLegend.jsx`(내부 `showLegend` state, 기본값 펼침)로
+  분리해 `Schedule.jsx`에서는 `<ScheduleDotLegend />` 한 줄만 남긴다(P21의 "새 일정 추가"
+  토글과 같은 패턴, `.schedule-legend-toggle` CSS 신설). 범례 자체의 문구·항목 구성은 그대로
+  유지. Playwright로 재실측: 기본 펼침(범례 1개 렌더) → 클릭 시 접힘(0개, 버튼 문구 "범례 보기
+  ▼"로 전환) → 재클릭 시 다시 펼쳐짐(1개) 확인. lint/vitest(388개)/build 통과.
 - (2026-09-26 결정, 사용자 요청 + P14.1) 일정 화면 안에 카테고리 관리 패널과 같은 위치·같은
   시각 스타일로 "외부 backlog(.json) 소스 관리" 접이식 패널(`BacklogSourcesSection.jsx`)을
   추가했다(**2026-09-26 P15에서 위치 변경** — 이 패널은 카테고리 관리와 함께 "설정" 탭으로
@@ -1694,3 +1701,7 @@ Windows 위젯형 도구를 만든다.
 - v3.45 (2026-09-27): P25(주간보고 자동 생성: codex CLI 연동 백엔드) done 처리 — B3.5의 P25 문단 참고. electron/weeklyReport.js(buildPrompt+generateWeeklyReport+registerWeeklyReportHandlers) 신설, dataStore.js에 backlog_sources[].weekly_report + 전역 weekly_report_example 스키마 추가, main.js/preload.js IPC 배선. critical-reviewer 지적 반영: [High] 2건 — Windows shell:true 타임아웃 시 cmd.exe만 죽고 codex 손자 프로세스는 안 죽던 것을 taskkill /t로 프로세스 트리 전체 종료하도록 수정, "인증 안 됨"이 구분 안 되던 것을 영문 키워드 매칭 기반 AUTH_ERROR 분류 추가로 해결. [Medium] 6건 — try/catch 누락으로 IPC reject 가능하던 것, task 배열 null 원소로 죽을 수 있던 것, stdin EPIPE 무방비, cmd.exe 메타문자 이스케이프 부족, where/실행 대상 불일치, 임시 파일명 충돌 가능성, stdout 파이프 미소비 — 전부 수정. 실제 codex exec 호출 2회로 종단 테스트(사람 사전 동의), NOT_INSTALLED/TIMEOUT 경로는 비용 없이 별도 확인. lint/vitest(350개)/build 통과. UI(P26)는 후속 task.
 - v3.46 (2026-09-27): P25 done 처리 이후 사용자가 직접 발견한 버그 수정 — 실제 패키지로 이 프로젝트 자신의 backlog(.json, 이번 주 신규 7건)를 생성해보니 결과가 한 문장으로 뭉뚱그려 압축됨을 발견, 원인은 buildPrompt의 문체 지시가 예시 문장의 길이/항목 수까지 따라 하라는 뜻으로 읽힌 것 — 문체(어투)와 분량(항목 수)을 분리해 명시하도록 프롬프트 수정, 실제 codex 재호출로 수정 전(한 문장 압축)/후(7개 항목 모두 개별 언급) 비교 확인. weeklyReport.test.js의 실제 프로세스 spawn 테스트 타임아웃도 20초로 늘려 flaky 방지. lint/vitest(353개)/build 통과.
 - v3.47 (2026-09-27): P29(트레이 메뉴에 완전 종료/자동 실행 토글 추가) done 처리 — 사용자 피드백(패키지 재빌드/재실행을 반복하다 보니 프로세스를 끄려면 매번 작업 관리자를 열어야 해서 번거로움) 반영, B5.2 "별도 종료 메뉴 없음" 결정을 사용자가 직접 번복. electron/trayMenu.js 신설(app.quit() 호출 — before-quit이 isQuitting을 먼저 세팅해 hide-to-tray 분기를 자연스럽게 우회, Windows 시작 시 자동 실행 체크박스는 getLoginItemSettings/setLoginItemSettings 반영). critical-reviewer 지적 반영: [High] 개발 모드에서 자동 실행 체크박스를 누르면 개발용 electron.exe가 실제 시작 프로그램에 등록되던 것을 app.isPackaged 가드로 차단(실제 개발 모드 실행으로 enabled:false 확인). [Medium] 4건 — createTray/configureAutoLaunch 호출 순서 버그 수정, 메뉴 템플릿 조립 로직을 electron 의존 없는 순수 함수(buildTrayMenuTemplate)로 분리해 vitest 7건 추가(원래 "vitest 아예 안 둠" 서술이 이 프로젝트의 실제 전례와 달랐던 것 정정), gate 필드 기록, 뒤집힌 결정을 그대로 적고 있던 옛 주석 2곳 정정. lint/vitest(388개)/build 통과.
+- v3.48 (2026-09-27): 사용자 피드백(일정 탭 점 범례가 항상 펼쳐져 있어 아래 내용을 가릴 수
+  있음) 반영 — 범례를 `ScheduleDotLegend.jsx`로 분리하고 클릭으로 접고 펼 수 있는 토글로 변경
+  (P21 패턴 재사용). Schedule.jsx는 284줄로 줄어 300줄 한도 여유 확보. lint/vitest(388개)/build
+  통과, Playwright로 펼침/접힘/재펼침 실측 확인.
