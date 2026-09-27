@@ -32,4 +32,7 @@ contextBridge.exposeInMainWorld('api', {
   // { ok, tasks|error } 형태로 돌아온다(reject 없음, electron/backlogSources.js 참고).
   pickBacklogSourceFile: () => ipcRenderer.invoke('backlog-source:pick-file'),
   readBacklogSourceTasks: (filePath) => ipcRenderer.invoke('backlog-source:read-tasks', filePath),
+  // P25: { ok:true, text } | { ok:false, code, message } 형태로만 돌아온다(reject 없음,
+  // electron/weeklyReport.js 참고) — 렌더러는 항상 이 형태만 처리하면 된다.
+  generateWeeklyReport: (payload) => ipcRenderer.invoke('weekly-report:generate', payload),
 });

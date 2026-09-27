@@ -191,4 +191,34 @@ describe('normalizeData', () => {
     });
     expect(result.backlog_sources[0].weekly_snapshot).toEqual(snapshot);
   });
+
+  // P25: weekly_report(마지막 주간보고 생성 결과 캐시)도 같은 "누락 시 기본값" 패턴을 따르는지 확인.
+  it('backlog_source에 weekly_report가 없으면 null로 채운다', () => {
+    const result = normalizeData({ backlog_sources: [{ id: 'src1', path: 'C:/foo/backlog.json' }] });
+    expect(result.backlog_sources[0].weekly_report).toBeNull();
+  });
+
+  it('backlog_source에 weekly_report가 이미 있으면 그대로 보존한다', () => {
+    const report = { weekStart: '2026-09-21', text: '이번 주 요약', generated_at: '2026-09-27T00:00:00.000Z' };
+    const result = normalizeData({
+      backlog_sources: [{ id: 'src1', path: 'C:/foo/backlog.json', weekly_report: report }],
+    });
+    expect(result.backlog_sources[0].weekly_report).toEqual(report);
+  });
+
+  // P25: weekly_report_example은 배열이 아닌 전역 단일 값 필드 — ARRAY_KEYS와 별도 경로로 정규화된다.
+  it('weekly_report_example이 없으면 빈 문자열로 채운다', () => {
+    const result = normalizeData({});
+    expect(result.weekly_report_example).toBe('');
+  });
+
+  it('weekly_report_example이 문자열이면 그대로 보존한다', () => {
+    const result = normalizeData({ weekly_report_example: '이번 주는 ~~을 진행했습니다.' });
+    expect(result.weekly_report_example).toBe('이번 주는 ~~을 진행했습니다.');
+  });
+
+  it('weekly_report_example 타입이 잘못되면(예: 숫자) 기본값으로 되돌린다', () => {
+    const result = normalizeData({ weekly_report_example: 123 });
+    expect(result.weekly_report_example).toBe('');
+  });
 });

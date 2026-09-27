@@ -173,8 +173,11 @@ const FIELD_DEFAULTS = {
   // P17: 그 소스를 "이번 주 들어 처음 확인한 시점"의 task 상태를 이번 주 변화 감지 기준선으로
   // 저장한다({ weekStart, tasks }) — src/lib/backlogWeeklySnapshot.js가 주 경계를 넘으면 자동
   // 갱신한다. 새로 등록된 소스는 아직 한 번도 확인 안 했으므로 null(첫 확인 시 즉시 채워짐).
-  backlog_sources: { path: null, label: null, weekly_snapshot: null, created_at: null, updated_at: null },
+  // P25: 소스별 마지막 주간보고 캐시({weekStart,text,generated_at}) — 생성은 weeklyReport.js, 저장은 P26.
+  backlog_sources: { path: null, label: null, weekly_snapshot: null, weekly_report: null, created_at: null, updated_at: null },
 };
+
+const SCALAR_FIELD_DEFAULTS = { weekly_report_example: '' }; // P25: 배열 아닌 전역값(주간보고 예시 문장)
 
 // critical-reviewer 지적: FIELD_DEFAULTS의 배열 기본값(tags)이 레코드마다 같은 인스턴스를
 // 공유하면, 한 레코드의 배열을 제자리에서 바꿀 때(push 등) 다른 레코드까지 영향받을 수 있다 —
@@ -202,6 +205,10 @@ function normalizeData(data) {
     const value = data && data[key];
     const items = Array.isArray(value) ? value.filter((item) => item && typeof item === 'object') : [];
     result[key] = items.map((item) => applyFieldDefaults(key, item));
+  }
+  for (const key of Object.keys(SCALAR_FIELD_DEFAULTS)) {
+    const value = data && data[key];
+    result[key] = typeof value === typeof SCALAR_FIELD_DEFAULTS[key] ? value : SCALAR_FIELD_DEFAULTS[key];
   }
   return result;
 }

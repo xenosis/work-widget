@@ -5,6 +5,7 @@ const { loadWindowState, saveWindowState, MIN_WINDOW_SIZE } = require('./windowS
 const { getAutoLaunchFlagPath, hasRegisteredAutoLaunch, markAutoLaunchRegistered } = require('./autoLaunch');
 const { registerWindowControls, forwardMaximizeState } = require('./windowControls');
 const { registerBacklogSourceHandlers } = require('./backlogSources');
+const { registerWeeklyReportHandlers } = require('./weeklyReport');
 
 let mainWindow;
 let tray;
@@ -290,3 +291,5 @@ registerWindowControls(() => mainWindow);
 // 분리한다(main.js 300줄 한도, P12.22와 같은 이유). dialog.showOpenDialog가 부모 창을
 // 필요로 해 같은 getter 패턴을 재사용한다.
 registerBacklogSourceHandlers(() => mainWindow);
+// P25: codex exec 호출은 파일 dialog 등 창이 필요 없어 getter 없이 바로 등록한다.
+registerWeeklyReportHandlers();

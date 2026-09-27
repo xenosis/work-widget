@@ -5416,7 +5416,7 @@
     },
     {
       "id": "P25",
-      "status": "todo",
+      "status": "done",
       "priority": "P1",
       "category": "feature",
       "title": "주간보고 자동 생성: codex CLI 연동(백엔드)",
@@ -5425,13 +5425,49 @@
       "parent": null,
       "deps": [],
       "doc": null,
-      "done_when": "렌더러가 IPC로 {sourceId, exampleSentence, weekData(추가/상태변경/사라짐 task 목록)}를 넘기면, 메인 프로세스가 child_process로 'codex exec'를 안전한 옵션(--sandbox read-only, --skip-git-repo-check, --ephemeral, 인자 배열로 전달해 셸 인젝션 방지)으로 실행해 그 결과 텍스트를 돌려준다. codex 미설치/인증안됨/타임아웃(예: 90초) 각각 렌더러가 구분 가능한 에러로 돌아오고 메인 프로세스가 죽지 않는다. data.json에 예시 문장(전역 1개, 모든 백로그 소스에 공통 적용)과 backlog_sources[]별 마지막 생성 결과(주 시작일+텍스트+생성시각)를 저장할 필드를 추가하고 dataStore.js가 기존 패턴대로 정규화한다. 실제 codex exec 호출 1~2회로 종단 테스트(사람 동의 받음, 최소 횟수만) — 이 프로젝트 자신의 backlog(.json) 변경 내역으로 실제 텍스트가 생성되는지 확인. lint/test/build 통과.",
+      "done_when": "렌더러가 IPC로 {sourceLabel, exampleSentence, weekData(추가/상태변경/사라짐 task 목록)}를 넘기면, 메인 프로세스가 child_process로 'codex exec'를 안전한 옵션(--sandbox read-only, --skip-git-repo-check, --ephemeral)으로 실행해 그 결과 텍스트를 돌려준다. 신뢰 못 하는 텍스트(예시 문장/외부 backlog(.json) task 내용)는 인자가 아니라 표준입력(stdin)으로만 전달해 셸 인젝션 표면을 없앤다(POSIX는 인자 배열 그대로 spawn, Windows는 codex.cmd 셸 스크립트 제약으로 인자를 따옴표로 감싼 명령줄 문자열 하나 + shell:true로 spawn하되 그 인자들 자체는 고정 문자열/임시 경로뿐). codex 미설치(NOT_INSTALLED)/인증 안 됨(AUTH_ERROR, 영문 키워드 매칭 기반 최선 추정)/타임아웃(TIMEOUT, 90초, Windows는 taskkill로 프로세스 트리 전체 종료)이 각각 렌더러가 구분 가능한 code로 돌아오고({ok:false,code,message}, reject 없음) 메인 프로세스가 죽지 않는다. data.json에 예시 문장(전역 1개, 모든 백로그 소스에 공통 적용)과 backlog_sources[]별 마지막 생성 결과(주 시작일+텍스트+생성시각)를 저장할 필드를 추가하고 dataStore.js가 기존 패턴대로 정규화한다. 실제 codex exec 호출 1~2회로 종단 테스트(사람 동의 받음, 최소 횟수만) — 이 프로젝트 자신의 backlog(.json) 변경 내역으로 실제 텍스트가 생성되는지 확인. lint/test/build 통과.",
       "est_min": null,
-      "gate": null,
+      "gate": "npm run lint && npm test && npm run build",
       "owner": "claude",
       "claimed_at": null,
-      "updated_at": "2026-09-27T01:04:37.923Z",
-      "log": []
+      "updated_at": "2026-09-27T02:24:26.308Z",
+      "log": [
+        {
+          "at": "2026-09-27T01:54:20.255Z",
+          "owner": "claude",
+          "status": "in_progress",
+          "note": "구현 착수: electron/weeklyReport.js 신설(codex exec child_process 호출), electron/dataStore.js에 예시 문장/생성 결과 캐시 필드 추가, IPC 배선. UI(P26)는 별도."
+        },
+        {
+          "at": "2026-09-27T02:11:44.690Z",
+          "owner": "claude",
+          "status": "in_review",
+          "note": "구현 완료: electron/weeklyReport.js(buildPrompt 순수함수+generateWeeklyReport codex exec 호출+IPC), dataStore.js에 backlog_sources[].weekly_report/전역 weekly_report_example 스키마, main.js/preload.js 배선. 실제 codex exec 2회 성공(사람 사전 동의), NOT_INSTALLED 경로는 API 비용 없이 확인. lint/vitest(346)/build 통과. work-widget-requirements.md(backlog(.json) B3.5) 갱신 완료. critical-reviewer+backlog-explainer 병렬 리뷰 착수."
+        },
+        {
+          "at": "2026-09-27T02:24:13.050Z",
+          "owner": null,
+          "status": "in_review",
+          "note": "critical-reviewer 지적 반영: (1) sourceId는 generateWeeklyReport에 실제로 필요 없어(호출자가 자기 쪽에서 이미 알고 있어 응답으로 되돌려받을 필요 없음) sourceLabel로 정정. (2) '인자 배열로 전달'이 Windows 구현(따옴표로 감싼 명령줄 문자열 하나 + shell:true)과 안 맞아 실제 구현을 반영해 정정, 신뢰 못 하는 텍스트는 여전히 인자가 아니라 stdin으로만 전달된다는 핵심은 그대로. (3) '인증안됨' 요구를 AUTH_ERROR 코드 도입으로 실제로 충족시켜 done_when을 낮추지 않고 구현을 강화했다. gate는 표시용으로 기록(직접 실행 안 함).",
+          "field_edit": {
+            "before": {
+              "done_when": "렌더러가 IPC로 {sourceId, exampleSentence, weekData(추가/상태변경/사라짐 task 목록)}를 넘기면, 메인 프로세스가 child_process로 'codex exec'를 안전한 옵션(--sandbox read-only, --skip-git-repo-check, --ephemeral, 인자 배열로 전달해 셸 인젝션 방지)으로 실행해 그 결과 텍스트를 돌려준다. codex 미설치/인증안됨/타임아웃(예: 90초) 각각 렌더러가 구분 가능한 에러로 돌아오고 메인 프로세스가 죽지 않는다. data.json에 예시 문장(전역 1개, 모든 백로그 소스에 공통 적용)과 backlog_sources[]별 마지막 생성 결과(주 시작일+텍스트+생성시각)를 저장할 필드를 추가하고 dataStore.js가 기존 패턴대로 정규화한다. 실제 codex exec 호출 1~2회로 종단 테스트(사람 동의 받음, 최소 횟수만) — 이 프로젝트 자신의 backlog(.json) 변경 내역으로 실제 텍스트가 생성되는지 확인. lint/test/build 통과.",
+              "gate": null
+            },
+            "after": {
+              "done_when": "렌더러가 IPC로 {sourceLabel, exampleSentence, weekData(추가/상태변경/사라짐 task 목록)}를 넘기면, 메인 프로세스가 child_process로 'codex exec'를 안전한 옵션(--sandbox read-only, --skip-git-repo-check, --ephemeral)으로 실행해 그 결과 텍스트를 돌려준다. 신뢰 못 하는 텍스트(예시 문장/외부 backlog(.json) task 내용)는 인자가 아니라 표준입력(stdin)으로만 전달해 셸 인젝션 표면을 없앤다(POSIX는 인자 배열 그대로 spawn, Windows는 codex.cmd 셸 스크립트 제약으로 인자를 따옴표로 감싼 명령줄 문자열 하나 + shell:true로 spawn하되 그 인자들 자체는 고정 문자열/임시 경로뿐). codex 미설치(NOT_INSTALLED)/인증 안 됨(AUTH_ERROR, 영문 키워드 매칭 기반 최선 추정)/타임아웃(TIMEOUT, 90초, Windows는 taskkill로 프로세스 트리 전체 종료)이 각각 렌더러가 구분 가능한 code로 돌아오고({ok:false,code,message}, reject 없음) 메인 프로세스가 죽지 않는다. data.json에 예시 문장(전역 1개, 모든 백로그 소스에 공통 적용)과 backlog_sources[]별 마지막 생성 결과(주 시작일+텍스트+생성시각)를 저장할 필드를 추가하고 dataStore.js가 기존 패턴대로 정규화한다. 실제 codex exec 호출 1~2회로 종단 테스트(사람 동의 받음, 최소 횟수만) — 이 프로젝트 자신의 backlog(.json) 변경 내역으로 실제 텍스트가 생성되는지 확인. lint/test/build 통과.",
+              "gate": "npm run lint && npm test && npm run build"
+            }
+          }
+        },
+        {
+          "at": "2026-09-27T02:24:26.308Z",
+          "owner": "claude",
+          "status": "done",
+          "note": "critical-reviewer(High 2건+Medium 6건) 전부 반영 후 완료: Windows shell:true 타임아웃 시 codex 손자 프로세스가 안 죽던 것을 taskkill /t로 프로세스 트리 종료하도록 수정(codex 설치된 실제 환경에서 timeoutMs:1로 종단 테스트, 좀비 프로세스 안 남음 확인), '인증 안 됨'을 AUTH_ERROR 코드로 실제 구분되게 구현(done_when을 낮추지 않고 강화), 그 외 reject 방지/null 원소 방어/stdin EPIPE 방어/cmd.exe 이스케이프 강화/where·실행 대상 통일/임시파일명 충돌 방지/stdout 파이프 미소비 방지 반영. done_when 문구도 실제 구현(sourceLabel, stdin 전달, Windows는 명령줄 문자열)에 맞게 set-field로 정정. gate에 표시용 검증 명령 기록. work-widget-requirements.md(B3.5 P25 문단 + 리뷰 반영 + 알려진 한계 + 변경이력 v3.45) 갱신, docs/backlog(.json이 아니라 마크다운) 폴더는 backlog-explainer가 이미 P25.md 작성함. lint/vitest(350개)/build(vite) 통과. 실제 codex exec 호출 2회로 이 프로젝트 자신의 backlog(.json) 데이터로 종단 테스트 완료(사람 사전 동의). UI(P26)는 후속 task, deps=[P25]로 이미 등록됨."
+        }
+      ],
+      "done_at": "2026-09-27"
     },
     {
       "id": "P26",
