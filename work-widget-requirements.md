@@ -1026,6 +1026,15 @@ Windows 위젯형 도구를 만든다.
   버튼을 다시 누르면 접히고, 추가 후 자동으로 접히지는 않는다(연속으로 여러 일정을 추가하는
   경우를 고려). lint/vitest(323개)/build 통과, Playwright로 기본 접힘·버튼 클릭 시 펼침·정상
   추가 동작을 확인.
+
+  **위치 재조정(2026-09-27, 사용자 피드백)**: 일정이 많아지면 이 토글 버튼이 화면 맨 아래로
+  밀려나 스크롤해야만 보이는 문제가 실제로 생겼다 — 버튼을 월간/주간 탭 줄 오른쪽(빈 공간)으로
+  옮기고(`.schedule-tabs-row`로 탭 묶음과 함께 감싸 `justify-content: space-between`), 펼쳐지는
+  폼도 같은 이유로 달력 위(탭 줄 바로 아래)로 옮겼다. 버튼 스타일은 더 이상
+  `.schedule-category-manager-toggle`을 재사용하지 않고 탭과 나란히 놓이는 만큼 탭과
+  어울리는 강조 스타일(`.schedule-add-toggle`, accent 색상)로 새로 만들었다 — 위 문단의 "새
+  CSS 클래스를 만들지 않는다"는 이제 안 맞는다. lint/vitest(368개)/build 통과, Playwright로
+  버튼이 탭 오른쪽에 위치하는지·펼친 폼이 달력보다 위에 오는지 좌표 비교로 확인.
 - (2026-09-27 결정, P23) 사용자 요청: 날짜를 하나씩 클릭하지 않아도 지금 보이는 달/주 전체
   일정을 한 번에 훑어보고 싶다는 요청. `scheduleGrid.js`에 `getSchedulesInRange(schedules,
   dateStrings)`(날짜 목록 각각에 `getSchedulesForDate`를 적용해 id 유효한 일정만 날짜순으로

@@ -185,26 +185,54 @@ export default function Schedule() {
   return (
     <>
       <h1>일정</h1>
-      <div className="schedule-tabs" role="tablist">
+      {/* 사용자 피드백(2026-09-27): "새 일정 추가" 버튼이 화면 맨 아래에 있어 일정이 많으면
+          스크롤해야 보였다 — 월간/주간 탭 줄 우측 여유 공간에 넣고, 펼쳐지는 폼도 달력 위로
+          옮겨 스크롤 없이 바로 보이게 한다. */}
+      <div className="schedule-tabs-row">
+        <div className="schedule-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === 'month'}
+            className={view === 'month' ? 'schedule-tab active' : 'schedule-tab'}
+            onClick={switchToMonth}
+          >
+            월간
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === 'week'}
+            className={view === 'week' ? 'schedule-tab active' : 'schedule-tab'}
+            onClick={switchToWeek}
+          >
+            주간
+          </button>
+        </div>
+        {/* critical-reviewer 지적(P21) 유지: 저장 중엔 못 접게 막는다(언마운트 시 에러 표시 기회 상실). */}
         <button
           type="button"
-          role="tab"
-          aria-selected={view === 'month'}
-          className={view === 'month' ? 'schedule-tab active' : 'schedule-tab'}
-          onClick={switchToMonth}
+          className="schedule-add-toggle"
+          onClick={() => setShowAddForm((v) => !v)}
+          aria-expanded={showAddForm}
+          disabled={saving}
         >
-          월간
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={view === 'week'}
-          className={view === 'week' ? 'schedule-tab active' : 'schedule-tab'}
-          onClick={switchToWeek}
-        >
-          주간
+          {showAddForm ? '새 일정 추가 닫기 ▲' : '+ 새 일정 추가 ▼'}
         </button>
       </div>
+      {showAddForm && (
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">새 일정 추가</h2>
+          </div>
+          <ScheduleAddForm
+            defaultDate={selectedDate}
+            onAdd={handleAddSchedule}
+            categories={data.schedule_categories}
+            disabled={saving}
+          />
+        </div>
+      )}
       {view === 'month' ? (
         <ScheduleMonthView
           monthCursor={monthCursor}
@@ -267,33 +295,6 @@ export default function Schedule() {
         schedules={data.schedules}
         categories={data.schedule_categories}
       />
-      {/* P21: "새 일정 추가" 폼을 기본 접힘 + 버튼 클릭 시 펼침으로(공간 절약 요청).
-          critical-reviewer 지적(Medium): 저장 중(saving)에 이 버튼으로 폼을 접으면
-          ScheduleAddForm이 언마운트되어 저장 실패 시 에러 문구를 보여줄 곳이 없어진다 —
-          저장 중에는 접지 못하게 막는다(폼 안의 다른 입력/버튼도 disabled={saving}으로
-          이미 막혀 있어 저장 중 조작 자체가 원래 불가능했던 것과 일관됨). */}
-      <button
-        type="button"
-        className="schedule-category-manager-toggle"
-        onClick={() => setShowAddForm((v) => !v)}
-        aria-expanded={showAddForm}
-        disabled={saving}
-      >
-        {showAddForm ? '새 일정 추가 닫기 ▲' : '+ 새 일정 추가 ▼'}
-      </button>
-      {showAddForm && (
-        <div className="card">
-          <div className="card-header">
-            <h2 className="card-title">새 일정 추가</h2>
-          </div>
-          <ScheduleAddForm
-            defaultDate={selectedDate}
-            onAdd={handleAddSchedule}
-            categories={data.schedule_categories}
-            disabled={saving}
-          />
-        </div>
-      )}
     </>
   );
 }

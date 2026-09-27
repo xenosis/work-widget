@@ -4,6 +4,23 @@
 
 const ID_PATTERN = /^P\d+(\.\d+)*$/; // 기존 관례: P0, P0.1, P1.2 ...
 
+// P27: task별 선택적 목표일(due_date). TaskDock 자신의 date 필드(work-widget-requirements.md
+// B3 계약)와 같은 "로컬 타임존 YYYY-MM-DD 문자열" 규약을 그대로 따른다 — 두 프로젝트가 같은
+// 사람이 쓰는 도구라 형식이 갈리면 나중에 TaskDock이 이 값을 읽어 캘린더에 놓을 때(P28) 혼란만
+// 커진다. 형태(정규식)뿐 아니라 "2026-13-45"처럼 존재하지 않는 날짜도 왕복 검증으로 잡는다
+// (TaskDock의 src/lib/dateRange.js가 이미 쓰는 것과 같은 기법 — 다만 이 파일은 CJS/node 전역이라
+// 그 ESM 모듈을 그대로 재사용하지 않고 같은 로직만 독립적으로 둔다, eslint.config.js의 src/
+// electron/scripts 영역 분리 원칙과 같은 이유).
+const DUE_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function isValidDueDate(value) {
+  if (value === null) return true;
+  if (typeof value !== 'string' || !DUE_DATE_PATTERN.test(value)) return false;
+  const [y, m, d] = value.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
+}
+
 class BacklogError extends Error {
   constructor(code, message, details) {
     super(message);
@@ -36,6 +53,15 @@ function validateSchema(json) {
     }
     if (priorityEnum && !priorityEnum.includes(t.priority)) {
       errors.push(`"${t.id}".priority = ${JSON.stringify(t.priority)} 는 enums.priority(${priorityEnum.join(', ')})에 없는 값입니다.`);
+    }
+    // P27 critical-reviewer 지적(Medium): due_date 형식 검증이 addTask/setField(쓰기 경로)에만
+    // 있고 여기(구조 검증, list/show/validate-backlog 훅이 전부 거치는 유일한 관문)엔 없어서,
+    // 손 편집이나 다른 도구로 잘못된 값(예: "2026-99-99", true)이 들어와도 훅/조회 명령이
+    // 조용히 통과시켰다 — 이미 값이 있는 task는 여기서도 형식을 확인한다(키 자체가 없는 건
+    // store.js가 null로 정규화하므로 여기 도달할 때는 항상 키가 있다고 가정하지 않는다 —
+    // 'due_date' in t로 먼저 존재 여부를 확인).
+    if ('due_date' in t && !isValidDueDate(t.due_date)) {
+      errors.push(`"${t.id}".due_date = ${JSON.stringify(t.due_date)} 는 유효한 날짜(YYYY-MM-DD 또는 null)가 아닙니다.`);
     }
     if (categoryEnum && !categoryEnum.includes(t.category)) {
       errors.push(`"${t.id}".category = ${JSON.stringify(t.category)} 는 enums.category(${categoryEnum.join(', ')})에 없는 값입니다.`);
@@ -127,4 +153,4 @@ function findParentCycle(tasks) {
   return null;
 }
 
-module.exports = { ID_PATTERN, BacklogError, validateSchema, assertValid, findCycle, findParentCycle };
+module.exports = { ID_PATTERN, BacklogError, validateSchema, assertValid, findCycle, findParentCycle, isValidDueDate };

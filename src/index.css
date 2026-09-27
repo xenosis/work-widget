@@ -1918,9 +1918,43 @@ body {
 }
 
 /* ---- 일정 화면(P5.3 주간 뷰 + 탭) ---- */
+.schedule-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .schedule-tabs {
   display: flex;
   gap: 6px;
+}
+
+.schedule-add-toggle {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-strong);
+  background: var(--accent-soft-bg);
+  border: 1px solid var(--accent-soft-border);
+}
+
+.schedule-add-toggle:hover:not(:disabled) {
+  background: var(--sidebar-hover);
+}
+
+.schedule-add-toggle:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.schedule-add-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .schedule-tab {

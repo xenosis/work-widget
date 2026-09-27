@@ -4,7 +4,7 @@
 // 전부 store.loadMutateValidateSave를 통해서만 파일에 쓴다(검증 통과 후 원자적 저장).
 'use strict';
 
-const { BacklogError, ID_PATTERN } = require('./schema');
+const { BacklogError, ID_PATTERN, isValidDueDate } = require('./schema');
 const { loadMutateValidateSave, nowIso } = require('./store');
 
 // parent가 같은 마지막 형제 task 바로 뒤, 형제가 아직 없으면 parent 자신 바로 뒤에 넣을 위치를 찾는다.
@@ -50,6 +50,13 @@ function addTask(filePath, expectedVersion, input) {
   if (input.status === 'done' && !input.note) {
     throw new BacklogError('VALIDATION', 'status를 done으로 바로 생성하려면 완료 근거(--note)가 필요합니다.');
   }
+  // P27: where/doc/gate/parent와 같은 관례 — 빈 문자열이나 리터럴 "null"도 "안 비운다"는 뜻으로
+  // 받는다(set-field의 normalizeFieldValue와 동일 규칙, cli.js가 플래그를 그대로 넘기므로 여기서
+  // 함께 처리해야 add에서도 일관되게 작동한다).
+  const dueDate = input.due_date === '' || input.due_date === 'null' || input.due_date === undefined ? null : input.due_date;
+  if (!isValidDueDate(dueDate)) {
+    throw new BacklogError('VALIDATION', `due_date 형식이 올바르지 않습니다(YYYY-MM-DD 또는 비움): "${input.due_date}"`);
+  }
   // --parent를 명시하면 그 값을, 아니면 id의 점 표기(P1.9 -> P1)에서 자동으로 추론한다.
   const parent = input.parent || inferParentFromId(input.id);
 
@@ -90,6 +97,7 @@ function addTask(filePath, expectedVersion, input) {
       deps,
       doc: input.doc ?? null,
       done_when: input.done_when,
+      due_date: dueDate,
       est_min: input.est_min ?? null,
       gate: input.gate ?? null,
       owner: input.owner ?? null,

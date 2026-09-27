@@ -161,4 +161,25 @@ describe('setField', () => {
   it('존재하지 않는 id는 NOT_FOUND로 거부한다', () => {
     expectBacklogError(() => setField(filePath, undefined, 'P404', { summary: 'x' }, { note: 'n' }));
   });
+
+  // P27
+  it('올바른 due_date로 고칠 수 있다', () => {
+    setField(filePath, undefined, 'P1', { due_date: '2026-11-20' }, { note: 'n' });
+    expect(readTask('P1').due_date).toBe('2026-11-20');
+  });
+
+  it('빈 문자열이나 "null"로 due_date를 비울 수 있다', () => {
+    setField(filePath, undefined, 'P1', { due_date: '2026-11-20' }, { note: 'n' });
+    setField(filePath, undefined, 'P1', { due_date: '' }, { note: '취소' });
+    expect(readTask('P1').due_date).toBeNull();
+  });
+
+  it('형식이 잘못된 due_date는 거부한다', () => {
+    expectBacklogError(() => setField(filePath, undefined, 'P1', { due_date: '2026/11/20' }, { note: 'n' }));
+    expectBacklogError(() => setField(filePath, undefined, 'P1', { due_date: '2026-02-30' }, { note: 'n' }));
+  });
+
+  it('값 없이 --due_date만 넘겨 boolean true가 되면 거부한다', () => {
+    expectBacklogError(() => setField(filePath, undefined, 'P1', { due_date: true }, { note: 'n' }));
+  });
 });

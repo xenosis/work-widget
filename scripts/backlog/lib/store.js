@@ -25,6 +25,19 @@ function readBacklogFile(filePath) {
   } catch (e) {
     throw new BacklogError('PARSE_ERROR', `backlog.json JSON 파싱 오류: ${e.message}`);
   }
+  // P27: due_date가 없던 시절(이 필드 추가 이전)에 만들어진 기존 task도 일관되게 다루기 위해,
+  // 읽을 때마다 누락된 필드만 null로 채운다(TaskDock 자신의 dataStore.js applyFieldDefaults와
+  // 같은 "누락된 필드만 채움" 패턴 — 이미 값이 있으면 절대 건드리지 않는다). 이 한 곳에서만
+  // 채워두면 이후 모든 소비자(queries.js, mutations.js의 deep clone 등)가 항상 이 필드가
+  // 존재한다고 가정할 수 있다.
+  // critical-reviewer 지적(Medium): 이건 "읽을 때만" 채우는 게 아니다 — loadMutateValidateSave가
+  // 이 정규화된 결과를 deep clone해 그대로 다시 저장하므로, P27 이후 첫 변경 명령(어떤 task를
+  // 고치든 상관없이) 때 기존 task 전부에 `due_date: null`이 실제로 디스크에 영속화된다(그
+  // 변경 diff가 한 번은 파일 전체 크기로 커짐 — 동작 오류는 아니고 해시는 raw 기준이라 낙관적
+  // 동시성 비교에도 영향 없음, 단지 "읽을 때만"이라는 표현이 정확하지 않았을 뿐).
+  if (Array.isArray(json?.tasks)) {
+    json.tasks = json.tasks.map((t) => (t && typeof t === 'object' && !('due_date' in t) ? { ...t, due_date: null } : t));
+  }
   const stat = fs.statSync(filePath);
   return {
     raw,

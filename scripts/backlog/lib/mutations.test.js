@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { setStatus } from './mutations.js';
+import { setStatus, addTask } from './mutations.js';
 
 // P12.8 critical-reviewer 지적: setStatus가 done -> 다른 상태로 되돌릴 때 done_at을 안 지워서,
 // done_at만 보는 도구/사람이 "완료됐다가 되돌아간" task를 여전히 완료로 오판할 수 있었다 —
@@ -58,5 +58,29 @@ describe('setStatus', () => {
   it('done이 아닌 상태끼리 전이해도 done_at은 계속 비어 있다', () => {
     setStatus(filePath, undefined, 'P1', 'in_progress', { note: '착수' });
     expect(readTask('P1').done_at).toBeNull();
+  });
+
+  // P27: addTask의 due_date 검증 + 기본값을 이 파일의 기존 임시 디렉토리 패턴으로 확인한다
+  // (setStatus와 같은 fixture, 별도 describe로 addTask 전용 테스트를 둔다).
+  describe('addTask due_date', () => {
+    const baseInput = {
+      id: 'P2', title: '새 작업', status: 'todo', priority: 'P1', category: 'feature',
+      summary: 's', done_when: 'd',
+    };
+
+    it('due_date를 안 주면 null로 채워진다', () => {
+      addTask(filePath, undefined, baseInput);
+      expect(readTask('P2').due_date).toBeNull();
+    });
+
+    it('올바른 due_date는 그대로 저장된다', () => {
+      addTask(filePath, undefined, { ...baseInput, due_date: '2026-10-05' });
+      expect(readTask('P2').due_date).toBe('2026-10-05');
+    });
+
+    it('형식이 잘못된 due_date는 거부하고 파일을 바꾸지 않는다', () => {
+      expect(() => addTask(filePath, undefined, { ...baseInput, due_date: '2026-13-01' })).toThrow();
+      expect(readTask('P2')).toBeUndefined();
+    });
   });
 });

@@ -2,7 +2,7 @@
 // add/set-status/reorder(기존 명령)와 별개 파일로 둬야 mutations.js가 한도를 넘지 않는다.
 'use strict';
 
-const { BacklogError } = require('./schema');
+const { BacklogError, isValidDueDate } = require('./schema');
 const { loadMutateValidateSave, nowIso } = require('./store');
 const { findInsertionIndex } = require('./mutations');
 
@@ -13,7 +13,7 @@ const { findInsertionIndex } = require('./mutations');
 // 무결성·이력 보존을 위해 절대 직접 못 고치게 막는다.
 const EDITABLE_FIELDS = [
   'title', 'summary', 'where', 'doc', 'done_when',
-  'est_min', 'gate', 'priority', 'category', 'parent', 'deps',
+  'est_min', 'gate', 'priority', 'category', 'parent', 'deps', 'due_date',
 ];
 
 // P11 critical-reviewer 지적(High): CLI는 값 없이 "--field"만 넘기면 flags[field]=true(boolean)를
@@ -55,7 +55,7 @@ function normalizeFieldValue(field, rawValue) {
   }
   // P11 critical-reviewer 지적(Medium): add의 --priority=null 관례와 맞춰 빈 문자열뿐 아니라
   // 리터럴 "null" 문자열도 비우는 값으로 받는다.
-  if (field === 'where' || field === 'doc' || field === 'gate' || field === 'parent') {
+  if (field === 'where' || field === 'doc' || field === 'gate' || field === 'parent' || field === 'due_date') {
     return rawValue === '' || rawValue === 'null' || rawValue === undefined ? null : rawValue;
   }
   return rawValue;
@@ -122,6 +122,12 @@ function setField(filePath, expectedVersion, id, updates, opts) {
     }
     if (updates.category !== undefined && !categoryEnum.includes(updates.category)) {
       throw new BacklogError('VALIDATION', `category "${updates.category}" 는 enums.category(${categoryEnum.join(', ')})에 없습니다.`);
+    }
+    if (updates.due_date !== undefined) {
+      const nextDueDate = normalizeFieldValue('due_date', updates.due_date);
+      if (!isValidDueDate(nextDueDate)) {
+        throw new BacklogError('VALIDATION', `due_date 형식이 올바르지 않습니다(YYYY-MM-DD 또는 비움): "${updates.due_date}"`);
+      }
     }
     if (updates.parent !== undefined) {
       const newParent = normalizeFieldValue('parent', updates.parent);
