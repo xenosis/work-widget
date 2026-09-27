@@ -84,6 +84,20 @@ export function BacklogIcon(props) {
   );
 }
 
+// P26: 주간보고 탭 아이콘 — MemoIcon(문서+텍스트 줄)에 작은 반짝임(별) 표시를 더해 "자동으로
+// 생성된 문서"라는 의미를 더한다.
+export function WeeklyReportIcon(props) {
+  return (
+    <svg {...SVG_PROPS} {...props}>
+      <path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+      <path d="M14 3v5h5" />
+      <line x1="8" y1="13" x2="16" y2="13" />
+      <line x1="8" y1="17" x2="13" y2="17" />
+      <path d="M9 8.2l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z" />
+    </svg>
+  );
+}
+
 // P12.3: 커스텀 타이틀바(frame:false)의 최소화/최대화/복원/닫기 버튼 — 다른 아이콘과 달리
 // 아주 작게(14px 안팎) 쓰이므로 strokeWidth를 조금 더 두껍게(2) 잡아 축소해도 선이 흐려지지
 // 않게 한다.

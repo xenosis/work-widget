@@ -7,9 +7,11 @@ import Todos from './screens/Todos.jsx';
 import Memos from './screens/Memos.jsx';
 import Schedule from './screens/Schedule.jsx';
 import Backlog from './screens/Backlog.jsx';
+import WeeklyReport from './screens/WeeklyReport.jsx';
 import Settings from './screens/Settings.jsx';
 
-// B1.3: 사이드바 메뉴 구성 — 대시보드 / 프로젝트 / 할일전체 / 메모 / 일정 / 백로그(P19 추가) / 설정(P15 추가)
+// B1.3: 사이드바 메뉴 구성 — 대시보드 / 프로젝트 / 할일전체 / 메모 / 일정 / 백로그(P19 추가) /
+// 주간보고(P26 추가) / 설정(P15 추가)
 const SCREENS = {
   dashboard: Dashboard,
   projects: Projects,
@@ -17,6 +19,7 @@ const SCREENS = {
   memos: Memos,
   schedule: Schedule,
   backlog: Backlog,
+  weeklyReport: WeeklyReport,
   settings: Settings,
 };
 

@@ -109,6 +109,12 @@ function quoteForWindowsShell(arg) {
   return `"${arg}"`;
 }
 
+// 실사용 확인(2026-09-27, 스텁 codex.cmd로 재현): 명령 이름 자체("codex")까지 따옴표로 감싸면
+// `cmd.exe /d /s /c "<명령줄>"`(Node의 shell:true가 내부적으로 이렇게 실행함) 아래에서 그 뒤에
+// 실행되는 .cmd 배치 파일의 `%~dp0`(자기 자신의 경로) 확장이 깨진다(직접 재현: 인자는 그대로
+// 다 전달되지만 %~dp0가 빈 값이 됨) — 인자값(공백/메타문자가 있을 수 있는 임시 경로)만
+// 따옴표로 감싸고, 고정 리터럴이라 공백이 있을 수 없는 명령 이름 자체는 감싸지 않는다.
+
 function isSafeForWindowsShellArg(arg) {
   return !WINDOWS_SHELL_UNSAFE_CHARS.test(arg);
 }
@@ -186,7 +192,7 @@ async function runGenerate({ exampleSentence, sourceLabel, weekData }, options) 
     let child;
     try {
       child = IS_WINDOWS
-        ? spawn([CODEX_COMMAND, ...argv].map(quoteForWindowsShell).join(' '), { windowsHide: true, shell: true, stdio: ['pipe', 'ignore', 'pipe'] })
+        ? spawn([CODEX_COMMAND, ...argv.map(quoteForWindowsShell)].join(' '), { windowsHide: true, shell: true, stdio: ['pipe', 'ignore', 'pipe'] })
         : spawn(CODEX_COMMAND, argv, { windowsHide: true, stdio: ['pipe', 'ignore', 'pipe'] });
     } catch (err) {
       finish({ ok: false, ...classifySpawnError(err) });

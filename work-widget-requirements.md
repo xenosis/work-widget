@@ -389,7 +389,8 @@ Windows 위젯형 도구를 만든다.
 
 ### B1.3 화면 간 이동
 - 사이드바 네비게이션 방식
-- 메뉴 구성: 대시보드 / 프로젝트 / 할일전체 / 메모 / 일정 / 백로그(P19 추가, 아래 결정 참고) / 설정(P15 추가, 아래 결정 참고)
+- 메뉴 구성: 대시보드 / 프로젝트 / 할일전체 / 메모 / 일정 / 백로그(P19 추가, 아래 결정 참고) /
+  주간보고(P26 추가, 아래 결정 참고) / 설정(P15 추가, 아래 결정 참고)
 
 - (2026-09-26 결정, P15, 이전 결정 번복) P12.16 당시 "카테고리 관리는 자주 안 쓰는 기능이라
   고정 5개인 사이드바 메뉴를 늘리기보다 일정 화면 안에 접어둔다"고 정했었다(아래 B3.4 문단
@@ -518,6 +519,75 @@ Windows 위젯형 도구를 만든다.
   번짐이 생기는 문제도 있었음) — 출력 픽셀이 덮는 원본 영역 전체를 알파 예비곱(premultiplied)
   평균 내는 박스 필터로 바꾸고, `scripts/lib/resizePng.test.js`(신규, 7개 케이스: 크롭/축소/
   확대/투명 픽셀 비오염)로 회귀를 고정했다.
+
+- (2026-09-27 결정, P26) P25(codex exec 실행 백엔드)에 이어 실제 화면을 붙인다. 8번째 사이드바
+  메뉴 "주간보고"(`src/screens/WeeklyReport.jsx`)를 추가 — 위 B1.3 메뉴 구성 갱신. 화면 구성:
+  (1) 전역 예시 문장 입력 카드(textarea + 저장 버튼, 모든 소스에 공통 적용 — 사람이 "일단 UI
+  만들어주고 예시 문장은 내가 나중에 회사 예시로 채운다"고 한 대로 초기값은 빈 문자열), (2)
+  등록된 backlog_sources마다 `WeeklyReportSourceRow.jsx`(신규) 행 — "생성" 버튼, 로딩("생성
+  중..."), 결과(마지막 생성 시각 + 텍스트 + "복사" 버튼, `navigator.clipboard.writeText` 사용).
+
+  구현: `WeeklyReportSourceRow`는 `BacklogSourceCard.jsx`와 같은 방식으로
+  `useBacklogSourceRead`+`resolveWeeklySnapshot`/`diffWeeklyChanges`를 재사용해 그 순간의
+  `weekData`(added/statusChanged/removed)를 구하되, 기준선을 새로 저장(rotate)하지는 않는다
+  (그건 여전히 백로그 탭의 역할, B3.5 참고 — 이 화면은 "지금 계산하면 이렇게 나온다"는 값을
+  codex 프롬프트에 쓸 뿐). 생성 버튼을 누르면 `window.api.generateWeeklyReport({sourceLabel,
+  exampleSentence, weekData})`(P25 IPC)를 호출하고, 성공하면 결과를 `backlog_sources[].weekly_report`
+  (`{weekStart, text, generated_at}`)로 저장하며 재실행 시 이전 결과를 덮어쓴다. 실패하면
+  `{code, message}`를 사람이 읽을 안내 문구로 변환해 보여준다(NOT_INSTALLED/AUTH_ERROR/TIMEOUT
+  각각 다른 안내 문장 + codex 원문 메시지 함께 표시).
+
+  여러 소스가 서로 다른 시점에 각자 결과 저장을 시도할 수 있어(Backlog.jsx의 소스별 기준선
+  저장과 같은 종류의 문제), `WeeklyReport.jsx`는 저장을 프라미스 체인으로 직렬화하는
+  `enqueueSave`를 화면 안에 둔다(react-hooks/refs 제약으로 mutex/최신 데이터 ref를 다른
+  모듈로 못 빼는 것도 Backlog.jsx의 `handleRotateSnapshot`과 같은 이유) — Backlog.jsx의
+  mutex+명시적 재시도 방식과 달리, 이 화면의 저장은 "건너뛰면 끝"이 아니라 "차례가 오면 그대로
+  실행"해도 되므로 폴링 없이 단순한 프라미스 체이닝만으로 충분하다. 실제로 data.json을 쓰는
+  로직 자체(`buildExampleSaveData`/`buildReportSaveData`)는 순수 함수로 뽑아 `src/lib/
+  weeklyReportActions.js`에 두고 vitest로 검증한다(ref를 안 건드리므로 분리 가능).
+
+  실제 codex 호출은 P25에서 이미 검증했으므로(done_when이 명시적으로 이 task는 모킹 가능한
+  범위로 최소화하라고 함) 이 화면은 실제 API 비용 없는 경로들로 종단 검증했다: (1) 이 컴퓨터에
+  설치된 codex(.cmd)를 PATH에서 제거한 격리 환경으로 Electron을 띄워 "생성" 클릭 → 로딩("생성
+  중...") → `NOT_INSTALLED` 에러가 실제 IPC 왕복으로 화면에 표시되고 버튼이 다시 눌러도 되는
+  상태로 돌아오는지 확인(실제 코드 경로, 모킹 아님 — 다만 codex 자신을 실행하지 않아 비용이
+  없음). (2) `data.json`에 결과가 이미 있는 상태로 띄워 결과 텍스트/생성 시각 표기/복사 버튼
+  (클립보드 반영까지)과, 저장된 예시 문장이 재실행 후에도 그대로 복원되는지 확인. (3) 기준선
+  없음 안내 문구가 실제로 뜨는지 확인.
+
+  **critical-reviewer 리뷰에서 잡힌 문제와 반영**: [High] 3건 — (1) codex 생성은 최대 90초까지
+  걸릴 수 있는데 그동안 사용자가 다른 탭으로 이동하면 `App.jsx`가 이 화면 컴포넌트를
+  언마운트한다 — 이미 시작된 `handleGenerate`→`onSaveReport`→`enqueueSave` 체인은(자바스크립트
+  프라미스라) 언마운트와 무관하게 계속 실행되는데, 그때 "탭을 떠나던 시점"의 오래된
+  `dataRef.current`로 data.json 전체를 다시 쓰면 그 사이 다른 탭에서 생긴 변경(할일 추가,
+  소스 삭제 등)이 조용히 사라질 수 있었다 — `enqueueSave`가 `dataRef` 스냅샷 대신 저장 직전에
+  매번 `window.api.loadData()`로 디스크의 최신 상태를 다시 읽어 그 위에 적용하도록 고쳐,
+  마운트 여부와 무관하게 항상 안전해졌다(이제 `dataRef`/그 동기화 effect 자체가 필요 없어져
+  삭제). (2) `WeeklyReportSourceRow`가 행이 마운트될 때(또는 주가 바뀔 때)만 읽는
+  `state.tasks`를 그대로 썼는데, 트레이에 며칠 띄워둔 채 "생성"을 누르면 그 오래된 tasks로
+  "이번 주 변화"를 계산해 실제 변화가 빠진 보고서가 조용히 만들어질 수 있었다 — 생성 직전에
+  `window.api.readBacklogSourceTasks`로 한 번 더 실제 파일을 읽도록 고쳤다. (3) 보고된 종단
+  검증에 `result.ok===true`(성공) 경로와 재실행 시 실제 덮어쓰기가 한 번도 실행된 적이
+  없었다는 지적 — 실제 codex 대신 stdin을 그대로 파일에 되돌려주는 스텁 `codex.cmd`(PATH
+  최상단에 두고 진짜 codex는 제거)로 실제 IPC/spawn 경로 전체를 왕복시켜, UI로 예시 문장을
+  두 번 다르게 저장→생성했을 때 결과 텍스트가 각각의 예시 문장을 반영하고
+  `backlog_sources[].weekly_report`가 실제로 교체되는 것까지 확인했다(이 과정에서 부수적으로
+  발견한 실제 버그도 하나 고쳤다 — 아래 참고).
+
+  **위 스텁 테스트 도중 자체 발견한 문제(critical-reviewer 지적 범위 밖)**: Windows에서 명령
+  이름 자체("codex")까지 따옴표로 감싸면(`quoteForWindowsShell`을 인자뿐 아니라 명령 이름에도
+  적용) `cmd.exe /d /s /c "<명령줄>"`(Node의 `shell:true`가 내부적으로 이렇게 실행) 아래에서
+  그 뒤에 실행되는 `.cmd` 배치 파일의 `%~dp0`(자기 자신의 경로) 확장이 깨진다는 것을 스텁으로
+  실측했다 — 인자값(공백/메타문자가 있을 수 있는 임시 경로)만 따옴표로 감싸고, 공백이 있을 수
+  없는 고정 리터럴인 명령 이름 자체는 감싸지 않도록 고쳤다.
+
+  [Medium] 3건 — `needsBaseline` 안내 문구가 "백로그 탭을 먼저 열면 지금 생성에 도움이 된다"는
+  인상을 줬는데 사실과 다르다는 지적(백로그 탭을 여는 순간 기준선이 "지금 상태"로 저장되므로
+  그 직후 생성해도 diff는 똑같이 비어 있음 — 도움은 다음 생성부터) — 문구를 정정했다.
+  `weeklyReportActions.js`의 머리 주석이 Backlog.jsx의 mutex/ref 패턴을 그대로 설명하고 있어
+  (실제로는 `enqueueSave`의 프라미스 큐 방식이라 ref를 전혀 안 받음) 실제 구조에 맞게 정정.
+  `gate`가 비어 있어 done_when의 자동 검증 요구가 "미설정 검사" 상태였던 것을 표시용 검증
+  명령으로 채움. lint/vitest(353개)/build 재통과, 위 스텁 기반 종단 시나리오 재확인.
 
 (추가 상세: 각 화면 내부 세부 흐름(프로젝트 상세 진입, 할일 추가/체크 인터랙션 등) — 이어서 논의)
 

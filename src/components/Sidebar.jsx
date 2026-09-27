@@ -1,4 +1,13 @@
-import { DashboardIcon, ProjectIcon, TodoIcon, MemoIcon, ScheduleIcon, BacklogIcon, SettingsIcon } from './icons.jsx';
+import {
+  DashboardIcon,
+  ProjectIcon,
+  TodoIcon,
+  MemoIcon,
+  ScheduleIcon,
+  BacklogIcon,
+  WeeklyReportIcon,
+  SettingsIcon,
+} from './icons.jsx';
 
 // P15 결정(사람, 2026-09-26): 이전까지는 사이드바 메뉴를 5개로 고정해 두고(카테고리 관리 등
 // 자주 안 쓰는 기능은 관련 화면 안에 접어두는 방침) 6번째를 안 늘렸는데, 실사용해보니 그
@@ -14,6 +23,8 @@ const MENU = [
   { key: 'memos', label: '메모', Icon: MemoIcon },
   { key: 'schedule', label: '일정', Icon: ScheduleIcon },
   { key: 'backlog', label: '백로그', Icon: BacklogIcon },
+  // P26: 백로그 기반 codex 자동 주간보고 — 8번째 메뉴로 분리(다른 탭들과 같은 이유, B1.3 참고).
+  { key: 'weeklyReport', label: '주간보고', Icon: WeeklyReportIcon },
   { key: 'settings', label: '설정', Icon: SettingsIcon },
 ];
 
