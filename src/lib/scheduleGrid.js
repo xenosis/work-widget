@@ -131,6 +131,40 @@ export function getSchedulesForDate(schedules, dateString) {
   });
 }
 
+// P23(사용자 요청): 월간/주간 뷰 하단에 그 기간 전체 일정을 날짜순으로 다 보여주기 위해,
+// 주어진 날짜 목록(월간이면 그 달 1일~말일, 주간이면 getWeekDates 7일) 각각에 대해
+// getSchedulesForDate를 돌려 날짜별로 묶는다. 일정이 하나도 없는 날짜는 결과에서 빼서
+// 목록이 빈 날짜로 늘어지지 않게 한다(사용자가 "일정 한방에 다 확인"하려는 목적에 맞게
+// 밀도를 높임). critical-reviewer 지적(High): id 없는 레코드(React key로 못 씀, B3.4 미준수
+// 데이터)를 여기서 걸러내지 않고 호출부(ScheduleRangeList.jsx)에서만 걸러내면, "그 날짜의
+// 일정이 전부 id 없음"인 경우 groups에는 빈 items로 남아 있으면서 렌더링만 빈 목록이 되고,
+// groups.length 자체는 0이 아니라서 "일정 없음" 안내도 안 뜨는 모순이 생긴다 — 여기서 한 번에
+// 걸러 groups는 항상 "표시할 수 있는 일정이 있는 날짜"만 담게 하고, ScheduleDateDetail.jsx와
+// 같은 이유로 droppedCount(id 없어 걸러진 개수, 범위 전체 합계)도 같이 돌려준다.
+export function getSchedulesInRange(schedules, dateStrings) {
+  let droppedCount = 0;
+  const groups = [];
+  for (const date of dateStrings) {
+    const all = getSchedulesForDate(schedules, date);
+    const items = all.filter((s) => typeof s.id === 'string');
+    droppedCount += all.length - items.length;
+    if (items.length > 0) groups.push({ date, items });
+  }
+  return { groups, droppedCount };
+}
+
+// P23: 월간/주간 각각 무슨 날짜 목록을 기준으로 훑을지 계산 — critical-reviewer 지적(Medium):
+// 원래 ScheduleRangeList.jsx 안에만 있어 gate=npm test로 검증할 수 없었다(shiftMonth/
+// todayResetCursors를 컴포넌트 밖으로 뺀 것과 같은 이유로 여기로 옮김). getMonthGrid는 인접
+// 달 채움 날짜도 포함하므로 inCurrentMonth로 걸러 그 달 1일~말일만 남긴다(done_when 요구사항).
+export function getScheduleRangeDates(view, monthCursor, weekAnchor) {
+  if (view === 'week') return getWeekDates(weekAnchor);
+  return getMonthGrid(monthCursor.year, monthCursor.month)
+    .flat()
+    .filter((cell) => cell.inCurrentMonth)
+    .map((cell) => cell.date);
+}
+
 // P12.9: 월간/주간 셀이 "일정이 있다/없다" boolean 점 하나만 보여줘서 반복/일회성 구분도,
 // 몇 개인지도, 무슨 일정인지도 클릭해야만 알 수 있었다(P5.2 당시 420px 폭 제약으로 의도된
 // 단순화) — 클릭 없이도 개수·유형을 구분할 수 있게, 셀 하나가 표시할 점 목록과 툴팁용 제목

@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { getSourceDisplayLabel } from '../lib/backlogSourceMutations.js';
 import { useBacklogSourceRead } from '../lib/useBacklogSourceRead.js';
 import { getThisWeekRange } from '../lib/dateRange.js';
-import { groupTasksByStatus } from '../lib/backlogTaskGrouping.js';
+import { groupTasksByStatus, selectGroupDisplayTasks } from '../lib/backlogTaskGrouping.js';
 import { resolveWeeklySnapshot, diffWeeklyChanges, countTasksByStatus } from '../lib/backlogWeeklySnapshot.js';
 
 const MAX_TASKS_PER_GROUP = 50;
@@ -113,7 +113,14 @@ export default function BacklogSourceCard({ source, onRotateSnapshot, onDiffChan
     return (
       <div className="backlog-status-source">
         <h3 className="backlog-status-source-title">{label}</h3>
-        <p className="empty-text">
+        <p
+          className="empty-text"
+          title={
+            state.skippedCount > 0
+              ? `표시할 task가 없습니다(id 없는 항목 ${state.skippedCount}개는 제외됨).`
+              : '등록된 task가 없습니다.'
+          }
+        >
           {state.skippedCount > 0
             ? `표시할 task가 없습니다(id 없는 항목 ${state.skippedCount}개는 제외됨).`
             : '등록된 task가 없습니다.'}
@@ -126,6 +133,24 @@ export default function BacklogSourceCard({ source, onRotateSnapshot, onDiffChan
   const counts = countTasksByStatus(state.tasks);
   const hasChanges = changes.added.length > 0 || changes.statusChanged.length > 0 || changes.removed.length > 0;
   const totalChangeCount = changes.added.length + changes.statusChanged.length + changes.removed.length;
+  // P24(사용자 요청): 상태별 전체 목록 안에서 "이번 주 상태가 바뀐 항목"이 어디 있는지 글자
+  // 색으로 바로 알아볼 수 있게 한다(새로 추가된 항목은 위 "이번 주 변경 사항" 섹션에서 이미
+  // 뚜렷이 보이므로 색 구분은 상태 변경에만 준다 — 사용자가 명시적으로 "새로 추가 말고 상태
+  // 변경"이라고 구분해 요청함). cap 예외도 statusChanged로만 좁힌다 — critical-reviewer
+  // 지적(Medium): 처음엔 added까지 cap에서 빼려 했는데, added는 이 프로젝트가 개수를 통제할
+  // 수 없는 값이라(외부 파일이 통째로 교체되거나 기준선이 빈 상태에서 잡히면 수천 건도 될 수
+  // 있음) P14.2가 애초에 cap을 둔 이유(대용량 외부 파일의 DOM 폭증 방지)와 정면으로
+  // 부딪힌다. added는 원래 cap을 그대로 적용받고, 색 구분·cap 예외 둘 다 정말 필요한
+  // statusChanged만 예외로 좁혀 그 위험을 없앤다. previousStatus도 같이 들고 있어야
+  // hover 툴팁에 "무엇이 바뀌었는지"를 보여줄 수 있다(critical-reviewer 지적 — 색만으로는
+  // 색맹 사용자나 스크린리더가 구분 못 함).
+  const statusChangedPrev = new Map(changes.statusChanged.map((t) => [t.id, t.previousStatus]));
+  // 알려진 한계(critical-reviewer 지적, Medium): statusChangedPrev는 소스 전체 기준 id
+  // Map이라 모든 상태 그룹에 똑같이 적용된다 — 외부 파일에 같은 id가 서로 다른 상태 그룹에
+  // 중복으로 나타나는 경우(diffWeeklyChanges의 baselineById가 마지막 항목만 기억하므로 그중
+  // 어느 쪽이 "바뀐 것"으로 잡힐지도 원래 불확정), 실제로는 안 바뀐 쪽까지 색이 칠해질 수
+  // 있다. id 중복 자체가 이 위젯이 통제 못 하는 외부 데이터의 기존 한계라 여기서 새로
+  // 해결하지 않는다.
 
   return (
     <div className="backlog-status-source">
@@ -187,25 +212,33 @@ export default function BacklogSourceCard({ source, onRotateSnapshot, onDiffChan
             )}
           </div>
           <ul className="backlog-status-groups">
-            {groups.map((g) => (
-              <li key={g.status} className="backlog-status-group">
-                <h4 className="backlog-status-group-title">
-                  <span className="backlog-status-group-title-text">{g.status}</span>
-                  <span className="card-count-badge">{g.tasks.length}</span>
-                </h4>
-                <ul className="card-list">
-                  {g.tasks.slice(0, MAX_TASKS_PER_GROUP).map((t, i) => (
-                    <li key={`${t.id}-${i}`} className="backlog-status-task-row">
-                      <span className="backlog-status-task-title">{t.title}</span>
-                      {t.owner && <span className="backlog-status-task-owner">{t.owner}</span>}
-                    </li>
-                  ))}
-                </ul>
-                {g.tasks.length > MAX_TASKS_PER_GROUP && (
-                  <p className="backlog-source-status">외 {g.tasks.length - MAX_TASKS_PER_GROUP}개</p>
-                )}
-              </li>
-            ))}
+            {groups.map((g) => {
+              const { displayed, hiddenCount } = selectGroupDisplayTasks(g.tasks, statusChangedPrev, MAX_TASKS_PER_GROUP);
+              return (
+                <li key={g.status} className="backlog-status-group">
+                  <h4 className="backlog-status-group-title">
+                    <span className="backlog-status-group-title-text">{g.status}</span>
+                    <span className="card-count-badge">{g.tasks.length}</span>
+                  </h4>
+                  <ul className="card-list">
+                    {displayed.map((t, i) => {
+                      const prevStatus = statusChangedPrev.get(t.id);
+                      return (
+                        <li
+                          key={`${t.id}-${i}`}
+                          className={prevStatus !== undefined ? 'backlog-status-task-row is-changed' : 'backlog-status-task-row'}
+                          title={prevStatus !== undefined ? `이번 주 상태 변경: ${prevStatus} → ${t.status}` : undefined}
+                        >
+                          <span className="backlog-status-task-title">{t.title}</span>
+                          {t.owner && <span className="backlog-status-task-owner">{t.owner}</span>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {hiddenCount > 0 && <p className="backlog-source-status">외 {hiddenCount}개</p>}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

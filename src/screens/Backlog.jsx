@@ -114,7 +114,9 @@ export default function Backlog() {
       <h1>백로그</h1>
       <BacklogWeeklyOverview changesBySource={changesBySource} sourceOrder={usableSources.map((s) => s.id)} />
       {usableSources.length === 0 ? (
-        <p className="empty-text">등록된 외부 backlog(.json) 소스가 없습니다(설정 탭에서 먼저 등록하세요).</p>
+        <p className="empty-text" title="등록된 외부 backlog(.json) 소스가 없습니다(설정 탭에서 먼저 등록하세요).">
+          등록된 외부 backlog(.json) 소스가 없습니다(설정 탭에서 먼저 등록하세요).
+        </p>
       ) : (
         <div className="card">
           <div className="card-header">

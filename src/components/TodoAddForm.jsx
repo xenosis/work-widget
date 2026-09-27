@@ -47,7 +47,9 @@ export default function TodoAddForm({ projects, onAdd, disabled }) {
 
   if (!hasProjects) {
     return (
-      <p className="empty-text">먼저 프로젝트를 만들어야 이 화면에서 할일을 추가할 수 있습니다.</p>
+      <p className="empty-text" title="먼저 프로젝트를 만들어야 이 화면에서 할일을 추가할 수 있습니다.">
+        먼저 프로젝트를 만들어야 이 화면에서 할일을 추가할 수 있습니다.
+      </p>
     );
   }
 

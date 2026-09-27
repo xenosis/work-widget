@@ -209,7 +209,7 @@ export default function Memos() {
           <button className="memo-add-btn" onClick={handleAddMemo}>
             + 새 메모
           </button>
-          {visibleMemos.length === 0 && <p className="memo-empty">메모가 없습니다.</p>}
+          {visibleMemos.length === 0 && <p className="empty-text">메모가 없습니다.</p>}
           <ul>
             {visibleMemos.map((m) => {
               const projectName = getProjectName(data.projects, m.project_id);
@@ -281,7 +281,9 @@ export default function Memos() {
               )}
             </>
           ) : (
-            <p className="memo-empty">왼쪽 목록에서 메모를 선택하거나 새 메모를 추가하세요.</p>
+            <p className="empty-text" title="왼쪽 목록에서 메모를 선택하거나 새 메모를 추가하세요.">
+              왼쪽 목록에서 메모를 선택하거나 새 메모를 추가하세요.
+            </p>
           )}
         </div>
       </div>

@@ -245,6 +245,19 @@ Windows 위젯형 도구를 만든다.
   진입 시 textarea로 확인)라 이번 task 범위 밖으로 남긴다 — 별도로 다룰지는 사람 판단이
   필요하다. lint/vitest(323개)/build 통과, Playwright로 위 세 가지 High 항목 각각 실제로
   말줄임됨을 재확인.
+
+  **done 처리 이후 사용자가 직접 발견한 추가 누락(2026-09-27)**: (1) 메모 탭의 안내 문구
+  ("왼쪽 목록에서 메모를 선택하거나...")가 2줄로 줄바꿈됨 — `.memo-empty`가 `.empty-text`와
+  내용이 사실상 같은 중복 클래스였는데 `.empty-text`에만 말줄임이 적용돼 있었다. 두 사용처를
+  `.empty-text`로 통일하고 `.memo-empty`는 삭제, `.empty-text`에도 nowrap+ellipsis를 추가했다
+  (이 클래스는 화면 전체에서 안내/빈 상태 문구로 널리 쓰여 이번에 포괄적으로 해결됨). (2) 일정
+  화면의 범례("점 색 = 카테고리..." 등 3개)가 위젯을 좁히면 항목 안에서 줄바꿈됨 — 이 문구들은
+  줄여서 말줄임할 만큼 무의미한 텍스트가 아니라서(짧고 각각 의미가 있는 안내), 대신
+  `.schedule-dot-legend`에 `flex-wrap:wrap`을 줘 항목 묶음이 통째로 다음 줄로 넘어가게 하고
+  `.schedule-dot-legend-item`에 `white-space:nowrap`을 줘 항목 내부에서는 줄바꿈이 안 생기게
+  했다(말줄임 대신 "줄 전체가 다음 줄로 내려가는" 방식을 택한 유일한 예외 — 문구 손실 없이
+  요청 취지인 "항목 내부 2줄 방지"를 지킴). lint/vitest(325개)/build 통과, Playwright로 두
+  가지 다 재확인.
 - (2026-09-25 결정, P12.13) 앱 전체의 select(7곳)와 date 입력(7곳 — 착수 시점 grep으로
   재확인해 원래 분석의 "4곳"을 정정, `Projects.jsx`/`ProjectDetail.jsx` 누락돼 있었음)이
   지금까지 배경/테두리만 다크 토큰을 따르고 화살표/옵션 목록/달력 아이콘은 OS 기본 모양
@@ -943,6 +956,41 @@ Windows 위젯형 도구를 만든다.
   버튼을 다시 누르면 접히고, 추가 후 자동으로 접히지는 않는다(연속으로 여러 일정을 추가하는
   경우를 고려). lint/vitest(323개)/build 통과, Playwright로 기본 접힘·버튼 클릭 시 펼침·정상
   추가 동작을 확인.
+- (2026-09-27 결정, P23) 사용자 요청: 날짜를 하나씩 클릭하지 않아도 지금 보이는 달/주 전체
+  일정을 한 번에 훑어보고 싶다는 요청. `scheduleGrid.js`에 `getSchedulesInRange(schedules,
+  dateStrings)`(날짜 목록 각각에 `getSchedulesForDate`를 적용해 id 유효한 일정만 날짜순으로
+  묶고, `{groups, droppedCount}`를 돌려주는 순수 함수 — `droppedCount`는
+  `ScheduleDateDetail.jsx`와 같은 이유로 id 없어 걸러진 개수)와 `getScheduleRangeDates(view,
+  monthCursor, weekAnchor)`(월간이면 그 달 1일~말일 — `getMonthGrid` 결과에서
+  `inCurrentMonth`만 필터, 주간이면 `getWeekDates` 7일 — `shiftMonth`/`todayResetCursors`와
+  같은 이유로 컴포넌트 밖 순수 함수로 둬 `npm test`로 검증 가능하게 함) 추가. 새 컴포넌트
+  `ScheduleRangeList.jsx`(읽기 전용 — 수정/삭제는 여전히 날짜를 선택해
+  `ScheduleDateDetail`에서 한다)를 `ScheduleDateDetail` 바로 다음, "새 일정 추가" 토글
+  이전에 배치. id 없는 일정이 있으면 `ScheduleDateDetail`과 같은 `.data-issue-notice` 문구를
+  보여주고(한쪽만 알리면 데이터 손실 신호가 화면마다 갈림), title이 문자열이 아니거나 빈
+  값이면 `getScheduleCellSummary`와 같은 방어로 "(제목 없음)"을 보여준다(손상 데이터로 화면
+  전체가 죽는 것 방지). lint/vitest(331개)/build 통과, Playwright로 반복 일정이 발생하는 모든
+  날짜를 포함해 그 달의 일정이 전부 나타남을 확인(예: 매주 화요일 반복 1건 + 일회성 2건이
+  등록된 2026년 9월 → 서로 다른 날짜 7개 그룹 확인).
+
+  **critical-reviewer 리뷰에서 잡힌 문제와 반영**: [Medium] 4건 — (1) 날짜 목록 계산
+  (`resolveDateStrings`)이 컴포넌트 안에만 있어 `gate=npm test`로 검증 못 했다 —
+  `scheduleGrid.js`로 옮겨 `getScheduleRangeDates`로 내보내고, 12월(연 경계) 테스트 추가.
+  (2) id 없는 레코드를 렌더링/개수 계산에서만 걸러내고 `groups.length`(빈 상태 판정)에는 안
+  걸러내, "그 날짜의 일정이 전부 id 없음"인 경우 빈 목록이 뜨는데 "일정 없음" 안내도 안 뜨는
+  모순이 있었다 — `getSchedulesInRange` 자체가 걸러서 돌려주도록 고쳐 한 곳에서 일관되게
+  처리. (3) `ScheduleDateDetail.jsx`는 id 없는 일정을 `.data-issue-notice`로 알리는데 이
+  컴포넌트는 조용히 숨겨 같은 문제가 화면마다 다르게 보였다 — 같은 문구/클래스로 통일.
+  (4) `title`이 문자열이 아니거나 빈 값일 때(B3.4가 막지 않는 손상 데이터) 방어가 없어 React가
+  죽을 수 있었다 — `getScheduleCellSummary`와 같은 "(제목 없음)" 대체 추가. 그리고 이 배치
+  과정에서 같이 반영된 P20 후속 수정(위 B1.1의 "done 처리 이후 사용자가 직접 발견한 추가
+  누락" 참고)에 대해서도 지적 — `.empty-text`에 nowrap+ellipsis를 걸면 안내문 뒷부분이
+  잘려 안 보이게 되는 곳이 몇 군데 있다(예: "설정 탭에서 먼저 등록하세요", "id 없는 항목 N개는
+  제외됨" 같은 실질적 지시/경고 문구). 그 문구들을 잘라도 되는 "짧은 안내"와 구분 없이
+  전부 똑같이 자른 것 — 실제로 잘림이 문제될 수 있는 5곳(`Backlog.jsx`, `TodoAddForm.jsx`,
+  `ProjectDetail.jsx`, `BacklogSourceCard.jsx`, `Memos.jsx`)에 `title` 속성(마우스 오버 시
+  전체 문구)을 추가해 잘려도 전체 내용을 확인할 수 있게 했다. lint/vitest(331개)/build
+  재통과.
 
 ---
 
@@ -1171,6 +1219,45 @@ Windows 위젯형 도구를 만든다.
   `BacklogStatusSection.jsx`는 삭제됐고, 패널이 "접혀 있으면 기준선이 안 잡힌다"는 위 서술도
   더 이상 맞지 않는다(새 화면의 `BacklogSourceCard.jsx`는 접힌 상태에서도 배경에서 계속
   기준선을 확인·저장한다 — 위 P19 문단 참고).
+- (2026-09-27 결정, P24) 사용자 요청: 상태별 전체 목록에서 이번 주 상태가 바뀐 항목을
+  다른 글자색으로 구분해, 새로 추가된 것 말고 "상태가 바뀐" 항목이 전체 목록 어디에 있는지
+  바로 알아볼 수 있게 해달라는 요청. 구현하려던 중 사용자가 직접 발견: 이 프로젝트 자신의
+  backlog(.json, 105개)로 실제 확인해보니 상태 그룹당 50개 cap(`MAX_TASKS_PER_GROUP`,
+  P14.2에서 대용량 외부 파일의 DOM 폭증을 막으려던 안전장치)에 걸려 "외 N개"로 잘리는데,
+  하필 바뀐 항목이 51번째 이후에 있으면 색으로 구분해도 안 보여 의미가 없다는 지적 —
+  이 지점에서 Claude에게 의견을 물었고, 최초 합의된 방향은 "이번 주 바뀐 항목(추가+상태변경)은
+  cap에서 예외로 두고 항상 표시"였으나, critical-reviewer 리뷰에서 이 범위가 다시 좁혀졌다
+  (아래 리뷰 반영 참고 — 최종적으로는 상태 변경만 cap 예외). `backlogTaskGrouping.js`에
+  `selectGroupDisplayTasks(tasks, changedIds, cap)`(순수 함수, vitest 5건)를 추가해 "안 바뀐
+  것만 cap 적용 + 바뀐 것은 항상 포함, 원래 배열 순서 유지"를 구현하고, `BacklogSourceCard.jsx`
+  가 상태별 목록 렌더링에 이 함수를 쓴다. 색 구분은 "상태 변경"에만 준다(사용자가 명시적으로
+  "새로 추가 말고 상태 변경"이라 구분해 요청함 — 새로 추가된 항목은 위 "이번 주 변경 사항"
+  섹션에서 이미 뚜렷이 보임) — 새 색 토큰을 늘리지 않고 기존 `--priority-mid-text`를
+  재사용한다(`.priority-chip.mid`의 "우선순위 중" 칩 색이지만, 백로그 탭엔 그 칩이 안 쓰여
+  의미 충돌 없음). lint/vitest(333개)/build 통과, Playwright로 60개짜리 상태 그룹(50개 cap
+  초과) 중 51번째(cap 밖) 항목이 이번 주 상태 변경된 상황을 재현해 그 항목이 실제로 화면에
+  나타나고 색 구분도 적용됨을 확인.
+
+  **critical-reviewer 리뷰에서 잡힌 문제와 반영**: [High] 1건 — `selectGroupDisplayTasks`
+  최초 구현이 "안 바뀐 것 중 cap개의 id"를 `Set`으로 만들어 그 Set에 속하는지로 다시
+  필터링했는데, 외부 파일은 id 중복이 없다는 보장이 없어(B3.5의 읽기 전용 원칙과 같은 이유로
+  형식을 강제 못 함) 같은 id가 여러 번 나오면 cap이 새거나(중복 id 행이 cap보다 많이 렌더됨)
+  `hiddenCount`가 부풀려지는 버그가 있었다 — id로 "속하는지"를 다시 묻는 대신 tasks를 한 번만
+  순회하며 그 자리에서 바로 "보여줄지"를 정하는 위치 기반 방식으로 바꿔 중복 id에도 안전하게
+  했다(vitest에 중복 id 케이스 추가). [Medium] 4건 — (1) `added`까지 cap 예외로 두면 이
+  프로젝트가 개수를 통제 못 하는 값이라(외부 파일 통째 교체, 빈 기준선에서 대량 유입 등)
+  P14.2가 cap을 둔 이유(DOM 폭증 방지)와 정면으로 부딪힌다는 지적 — 색 구분·cap 예외 둘 다
+  실제로 필요한 `statusChanged`만으로 범위를 좁혔다(그래서 위 done_when도 "새로 추가되거나
+  상태가 바뀐"에서 "상태가 바뀐"으로 정정했다 — 착수 당시 done_when에 사용자의 실제 발화
+  의도가 정확히 반영되지 못했던 것). (2) id가 중복된 task가 서로 다른 상태 그룹에 걸쳐 있는
+  경우 `diffWeeklyChanges`의 `baselineById`가 마지막 항목만 기억해 어느 쪽이 "바뀐 것"으로
+  잡힐지 원래도 불확정이라는 지적 — 이 위젯이 통제 못 하는 외부 데이터의 기존 한계로 코드
+  주석에 남기고 별도로 해결하지 않는다. (3) 색만으로는 색맹 사용자나 스크린리더가 구분 못
+  한다는 지적 — 상태 변경 행에 `title`(hover 툴팁, "이번 주 상태 변경: {이전} → {현재}") 추가.
+  (4) 순서 유지 테스트가 cap이 실제로 안 걸리는 조건이라 검증이 얕았다는 지적 — cap이 실제로
+  걸리면서 바뀐 항목이 안 바뀐 항목들 사이에 끼어 있는 케이스 추가. lint/vitest(333개)/build
+  재통과, Playwright로 좁혀진 범위(added는 색·cap 예외 둘 다 없음, statusChanged만 있음)와
+  hover 툴팁을 재확인.
 
 ---
 
@@ -1340,3 +1427,5 @@ Windows 위젯형 도구를 만든다.
 - v3.40 (2026-09-27): P21(일정 탭: 새 일정 추가 폼을 버튼 클릭 시에만 표시) done 처리 — 사용자 피드백(폼이 항상 펼쳐져 공간을 너무 차지함) 반영, P16이 검토 후 기각했던 방식을 이번엔 채택(B2.4에 번복 기록). Schedule.jsx에 showAddForm(기본 false)+토글 버튼(schedule-category-manager-toggle 재사용) 추가. critical-reviewer 지적 반영: [Medium] 저장 중 토글에 disabled 없어 폼이 언마운트되며 에러 표시 기회를 잃을 수 있던 것을 disabled={saving}으로 수정, ScheduleAddForm.jsx 헤더 주석 정정. lint/vitest(323개)/build 통과, Playwright로 기본 접힘/펼침/추가 확인.
 - v3.41 (2026-09-27): P22(스크롤바 전체 앱 다크 테마 적용) done 처리 — 사용자 피드백(스크롤바가 Windows 기본 밝은 테마 그대로) 반영, P19의 사이드바 전용 웹킷 스크롤바 테마를 전역으로 확장. critical-reviewer 지적 반영: [High] 표준 scrollbar-width/-color를 함께 걸었더니 이 Chromium 버전(Electron 31/Chromium 126)이 ::-webkit-scrollbar*를 무시해 .sidebar 스크롤바가 의도한 4px 대신 12px이 됨(Playwright 실측으로 확인, P15/P19가 막은 폭 축소→줄바꿈 연쇄 재발 위험) — 표준 속성 제거, webkit 전용으로 전환 후 재실측(4~5px로 복귀). [Medium] 스크롤바 모서리/textarea 리사이저 테마 누락 추가. lint/build 통과.
 - v3.42 (2026-09-27): P20(전역 UI: 라벨/제목류 텍스트 2줄 방지) done 처리 — 사용자 피드백(화면 어디서든 2줄 줄바꿈 대신 말줄임 요청) 반영. `.card-title`/`.content h1`/`.schedule-holiday-name`/`.backlog-status-source-title`/`.backlog-status-group-title`(상태 텍스트 부분)/`.backlog-weekly-summary`/`.backlog-source-summary-counts`에 nowrap+ellipsis 추가, `.card-count-badge`에 flex-shrink:0. 메모 본문/설명 textarea는 의도적으로 제외. critical-reviewer 지적 반영: [High] 3건 — `.backlog-status-task-owner`(외부 status/owner/sourceLabel)에 max-width+말줄임, `.backlog-source-label`(설정 탭 소스 라벨, 요구사항 문서의 잘못된 "이미 처리됨" 기재도 정정)에 nowrap+ellipsis, 대시보드 진행중 프로젝트 이름(클래스 없는 맨 span)에 `.project-row-name` 신설. [Medium] 3건 — `.backlog-source-summary-counts`의 text-overflow가 flex 컨테이너엔 실제로 안 그려진다는 CSS 사양 지적(block 텍스트 전용 스팬으로 분리, 배지는 바깥 형제로 분리해 항상 보이게), `.backlog-status-group-title` 배지 없는 사용처에 white-space:nowrap, `.card-header`에 gap 추가. ProjectDetail 설명 미리보기 1줄 제한은 P20 이전부터 있던 별개 설계라 범위 밖으로 남김(문서에 기록, 사람 판단 필요). lint/vitest(323개)/build 통과, Playwright로 재검증 중 자체 발견한 문제(backlog 토글 라벨 넘침) + critical-reviewer 지적 3건(대시보드/설정/백로그 화면) 전부 실측 확인.
+- v3.43 (2026-09-27): P23(일정 탭: 월간/주간 전체 기간 일정 리스트 추가) done 처리 — 사용자 요청(날짜를 하나씩 클릭 안 해도 지금 보이는 달/주 전체 일정을 한 번에 훑고 싶음) 반영. scheduleGrid.js에 getSchedulesInRange/getScheduleRangeDates 추가, 새 컴포넌트 ScheduleRangeList.jsx(읽기 전용)를 ScheduleDateDetail 다음·"새 일정 추가" 토글 이전에 배치. 겸사겸사 사용자가 발견한 P20 관련 잔여 문제 2건(메모 탭 안내 문구 2줄 줄바꿈, 일정 범례 항목 내부 줄바꿈)도 같이 수정. critical-reviewer 지적 반영: [Medium] 4건 — 날짜 목록 계산을 컴포넌트 밖 순수 함수로 이동(gate=npm test 검증 가능, 12월 연 경계 테스트 추가), id 없는 레코드 처리를 groups/droppedCount 양쪽에서 일관되게(반환 형태를 {groups, droppedCount}로 변경), ScheduleDateDetail과 동일한 .data-issue-notice로 통일, 손상된 title 값에 대한 "(제목 없음)" 대체 추가(크래시 방지). 추가로 P20 후속 .empty-text 잘림이 실질적 지시/경고 문구를 가리던 5곳에 title 속성 보강. lint/vitest(331개)/build 통과, Playwright로 손상 데이터 주입 시나리오까지 재확인.
+- v3.44 (2026-09-27): P24(백로그 상태별 전체 목록: 이번 주 변경 항목 색상 구분 + 50개 cap 예외) done 처리 — 사용자 요청(상태 변경된 항목을 다른 글자색으로) + 사용자가 직접 발견한 50개 cap 문제(변경 항목이 cap 밖에 있으면 색칠해도 안 보임) 반영. backlogTaskGrouping.js에 selectGroupDisplayTasks 추가, BacklogSourceCard.jsx가 상태별 목록 렌더링에 적용, 상태 변경 행에 .is-changed(--priority-mid-text 재사용) + hover 툴팁. critical-reviewer 지적 반영: [High] Set 재필터링 방식이 외부 파일의 id 중복에서 cap 누수/hiddenCount 부풀림을 일으키던 것을 위치 기반 단일 순회로 수정. [Medium] 4건 — added를 cap 예외 대상에서 제외(P14.2 DOM 폭증 방지 취지 보존, done_when도 사용자의 실제 발화 의도에 맞게 정정), id 중복이 여러 상태 그룹에 걸친 경우의 불확정성을 기존 외부 데이터 한계로 문서화, 접근성용 title 툴팁 추가, cap이 실제로 걸리는 조건의 순서 유지 테스트 보강. lint/vitest(333개)/build 통과.

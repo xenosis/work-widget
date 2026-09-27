@@ -9,6 +9,7 @@ import { ScheduleIcon } from '../components/icons.jsx';
 import ScheduleMonthView from '../components/ScheduleMonthView.jsx';
 import ScheduleWeekView from '../components/ScheduleWeekView.jsx';
 import ScheduleDateDetail from '../components/ScheduleDateDetail.jsx';
+import ScheduleRangeList from '../components/ScheduleRangeList.jsx';
 import ScheduleAddForm from '../components/ScheduleAddForm.jsx';
 import { createSchedule } from '../lib/scheduleFactory.js';
 import { applyScheduleUpdate, removeSchedule } from '../lib/scheduleMutations.js';
@@ -17,10 +18,8 @@ export default function Schedule() {
   const { apiAvailable, data, error, setData } = useAppData();
   const today = getTodayDateString();
   const [view, setView] = useState('month');
-  // P21 결정(사람, 2026-09-27, P16 결정 번복): "새 일정 추가" 폼이 항상 펼쳐져 있어 공간을
-  // 너무 차지한다는 재요청 — 다른 화면들의 "팝업 없이 항상 보이는 입력창" 원칙을 이 화면만
-  // 깨는 트레이드오프를 감수하고 접이식으로 바꾼다(사람이 그 트레이드오프를 알고도 다시
-  // 요청함, work-widget-requirements.md B2.4 참고). 기본은 접힘.
+  // P21(B2.4 참고, P16 번복): "새 일정 추가" 폼이 공간을 너무 차지한다는 재요청 — 다른
+  // 화면들의 "항상 보이는 입력창" 원칙을 이 화면만 깨는 트레이드오프를 감수해 접이식으로.
   const [showAddForm, setShowAddForm] = useState(false);
   const [monthCursor, setMonthCursor] = useState(() => {
     const [y, m] = today.split('-').map(Number);
@@ -258,6 +257,15 @@ export default function Schedule() {
         onEdit={handleEditSchedule}
         onDelete={handleDeleteSchedule}
         disabled={saving}
+      />
+      {/* P23: 날짜별 클릭 없이 보이는 달/주 전체 일정을 스크롤로 훑는다(읽기 전용, 수정/삭제는
+          위 ScheduleDateDetail). */}
+      <ScheduleRangeList
+        view={view}
+        monthCursor={monthCursor}
+        weekAnchor={weekAnchor}
+        schedules={data.schedules}
+        categories={data.schedule_categories}
       />
       {/* P21: "새 일정 추가" 폼을 기본 접힘 + 버튼 클릭 시 펼침으로(공간 절약 요청).
           critical-reviewer 지적(Medium): 저장 중(saving)에 이 버튼으로 폼을 접으면
