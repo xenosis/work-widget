@@ -1408,6 +1408,19 @@ Windows 위젯형 도구를 만든다.
   코드 수정은 범위 밖으로 남기고, P26은 생성된 텍스트를 사람이 직접 확인한 뒤에만 쓰도록(자동
   전송/복사 없음) 설계해야 한다.
 
+  **done 처리 이후 사용자가 직접 발견한 버그(2026-09-27)**: 실제 패키지를 빌드해 이 프로젝트
+  자신의 backlog(.json, 이번 주 신규 7건 — P20/P21/P22/P23/P24/P25/P26)로 실제 생성해보니,
+  결과가 "이번 주는 일정 탭과 전역 UI 개선, 주간보고 자동 생성 기능 및 탭 UI 작업을
+  완료했습니다." 한 문장으로 7개 항목을 뭉뚱그려 압축한 것을 사용자가 지적했다 — 원인은
+  `buildPrompt`의 문체 지시("예시와 비슷한 문체로 작성하세요")가 codex에게 "문체"뿐 아니라
+  예시 문장의 **길이/항목 수까지** 따라 하라는 뜻으로 읽혔기 때문이었다(예시가 짧은 한 문장이라
+  결과도 그만큼 압축됨). 예시 블록의 지시문을 "어투와 표현 방식만 참고하고 길이/항목 수는
+  무관하다"로, 마지막 지시문을 "나열된 각 항목을 하나도 빠짐없이 반영하라(뭉뚱그려 합치지
+  말 것)"로 명시적으로 분리했다. 실제 codex 재호출로 수정 전/후를 비교 확인: 수정 전엔 위
+  한 문장짜리 압축 요약이었고, 수정 후엔 7개 항목이 모두 개별적으로 언급된 문단이 나왔다.
+  lint/vitest(353개, 이 중 `generateWeeklyReport`의 실제 프로세스 spawn 테스트가 시스템 부하
+  시 vitest 기본 5초 타임아웃을 넘겨 flaky했던 것도 20초로 늘려 같이 고침)/build 재통과.
+
 ---
 
 ## B4. 기능 동작 상세
@@ -1579,3 +1592,4 @@ Windows 위젯형 도구를 만든다.
 - v3.43 (2026-09-27): P23(일정 탭: 월간/주간 전체 기간 일정 리스트 추가) done 처리 — 사용자 요청(날짜를 하나씩 클릭 안 해도 지금 보이는 달/주 전체 일정을 한 번에 훑고 싶음) 반영. scheduleGrid.js에 getSchedulesInRange/getScheduleRangeDates 추가, 새 컴포넌트 ScheduleRangeList.jsx(읽기 전용)를 ScheduleDateDetail 다음·"새 일정 추가" 토글 이전에 배치. 겸사겸사 사용자가 발견한 P20 관련 잔여 문제 2건(메모 탭 안내 문구 2줄 줄바꿈, 일정 범례 항목 내부 줄바꿈)도 같이 수정. critical-reviewer 지적 반영: [Medium] 4건 — 날짜 목록 계산을 컴포넌트 밖 순수 함수로 이동(gate=npm test 검증 가능, 12월 연 경계 테스트 추가), id 없는 레코드 처리를 groups/droppedCount 양쪽에서 일관되게(반환 형태를 {groups, droppedCount}로 변경), ScheduleDateDetail과 동일한 .data-issue-notice로 통일, 손상된 title 값에 대한 "(제목 없음)" 대체 추가(크래시 방지). 추가로 P20 후속 .empty-text 잘림이 실질적 지시/경고 문구를 가리던 5곳에 title 속성 보강. lint/vitest(331개)/build 통과, Playwright로 손상 데이터 주입 시나리오까지 재확인.
 - v3.44 (2026-09-27): P24(백로그 상태별 전체 목록: 이번 주 변경 항목 색상 구분 + 50개 cap 예외) done 처리 — 사용자 요청(상태 변경된 항목을 다른 글자색으로) + 사용자가 직접 발견한 50개 cap 문제(변경 항목이 cap 밖에 있으면 색칠해도 안 보임) 반영. backlogTaskGrouping.js에 selectGroupDisplayTasks 추가, BacklogSourceCard.jsx가 상태별 목록 렌더링에 적용, 상태 변경 행에 .is-changed(--priority-mid-text 재사용) + hover 툴팁. critical-reviewer 지적 반영: [High] Set 재필터링 방식이 외부 파일의 id 중복에서 cap 누수/hiddenCount 부풀림을 일으키던 것을 위치 기반 단일 순회로 수정. [Medium] 4건 — added를 cap 예외 대상에서 제외(P14.2 DOM 폭증 방지 취지 보존, done_when도 사용자의 실제 발화 의도에 맞게 정정), id 중복이 여러 상태 그룹에 걸친 경우의 불확정성을 기존 외부 데이터 한계로 문서화, 접근성용 title 툴팁 추가, cap이 실제로 걸리는 조건의 순서 유지 테스트 보강. lint/vitest(333개)/build 통과.
 - v3.45 (2026-09-27): P25(주간보고 자동 생성: codex CLI 연동 백엔드) done 처리 — B3.5의 P25 문단 참고. electron/weeklyReport.js(buildPrompt+generateWeeklyReport+registerWeeklyReportHandlers) 신설, dataStore.js에 backlog_sources[].weekly_report + 전역 weekly_report_example 스키마 추가, main.js/preload.js IPC 배선. critical-reviewer 지적 반영: [High] 2건 — Windows shell:true 타임아웃 시 cmd.exe만 죽고 codex 손자 프로세스는 안 죽던 것을 taskkill /t로 프로세스 트리 전체 종료하도록 수정, "인증 안 됨"이 구분 안 되던 것을 영문 키워드 매칭 기반 AUTH_ERROR 분류 추가로 해결. [Medium] 6건 — try/catch 누락으로 IPC reject 가능하던 것, task 배열 null 원소로 죽을 수 있던 것, stdin EPIPE 무방비, cmd.exe 메타문자 이스케이프 부족, where/실행 대상 불일치, 임시 파일명 충돌 가능성, stdout 파이프 미소비 — 전부 수정. 실제 codex exec 호출 2회로 종단 테스트(사람 사전 동의), NOT_INSTALLED/TIMEOUT 경로는 비용 없이 별도 확인. lint/vitest(350개)/build 통과. UI(P26)는 후속 task.
+- v3.46 (2026-09-27): P25 done 처리 이후 사용자가 직접 발견한 버그 수정 — 실제 패키지로 이 프로젝트 자신의 backlog(.json, 이번 주 신규 7건)를 생성해보니 결과가 한 문장으로 뭉뚱그려 압축됨을 발견, 원인은 buildPrompt의 문체 지시가 예시 문장의 길이/항목 수까지 따라 하라는 뜻으로 읽힌 것 — 문체(어투)와 분량(항목 수)을 분리해 명시하도록 프롬프트 수정, 실제 codex 재호출로 수정 전(한 문장 압축)/후(7개 항목 모두 개별 언급) 비교 확인. weeklyReport.test.js의 실제 프로세스 spawn 테스트 타임아웃도 20초로 늘려 flaky 방지. lint/vitest(353개)/build 통과.

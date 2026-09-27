@@ -82,8 +82,12 @@ describe('isLikelyAuthError', () => {
 // (critical-reviewer 지적, Medium: 예전엔 buildPrompt 호출이 try/catch 밖에 있어 잘못된
 // payload가 IPC reject로 이어질 수 있었다).
 describe('generateWeeklyReport', () => {
+  // 실제 프로세스 spawn(+PATH에 codex가 있으면 taskkill로 강제 종료까지)이 걸리는 시간은
+  // 시스템 부하에 따라 vitest 기본 타임아웃(5초)을 넘길 수 있어(실측: 부하가 있을 때 5초
+  // 초과로 flaky) 넉넉히 늘려둔다 — 이 테스트 자체의 로직이 실제로 오래 걸리는 게 아니라
+  // OS 프로세스 생성/종료 타이밍의 변동성 문제다.
   it('payload가 null이어도 reject하지 않고 ok:false를 돌려준다', async () => {
     const result = await generateWeeklyReport(null, { timeoutMs: 1 });
     expect(result.ok).toBe(false);
-  });
+  }, 20000);
 });
